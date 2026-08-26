@@ -1,6 +1,6 @@
 import { Variables, ExportSetting, extractDefaultExtension as extractExtension, createEnv, today } from '../settings';
 import { MessageBox, confirm } from '../ui/message_box';
-import { Platform, TFile, getLinkpath, moment, type EmbedCache } from 'obsidian';
+import { Platform, TFile, getLinkpath, moment } from 'obsidian';
 import type { SemVer } from 'semver';
 import { exec, renderTemplate, getPlatformValue, trimQuotes } from '../system/utils';
 import { t } from '../lang/helpers';
@@ -102,30 +102,14 @@ export async function exportNote(
     console.error(e);
   }
 
-  let embedArray: EmbedCache[] | undefined;
-  try {
-    embedArray = metadataCache.getCache(currentFile.path).embeds;
-  } catch (e) {
-    console.error(e);
-  }
-  let targetDirArray: string[] = [];
-  for (const embed of embedArray ?? []) {
-    const linkPath = embed.link;
-    const targetFile = metadataCache.getFirstLinkpathDest(getLinkpath(linkPath), currentFile.path);
-    if (targetFile instanceof TFile) {
-      targetDirArray.push(resolve(vaultDir, dirname(targetFile.path)));
-    } else if (targetFile === null) {
-      console.warn(`Could not resolve embedded file: ${linkPath}`);
-    }
-  }
-  targetDirArray = [...new Set(targetDirArray)];
-  // One folder per `--resource-path`, so the separator is never a question: see the presets in export_templates.ts.
-  const embedDirs = targetDirArray.join(PATH_SEPARATOR());
-
   // Every embedded note, transitively, as the written link against the file it means.
   const noteEmbeds = new Map<string, string>();
   // Every file the note reaches, notes and images alike — what a wasm run has to be handed, having no vault to look in.
   const embeddedFiles = new Set<string>();
+  // The folders those files sit in, which is where pandoc is told to look for what a note names by filename alone. An
+  // embedded note is written in where it stands but its images are still its own: they sit beside *it*, wherever that
+  // is, so the walk has to reach as far as the writing does.
+  const embedFolders = new Set<string>();
   const walkedForEmbeds = new Set<string>([currentFile.path]);
   const collectNoteEmbeds = (file: TFile, depth: number) => {
     if (depth > 8) {
@@ -134,14 +118,17 @@ export async function exportNote(
     for (const embed of metadataCache.getCache(file.path)?.embeds ?? []) {
       const target = metadataCache.getFirstLinkpathDest(getLinkpath(embed.link), file.path);
       if (!(target instanceof TFile)) {
+        console.warn(`Could not resolve embedded file: ${embed.link}`);
         continue;
       }
-      embeddedFiles.add(adapter.getFullPath(target.path));
+      const path = adapter.getFullPath(target.path);
+      embeddedFiles.add(path);
+      embedFolders.add(dirname(path));
       if (target.extension !== 'md') {
         continue;
       }
       // Keyed by the link as written, `#section` and all — that is what the filter reads.
-      noteEmbeds.set(embed.link, adapter.getFullPath(target.path));
+      noteEmbeds.set(embed.link, path);
       if (!walkedForEmbeds.has(target.path)) {
         walkedForEmbeds.add(target.path);
         collectNoteEmbeds(target, depth + 1);
@@ -153,6 +140,8 @@ export async function exportNote(
   } catch (e) {
     console.error(e);
   }
+  // One folder per `--resource-path`, so the separator is never a question: see the presets in export_templates.ts.
+  const embedDirs = [...embedFolders].join(PATH_SEPARATOR());
 
   const variables: Variables = {
     pluginDir,

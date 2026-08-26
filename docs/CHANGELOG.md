@@ -5,11 +5,12 @@
 
 ### New features
 
-* **Table of contents depth in the export window.** Where a template writes a format that has a table of contents, the export window carries the same slider as the template editor: it shows what the template asks for, and lets a different depth be set for one export without changing the template itself.
+* **Table of contents depth in the export window.** Where the template chosen for the export writes a format that has a table of contents, the export window carries an option for the depth of that table of contents. It lets the depth be changed for a single export where that is needed, without changing the template itself.
 
 ### UI/UX enhancements and bug fixes
 
-* The lua-filter store's chip row is shorter: five shelves instead of eight, none of them named after an output format, and no "No setup needed" chip.
+* The number of categories in the lua-filter store was reduced to five.
+* Fixed a bug where images in embedded notes were not included in the document on export.
 
 
 
