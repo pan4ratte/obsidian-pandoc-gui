@@ -325,14 +325,15 @@ export default {
 
   // ─── Math ────────────────────────────────────────────────────────────────────
   MATH: 'Math rendering',
-  MATH_DESC: 'How TeX math is written into the page.',
-  MATH_DEFAULT: 'Default (plain text)',
+  MATH_DESC: 'How TeX math is written into the page. Pandoc 3.11 and later write MathML by default; the versions before it wrote plain text.',
+  MATH_DEFAULT: 'Default',
   MATH_METHOD_LABELS: {
     mathjax: 'MathJax',
     katex: 'KaTeX',
     mathml: 'MathML',
     webtex: 'WebTeX (images)',
     gladtex: 'GladTeX',
+    plain: 'Plain text (Unicode)',
   },
   MATH_URL: 'Script URL',
   MATH_URL_DESC: 'The build the page loads. Leave empty for the one pandoc names.',
@@ -402,6 +403,13 @@ export default {
     lang: 'e.g. en-GB',
   },
   VARIABLE_DEFAULT: 'Default',
+  TEXT_DIRECTION: 'Text direction',
+  TEXT_DIRECTION_DESC: 'Right to left, for Hebrew, Arabic and Persian. Word and OpenDocument honour it from pandoc 3.11 on.',
+  TEXT_DIRECTION_DEFAULT: 'Default (from the language)',
+  TEXT_DIRECTION_LABELS: {
+    ltr: 'Left to right',
+    rtl: 'Right to left',
+  },
   OTHER_VARIABLES: 'Other variables',
   OTHER_VARIABLES_DESC: 'One key=value a line, passed as -V. Read by the output template.',
 

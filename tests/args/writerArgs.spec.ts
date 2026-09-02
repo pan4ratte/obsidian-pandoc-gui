@@ -25,6 +25,7 @@ import {
   includeInHeader,
   listOfFigures,
   listOfTables,
+  legacyMathFlags,
   mathMethod,
   mathUrl,
   metadata,
@@ -59,6 +60,7 @@ import {
   setIncludeInHeader,
   setListOfFigures,
   setListOfTables,
+  renameMathFlags,
   setMathMethod,
   setMathUrl,
   setMetadata,
@@ -85,7 +87,9 @@ import {
   stripComments,
   syntaxDefinition,
   tabStop,
+  setTextDirection,
   takesMathUrl,
+  textDirection,
   templateFile,
   textFromPairs,
   topLevelDivision,
@@ -273,6 +277,77 @@ describe('math', () => {
     expect(takesMathUrl('mathjax')).toBe(true);
     expect(takesMathUrl('gladtex')).toBe(false);
     expect(takesMathUrl(undefined)).toBe(false);
+  });
+
+  test('the spelling pandoc 3.11 asks for is read as readily as the five it replaced', () => {
+    expect(mathMethod('--math-method=katex')).toBe('katex');
+    expect(mathMethod('--math-method mathml')).toBe('mathml');
+    expect(mathUrl('--math-method=mathjax:https://example.com/tex.js')).toBe('https://example.com/tex.js');
+    expect(mathUrl('--math-method="mathjax:https://example.com/a b.js"')).toBe('https://example.com/a b.js');
+    expect(mathMethod('--math-method=nonsense')).toBeUndefined();
+    // Last one wins, whichever spelling it came in.
+    expect(mathMethod('--math-method=katex --mathml')).toBe('mathml');
+    expect(mathMethod('--mathml --math-method=katex')).toBe('katex');
+  });
+
+  test('plain has only the new spelling; the other five keep the old one', () => {
+    expect(setMathMethod('', 'plain')).toBe('--math-method=plain');
+    expect(setMathMethod('--math-method=plain', 'mathml')).toBe('--mathml');
+    expect(setMathMethod('--katex', 'plain')).toBe('--math-method=plain');
+    expect(mathMethod('--math-method=plain')).toBe('plain');
+    expect(setMathMethod('--math-method=plain', '')).toBe('');
+  });
+
+  test('a pandoc that renamed the options is given the new name', () => {
+    expect(renameMathFlags('pandoc a.md -o a.html --mathml')).toBe('pandoc a.md -o a.html --math-method=mathml');
+    expect(renameMathFlags('pandoc --mathjax=https://example.com/tex.js a.md')).toBe(
+      'pandoc --math-method=mathjax:https://example.com/tex.js a.md'
+    );
+    expect(renameMathFlags('pandoc --mathjax="https://example.com/a b.js"')).toBe(
+      'pandoc --math-method="mathjax:https://example.com/a b.js"'
+    );
+    expect(renameMathFlags(`pandoc a.md ${FILTER}`)).toBe(`pandoc a.md ${FILTER}`);
+  });
+
+  test('a pandoc older than the rename is given the five flags back, and no flag at all for plain', () => {
+    expect(legacyMathFlags('pandoc a.md --math-method=mathml')).toBe('pandoc a.md --mathml');
+    expect(legacyMathFlags('pandoc --math-method=mathjax:https://example.com/tex.js a.md')).toBe(
+      'pandoc --mathjax=https://example.com/tex.js a.md'
+    );
+    expect(legacyMathFlags('pandoc --math-method mathml a.md')).toBe('pandoc --mathml a.md');
+    // Plain is what that pandoc does with no method named.
+    expect(legacyMathFlags('pandoc a.md --math-method=plain -o a.html')).toBe('pandoc a.md -o a.html');
+    // Not a method pandoc names: left for pandoc to complain about.
+    expect(legacyMathFlags('pandoc --math-method=nonsense')).toBe('pandoc --math-method=nonsense');
+    expect(legacyMathFlags('pandoc --mathml')).toBe('pandoc --mathml');
+  });
+
+  test('either rename leaves a line already in its own spelling alone', () => {
+    expect(renameMathFlags('pandoc --math-method=mathml')).toBe('pandoc --math-method=mathml');
+    // A word that merely ends in a method's name is not that method.
+    expect(renameMathFlags('pandoc --my-mathml')).toBe('pandoc --my-mathml');
+  });
+});
+
+describe('text direction', () => {
+  test('a direction is metadata, since that is where the word processors read it', () => {
+    expect(setTextDirection('', 'rtl')).toBe('-M dir=rtl');
+    expect(textDirection('-M dir=rtl')).toBe('rtl');
+    expect(textDirection('--metadata dir=ltr')).toBe('ltr');
+    // A variable of the same name is not metadata, and the word processors do not read it.
+    expect(textDirection('-V dir=rtl')).toBeUndefined();
+  });
+
+  test('anything that is not one of the two directions is nothing at all', () => {
+    expect(textDirection('-M dir=sideways')).toBeUndefined();
+    expect(textDirection(FILTER)).toBeUndefined();
+    expect(setTextDirection('-M dir=rtl', '')).toBe('');
+    expect(setTextDirection('-M dir=rtl', 'sideways')).toBe('');
+  });
+
+  test('it is set beside the other metadata rather than over it', () => {
+    expect(setTextDirection('-M author=Ada', 'rtl')).toBe('-M author=Ada -M dir=rtl');
+    expect(setTextDirection('-M dir=ltr -M author=Ada', 'rtl')).toBe('-M author=Ada -M dir=rtl');
   });
 });
 

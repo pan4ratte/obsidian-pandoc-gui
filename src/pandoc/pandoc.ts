@@ -58,6 +58,11 @@ export const PANDOC_SYNTAX_HIGHLIGHTING_VERSION = '3.7.0';
 export const takesSyntaxHighlighting = (version?: SemVer | null): boolean =>
   !!version && version.compare(PANDOC_SYNTAX_HIGHLIGHTING_VERSION) >= 0;
 
+/** Where `--math-method` arrived, and `--mathjax` and its four siblings began to warn. */
+export const PANDOC_MATH_METHOD_VERSION = '3.11.0';
+
+export const takesMathMethod = (version?: SemVer | null): boolean => !!version && version.compare(PANDOC_MATH_METHOD_VERSION) >= 0;
+
 export const PANDOC_MANUAL_URL = 'https://pandoc.org/MANUAL.html';
 
 /** Landing page for the newest release, used when the API lookup gives no URL. */
@@ -116,6 +121,7 @@ export default {
   parseVersion: parsePandocVersion,
   getLatestRelease: getLatestPandocRelease,
   takesSyntaxHighlighting,
+  takesMathMethod,
   requiredVersion: PANDOC_REQUIRED_VERSION,
   manualUrl: PANDOC_MANUAL_URL,
   latestReleaseUrl: PANDOC_LATEST_RELEASE_URL,

@@ -233,26 +233,57 @@ export const renameHighlightFlags = (cmd: string): string =>
  * How TeX math reaches HTML. Three of these may carry a URL naming the build to load — the Html preset pins one that
  * way — and it is read and written as a field of its own, since nothing else in the modal could say it.
  */
-export const MATH_METHODS = ['mathjax', 'katex', 'mathml', 'webtex', 'gladtex'] as const;
+export const MATH_METHODS = ['mathjax', 'katex', 'mathml', 'webtex', 'gladtex', 'plain'] as const;
 export type MathMethod = (typeof MATH_METHODS)[number];
+
+/** The five pandoc gave a flag of their own, before `--math-method` gathered them under one option in 3.11. */
+const LEGACY_MATH_METHODS: readonly MathMethod[] = ['mathjax', 'katex', 'mathml', 'webtex', 'gladtex'];
 
 /** The three that load something from somewhere. */
 const MATH_URL_METHODS: readonly MathMethod[] = ['mathjax', 'katex', 'webtex'];
 
 export const takesMathUrl = (method?: string): boolean => MATH_URL_METHODS.includes(method as MathMethod);
 
-const MATH = String.raw`(?:^|\s)--(${MATH_METHODS.join('|')})(?:=${VALUE})?(?=\s|$)`;
+/** Both spellings: the five flags, each taking an `=URL`, and `--math-method`, whose URL follows a colon. */
+const MATH = String.raw`(?:^|\s)(?:--(${LEGACY_MATH_METHODS.join('|')})(?:=${VALUE})?|--math-method[= ]${VALUE})(?=\s|$)`;
 
-export const mathMethod = (args?: string): MathMethod | undefined => lastMatch(args, MATH)?.[1] as MathMethod | undefined;
-
-/** The build the chosen method is pointed at, where it names one. */
-export const mathUrl = (args?: string): string | undefined => {
-  const found = lastMatch(args, MATH);
-  return found?.[2] === undefined ? undefined : unquote(found[2]);
+/** `mathjax:https://…` split where pandoc splits it: at the first colon, the URL carrying colons of its own. */
+const splitMathValue = (value: string): { method: string; url?: string } => {
+  const at = value.indexOf(':');
+  return at === -1 ? { method: value } : { method: value.slice(0, at), url: value.slice(at + 1) };
 };
 
-const writeMath = (args: string, method: string, url?: string) =>
-  append(args, url && takesMathUrl(method) ? `--${method}=${quote(url)}` : `--${method}`);
+/** What a match of either spelling names. */
+const readMath = (found?: RegExpMatchArray): { method?: string; url?: string } => {
+  if (!found) {
+    return {};
+  }
+  if (found[1]) {
+    return { method: found[1], url: found[2] === undefined ? undefined : unquote(found[2]) };
+  }
+  return splitMathValue(unquote(found[3]));
+};
+
+export const mathMethod = (args?: string): MathMethod | undefined => {
+  const { method } = readMath(lastMatch(args, MATH));
+  return MATH_METHODS.includes(method as MathMethod) ? (method as MathMethod) : undefined;
+};
+
+/** The build the chosen method is pointed at, where it names one. */
+export const mathUrl = (args?: string): string | undefined => readMath(lastMatch(args, MATH)).url;
+
+/**
+ * The five keep the flag of their own, which every version the plugin supports takes; only the command that runs is
+ * moved to the spelling the binary at hand wants. `plain` has no older spelling — before 3.11 it was simply what
+ * pandoc did when no method was named at all.
+ */
+const writeMath = (args: string, method: string, url?: string) => {
+  const wanted = url && takesMathUrl(method) ? url : undefined;
+  if (LEGACY_MATH_METHODS.includes(method as MathMethod)) {
+    return append(args, wanted ? `--${method}=${quote(wanted)}` : `--${method}`);
+  }
+  return append(args, `--math-method=${quote(wanted ? `${method}:${wanted}` : method)}`);
+};
 
 export const setMathMethod = (args: string | undefined, method: string): string => {
   const stripped = without(args, MATH);
@@ -267,6 +298,31 @@ export const setMathUrl = (args: string | undefined, url: string): string => {
   }
   return writeMath(without(args, MATH), method, url.trim() || undefined);
 };
+
+/** The five spellings pandoc 3.11 replaced, all of which it now warns about on every run. */
+const LEGACY_MATH = String.raw`(^|\s)--(${LEGACY_MATH_METHODS.join('|')})(?:=${VALUE})?(?=\s|$)`;
+
+/** The one option that took their place, which only pandoc 3.11 and later know. */
+const NEW_MATH = String.raw`(^|\s)--math-method[= ]${VALUE}(?=\s|$)`;
+
+/** The command line in the spelling pandoc 3.11 and later ask for. */
+export const renameMathFlags = (cmd: string): string =>
+  cmd.replace(
+    new RegExp(LEGACY_MATH, 'g'),
+    (_match, lead: string, method: string, url?: string) => `${lead}--math-method=${quote(url ? `${method}:${unquote(url)}` : method)}`
+  );
+
+/** The same line for a pandoc older than 3.11, which knows only the five flags — and, for `plain`, no flag at all. */
+export const legacyMathFlags = (cmd: string): string =>
+  cmd.replace(new RegExp(NEW_MATH, 'g'), (match, lead: string, value: string) => {
+    const { method, url } = splitMathValue(unquote(value));
+    if (!MATH_METHODS.includes(method as MathMethod)) {
+      // Not a method pandoc names: left as written, for pandoc itself to complain about.
+      return match;
+    }
+    // `plain` comes back out altogether, space and all: it is what a pandoc without the option does anyway.
+    return method === 'plain' ? '' : `${lead}--${method}${url && takesMathUrl(method) ? `=${quote(url)}` : ''}`;
+  });
 
 /* -- The output template -------------------------------------------------- */
 
@@ -483,6 +539,27 @@ export const setMetadata = METADATA.setAll;
 export const CURATED_VARIABLES = ['papersize', 'fontsize', 'mainfont', 'geometry', 'linkcolor', 'lang'] as const;
 
 export type CuratedVariable = (typeof CURATED_VARIABLES)[number];
+
+/* -- Text direction ------------------------------------------------------- */
+
+/**
+ * Which way the text runs. Pandoc reads `dir` out of the document's metadata and not out of the template variables —
+ * the ODT and docx writers look it up there and nowhere else — so it goes in with `-M`, which the HTML and EPUB
+ * templates that ask for a `dir` see just as well. Word and OpenDocument only began to honour it in pandoc 3.11;
+ * before that the option is read and written all the same, and simply does nothing.
+ */
+export const TEXT_DIRECTIONS = ['ltr', 'rtl'] as const;
+export type TextDirection = (typeof TEXT_DIRECTIONS)[number];
+
+const DIRECTION = 'dir';
+
+export const textDirection = (args?: string): TextDirection | undefined => {
+  const value = metadataValue(args, DIRECTION);
+  return TEXT_DIRECTIONS.includes(value as TextDirection) ? (value as TextDirection) : undefined;
+};
+
+export const setTextDirection = (args: string | undefined, direction: string): string =>
+  setMetadataValue(args, DIRECTION, TEXT_DIRECTIONS.includes(direction as TextDirection) ? direction : '');
 
 /** The list as it is typed: one `key=value` a line, blank lines passed over. */
 export const pairsFromText = (text: string): Pair[] =>

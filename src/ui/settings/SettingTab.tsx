@@ -74,6 +74,7 @@ import {
   SHIFT_HEADING_LEVELS,
   SLIDE_LEVELS,
   SPLIT_LEVELS,
+  TEXT_DIRECTIONS,
   TOP_LEVEL_DIVISIONS,
   WRAP_MODES,
   ascii,
@@ -151,6 +152,7 @@ import {
   setSyntaxDefinition,
   setTabStop,
   setTemplateFile,
+  setTextDirection,
   setTopLevelDivision,
   setVariable,
   setVariables,
@@ -163,6 +165,7 @@ import {
   tabStop,
   takesMathUrl,
   templateFile,
+  textDirection,
   textFromPairs,
   topLevelDivision,
   variable,
@@ -196,6 +199,7 @@ import {
   supportsSplitLevel,
   supportsTemplate,
   templateExtension,
+  supportsTextDirection,
   supportsToc,
   supportsTopLevelDivision,
   supportsVariable,
@@ -620,6 +624,11 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
     );
 
     const mathOptions = [{ name: t.MATH_DEFAULT, value: '' }, ...MATH_METHODS.map(m => ({ name: t.MATH_METHOD_LABELS[m], value: m }))];
+
+    const directionOptions = [
+      { name: t.TEXT_DIRECTION_DEFAULT, value: '' },
+      ...TEXT_DIRECTIONS.map(d => ({ name: t.TEXT_DIRECTION_LABELS[d], value: d })),
+    ];
 
     const engineOptions = createMemo(() =>
       withCurrent([{ name: t.PDF_ENGINE_DEFAULT, value: '' }, ...PDF_ENGINES.map(e => ({ name: e, value: e }))], pdfEngine(args()))
@@ -1062,8 +1071,9 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
             </Collapsible>
           </div>
 
-          {/* The page as template variables, each row shown only where the writer reads it. */}
-          <Show when={curatedVariables().length > 0}>
+          {/* The page as template variables, each row shown only where the writer reads it. Direction stands with
+              them though it is metadata: it is one more thing the page is set up with. */}
+          <Show when={curatedVariables().length > 0 || supportsTextDirection(format())}>
             <div class="ex-card ex-template-modal-page-setup">
               <Setting name={t.PAGE_SETUP} description={t.PAGE_SETUP_DESC} heading={true} />
               <For each={curatedVariables()}>
@@ -1089,6 +1099,16 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
                   </Setting>
                 )}
               </For>
+              <Show when={supportsTextDirection(format())}>
+                <Setting name={t.TEXT_DIRECTION} description={t.TEXT_DIRECTION_DESC} class="ex-template-modal-direction">
+                  <DropDown
+                    options={directionOptions}
+                    selected={textDirection(args()) ?? ''}
+                    autofocus={false}
+                    onChange={value => writeArgs(a => setTextDirection(a, value))}
+                  />
+                </Setting>
+              </Show>
             </div>
           </Show>
 
@@ -1707,6 +1727,7 @@ export default class extends PluginSettingTab {
               t.EMBED_RESOURCES,
               t.MEDIA,
               t.EXTRACT_MEDIA,
+              t.TEXT_DIRECTION,
               t.OTHER_VARIABLES,
               t.USER_ARGS,
               t.TEMPLATE_TARGET_EXTENSIONS,

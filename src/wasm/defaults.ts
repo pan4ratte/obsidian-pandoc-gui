@@ -148,7 +148,7 @@ const IGNORED = new Set(['verbose', 'quiet', 'trace', 'dump-args', 'no-check-cer
 /** The same, for the ones that carry a value — which has to be stepped over rather than read as the input file. */
 const IGNORED_WITH_VALUE = new Set(['data-dir', 'log', 'request-header', 'pdf-engine', 'pdf-engine-opt']);
 
-/** `--mathjax` and friends, which share one key. */
+/** `--mathjax` and friends, which share one key. `--math-method` is what pandoc 3.11 renamed them to. */
 const MATH_METHODS = ['mathjax', 'katex', 'mathml', 'webtex', 'gladtex'];
 
 /** The same for citations: two flags that are each a value of one key. `--citeproc` is a filter and stands apart. */
@@ -304,6 +304,21 @@ export function commandToDefaults(cmd: string): TranslatedCommand {
     if (MATH_METHODS.includes(name)) {
       const url = value === undefined ? undefined : trimQuotes(value);
       defaults['html-math-method'] = url ? { method: name, url } : { method: name };
+      continue;
+    }
+    // The key stays `html-math-method` whichever spelling named it: 3.11 renamed it to `math-method` but still reads
+    // the old one, and a build downloaded before 3.11 reads nothing else.
+    if (name === 'math-method') {
+      if (value === undefined && i + 1 < tokens.length) {
+        value = tokens[(i += 1)];
+      }
+      const named = trimQuotes(value ?? '');
+      const at = named.indexOf(':');
+      const method = at === -1 ? named : named.slice(0, at);
+      const url = at === -1 ? '' : named.slice(at + 1);
+      if (method) {
+        defaults['html-math-method'] = url ? { method, url } : { method };
+      }
       continue;
     }
     if (CITE_METHODS.includes(name)) {

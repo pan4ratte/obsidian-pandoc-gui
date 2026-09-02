@@ -6,9 +6,12 @@
 ### New features
 
 * **Table of contents depth in the export window.** Where the template chosen for the export writes a format that has a table of contents, the export window carries an option for the depth of that table of contents. It lets the depth be changed for a single export where that is needed, without changing the template itself.
+* **Text direction.** The template editor carries a text direction option: right to left for Word, OpenDocument, HTML and EPUB. Word and OpenDocument honour it from Pandoc 3.11 on.
 
 ### UI/UX enhancements and bug fixes
 
+* Math rendering gained "Plain text (Unicode)", the method Pandoc 3.11 made it possible to name explicitly.
+* The math flags follow the Pandoc version: 3.11 and later get `--math-method`, earlier ones keep `--mathjax` and the rest.
 * The number of categories in the lua-filter store was reduced to five.
 * Fixed a bug where images in embedded notes were not included in the document on export.
 

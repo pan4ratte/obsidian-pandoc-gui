@@ -9,7 +9,7 @@ import { describeExportFailure } from './export_error';
 import type PandocGuiPlugin from '../main';
 import pandoc from '../pandoc/pandoc';
 import { orderLuaFilters } from '../filters/lua_filters';
-import { renameHighlightFlags } from '../args/writer_args';
+import { legacyMathFlags, renameHighlightFlags, renameMathFlags } from '../args/writer_args';
 import { outputArg } from '../args/output_arg';
 import { resolveEngine, unsupportedBy, writesTypstPdf } from '../pandoc/engine';
 import { convertWithWasm } from '../wasm/convert';
@@ -253,21 +253,28 @@ export async function exportNote(
         : setting.command;
 
     if (setting.type === 'pandoc') {
-      // A pandoc that has renamed the highlighting options warns about the old names on every single run. The wasm
-      // build is newer than the rename, so there it is the new spelling either way.
-      let renamed = engine === 'wasm';
-      if (!renamed) {
-        let installed: SemVer;
+      let installed: SemVer;
+      if (engine !== 'wasm') {
         try {
           installed = await pandoc.getCachedVersion(getPlatformValue(globalSetting.pandocPath), env);
         } catch (e) {
           // Not knowing the version is no reason to stop: the old spelling is the one every version takes.
           console.warn(e);
         }
-        renamed = pandoc.takesSyntaxHighlighting(installed);
       }
-      if (renamed) {
+
+      // A pandoc that has renamed the highlighting options warns about the old names on every single run. The wasm
+      // build is newer than the rename, so there it is the new spelling either way.
+      if (engine === 'wasm' || pandoc.takesSyntaxHighlighting(installed)) {
         cmdTpl = renameHighlightFlags(cmdTpl);
+      }
+
+      // The math methods are the same story one release on, and this one runs both ways: a template may name `plain`,
+      // which only 3.11 can be told about. The wasm build is left out of it — its version is whichever one was
+      // downloaded, and the flags never reach it as flags anyway, the translator having turned them into a defaults
+      // file that spells the method the one way every build reads.
+      if (engine !== 'wasm') {
+        cmdTpl = pandoc.takesMathMethod(installed) ? renameMathFlags(cmdTpl) : legacyMathFlags(cmdTpl);
       }
     }
 

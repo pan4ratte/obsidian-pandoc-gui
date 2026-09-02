@@ -325,14 +325,15 @@ export default {
 
   // ─── Math ────────────────────────────────────────────────────────────────────
   MATH: 'Отрисовка формул',
-  MATH_DESC: 'Как формулы TeX записываются на страницу.',
-  MATH_DEFAULT: 'По умолчанию (простой текст)',
+  MATH_DESC: 'Как формулы TeX записываются на страницу. Pandoc 3.11 и новее по умолчанию пишет MathML, версии до неё — простой текст.',
+  MATH_DEFAULT: 'По умолчанию',
   MATH_METHOD_LABELS: {
     mathjax: 'MathJax',
     katex: 'KaTeX',
     mathml: 'MathML',
     webtex: 'WebTeX (изображения)',
     gladtex: 'GladTeX',
+    plain: 'Простой текст (Unicode)',
   },
   MATH_URL: 'URL скрипта',
   MATH_URL_DESC: 'Сборка, которую загружает страница. Оставьте пустым, чтобы взять указанную самим pandoc.',
@@ -402,6 +403,13 @@ export default {
     lang: 'например, ru-RU',
   },
   VARIABLE_DEFAULT: 'По умолчанию',
+  TEXT_DIRECTION: 'Направление письма',
+  TEXT_DIRECTION_DESC: 'Справа налево — для иврита, арабского и фарси. Word и OpenDocument слушаются этого начиная с Pandoc 3.11.',
+  TEXT_DIRECTION_DEFAULT: 'По умолчанию (по языку)',
+  TEXT_DIRECTION_LABELS: {
+    ltr: 'Слева направо',
+    rtl: 'Справа налево',
+  },
   OTHER_VARIABLES: 'Другие переменные',
   OTHER_VARIABLES_DESC: 'По одному key=value в строке, передаётся через -V. Читается шаблоном вывода.',
 

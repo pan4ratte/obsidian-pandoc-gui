@@ -13,7 +13,7 @@ Export and import notes with Pandoc without touching the command line: every opt
 
 ### 1. Every Pandoc feature in a graphical interface
 
-A flexible template editor lets you set up how notes are exported without using the command line. Everything is configurable: the table of contents and its depth, section numbering, the PDF engine, syntax highlighting, maths rendering, paper and font size, footnote placement and much more.
+A flexible template editor lets you set up how notes are exported without using the command line. Everything is configurable: the table of contents and its depth, section numbering, the PDF engine, syntax highlighting, maths rendering, paper and font size, text direction, footnote placement and much more.
 
 ### 2. Dozens of export formats
 

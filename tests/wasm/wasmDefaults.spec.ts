@@ -75,6 +75,15 @@ describe('commandToDefaults', () => {
     expect(options('pandoc --mathml')).toMatchObject({ 'html-math-method': { method: 'mathml' } });
   });
 
+  test('the option pandoc 3.11 renamed those to lands on the same key, which every build reads', () => {
+    expect(options('pandoc --math-method=katex')).toMatchObject({ 'html-math-method': { method: 'katex' } });
+    expect(options('pandoc --math-method mathml')).toMatchObject({ 'html-math-method': { method: 'mathml' } });
+    expect(options('pandoc --math-method="mathjax:https://example.com/tex.js"')).toMatchObject({
+      'html-math-method': { method: 'mathjax', url: 'https://example.com/tex.js' },
+    });
+    expect(options('pandoc --math-method=plain')).toMatchObject({ 'html-math-method': { method: 'plain' } });
+  });
+
   test('the citation method is one key too, and citeproc is still a filter rather than a value of it', () => {
     expect(options('pandoc --natbib')).toMatchObject({ 'cite-method': 'natbib' });
     expect(options('pandoc --biblatex')).toMatchObject({ 'cite-method': 'biblatex' });

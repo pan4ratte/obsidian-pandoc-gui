@@ -263,6 +263,12 @@ const HTML_WRITERS = ['html', 'html4', 'html5', 'chunkedhtml'] as const;
 const EPUB_WRITERS = ['epub', 'epub2', 'epub3'] as const;
 const LATEX_WRITERS = ['latex', 'beamer', 'pdf'] as const;
 
+/**
+ * `dir`: the writers that do something with a direction. The two word processors read it from the metadata, which
+ * pandoc 3.11 taught them; the HTML and EPUB templates put it on the `html` element, as they always have.
+ */
+export const supportsTextDirection = supportedBy(['docx', 'odt', 'opendocument', ...HTML_WRITERS, ...EPUB_WRITERS]);
+
 export const supportsVariable: Record<CuratedVariable, (writer?: string) => boolean> = {
   papersize: supportedBy(['latex', 'pdf', 'context', 'ms', 'typst', ...EPUB_WRITERS]),
   fontsize: supportedBy([...LATEX_WRITERS, 'context', 'typst', 'odt', ...HTML_WRITERS]),
