@@ -1,11 +1,15 @@
 import { Notice, Platform, type App } from 'obsidian';
 import { For, Match, Show, Switch, createEffect, createMemo, createResource, createSignal, onCleanup } from 'solid-js';
 import { t } from '../../lang/helpers';
-import { openExternal } from '../../system/platform';
+import { chooseFile, isDesktop, openExternal, vaultRoot } from '../../system/platform';
+import { FileStore } from '../../system/file_store';
+import { stem } from '../../system/paths';
 import {
   DEFAULT_LUA_FILTER_CATEGORY,
+  LOCAL_FILTER_PREFIX,
   LUA_FILTER_CATEGORIES,
   LuaFilterManager,
+  isLocalFilter,
   shelfOf,
   type InstalledLuaFilter,
   type LuaFilterCategory,
@@ -13,6 +17,8 @@ import {
 } from '../../filters/lua_filters';
 import Modal from '../components/Modal';
 import Icon from '../components/Icon';
+import Collapsible from '../components/Collapsible';
+import CodeEditor from '../components/CodeEditor';
 import { tooltip } from '../components/tooltip';
 
 /** The chips above the list: how a filter stands, then the shelf it sits on. */
@@ -25,6 +31,18 @@ const CATEGORY_ICON: Record<LuaFilterCategory, string> = {
   prose: 'type',
   other: 'wrench',
 };
+
+/** What the file dialog offers, ending in everything: a filter is as often kept under a name of the user's own. */
+const LUA_FILES = [
+  { name: 'Lua filter', extensions: ['lua'] },
+  { name: 'All files', extensions: ['*'] },
+];
+
+/**
+ * The card a new filter is written in, which is not one of the catalogue's — it stands for that card wherever an
+ * entry's id would. A filter's slug is never empty, so nothing on disk can be known by the bare prefix.
+ */
+const DRAFT = LOCAL_FILTER_PREFIX;
 
 /** What went wrong, in the words of whatever threw — an object gets its shape, not `[object Object]`. */
 const message = (e: unknown) => (e instanceof Error ? e.message : typeof e === 'string' ? e : JSON.stringify(e));
@@ -72,8 +90,10 @@ export default (props: {
       .map(f => ({
         id: f.id,
         storeName: f.storeName,
-        description: '',
-        author: '',
+        // Only a filter of the user's own carries one of these; a catalogue's orphan has nothing left to say.
+        description: f.description ?? '',
+        // Whose work a filter of the user's own is. A catalogue's orphan credits nobody: what it knew went with it.
+        author: isLocalFilter(f.id) ? t.STORE_AUTHOR_YOU : '',
         category: shelfOf(f.category),
         updated: f.updated,
         fileName: f.fileName,
@@ -201,6 +221,124 @@ export default (props: {
       }
     });
 
+  // ── The filter being written ────────────────────────────────────────────────
+
+  /** Which card stands open as a form: `DRAFT` for the one that adds a filter, or the id of one being rewritten. */
+  const [drafting, setDrafting] = createSignal<string>();
+  const [draftName, setDraftName] = createSignal('');
+  const [draftDescription, setDraftDescription] = createSignal('');
+  const [draftCode, setDraftCode] = createSignal('');
+
+  const canSave = () => !!draftName().trim() && !!draftCode().trim() && !busy().has(drafting() ?? '');
+
+  const closeDraft = () => setDrafting(undefined);
+
+  /** The card opened on an empty filter. What was typed into it before is not kept: closing it is giving it up. */
+  const openNewDraft = () => {
+    setDraftName('');
+    setDraftDescription('');
+    setDraftCode('');
+    setDrafting(DRAFT);
+  };
+
+  /** An installed filter of the user's own, opened in its own card with what is on disk in the field. */
+  const openEdit = async (filter?: InstalledLuaFilter) => {
+    if (!filter) {
+      return;
+    }
+    let code: string;
+    try {
+      code = await props.manager.readFilter(filter);
+    } catch {
+      new Notice(t.STORE_ADD_READ_FAILED(filter.fileName));
+      return;
+    }
+    setDraftName(filter.storeName);
+    setDraftDescription(filter.description ?? '');
+    setDraftCode(code);
+    setDrafting(filter.id);
+  };
+
+  /** A filter kept as a file elsewhere on the device: read into the field, to be looked over and then saved. */
+  const pickFile = async () => {
+    const path = await chooseFile({ filters: LUA_FILES });
+    if (!path) {
+      return;
+    }
+    const bytes = await new FileStore(props.app.vault, vaultRoot(props.app.vault.adapter)).read(path);
+    if (!bytes) {
+      new Notice(t.STORE_ADD_READ_FAILED(path));
+      return;
+    }
+    setDraftCode(new TextDecoder().decode(bytes));
+    // The file's own name, unless the card has been given one already.
+    if (!draftName().trim()) {
+      setDraftName(stem(path));
+    }
+  };
+
+  const saveDraft = () => {
+    const target = drafting();
+    if (!target) {
+      return;
+    }
+    const editing = target === DRAFT ? undefined : installedOf(target);
+    return withBusy(target, async () => {
+      try {
+        const draft = { name: draftName(), description: draftDescription(), code: draftCode() };
+        const filter = editing ? await props.manager.update(editing, draft) : await props.manager.create(draft, props.installed);
+        props.onInstalled(filter);
+        new Notice(t.STORE_SAVED_NOTICE(filter.storeName));
+        closeDraft();
+      } catch (e) {
+        new Notice(t.STORE_SAVE_FAILED(message(e)));
+      }
+    });
+  };
+
+  // ── The form, and the buttons that stand under it ───────────────────────────
+
+  /** The fields, wherever they are being shown: the card that adds a filter, or the card of one being rewritten. */
+  const DraftForm = () => (
+    <div class="ex-lua-draft">
+      <input
+        type="text"
+        class="ex-lua-draft-name"
+        placeholder={t.STORE_ADD_NAME}
+        spellcheck={false}
+        value={draftName()}
+        onInput={e => setDraftName(e.currentTarget.value)}
+      />
+      <input
+        type="text"
+        class="ex-lua-draft-description"
+        placeholder={t.STORE_ADD_DESCRIPTION}
+        value={draftDescription()}
+        onInput={e => setDraftDescription(e.currentTarget.value)}
+      />
+      <CodeEditor value={draftCode()} placeholder={t.STORE_ADD_CODE} onInput={setDraftCode} />
+    </div>
+  );
+
+  /** What the row along the foot of a card being written in holds. */
+  const DraftActions = () => (
+    <>
+      {/* The way out of the card, in the row every other way out of a card is in. */}
+      <button class="ex-lua-cancel" ref={el => tooltip(el, () => t.STORE_CANCEL)} onClick={closeDraft}>
+        <Icon name="x" />
+      </button>
+      {/* There is no dialog to open where there is no file system to open it on. */}
+      <Show when={isDesktop()}>
+        <button class="ex-lua-pick" ref={el => tooltip(el, () => t.STORE_ADD_PICK_FILE)} onClick={() => void pickFile()}>
+          <Icon name="folder-open" />
+        </button>
+      </Show>
+      <button class="ex-lua-save" ref={el => tooltip(el, () => t.STORE_ADD_SAVE)} disabled={!canSave()} onClick={() => void saveDraft()}>
+        <Icon name="save" />
+      </button>
+    </>
+  );
+
   // ── Card ────────────────────────────────────────────────────────────────────
 
   const Card = (cardProps: { entry: LuaFilterEntry }) => {
@@ -218,6 +356,9 @@ export default (props: {
     /** What the row along the foot of the card holds, which decides whether there is a row at all. */
     const credited = () => !!entry().author;
     const canInstall = () => installable() && (!filter() || updatable());
+    /** A filter of the user's own is the only one there is anything to rewrite in. */
+    const editable = () => !!filter() && isLocalFilter(entry().id);
+    const editing = () => drafting() === entry().id;
     const hasActions = () => !!entry().homepage || canInstall() || !!filter();
     /** What the filter needs, a bullet each. The catalogue writes them as one field, so the ways a list is written
         into it are what they are split on. */
@@ -227,6 +368,42 @@ export default (props: {
         .map(item => item.trim())
         .filter(item => item);
 
+    /** The row as it stands when the card is not being written in. */
+    const CatalogueActions = () => (
+      <>
+        <Show when={editable()}>
+          <button class="ex-lua-edit" ref={el => tooltip(el, () => t.STORE_EDIT)} onClick={() => void openEdit(filter())}>
+            <Icon name="pencil" />
+          </button>
+        </Show>
+        <Show when={entry().homepage}>
+          <button class="ex-lua-readme" ref={el => tooltip(el, () => t.STORE_README)} onClick={() => openExternal(entry().homepage)}>
+            <Icon name="book-open" />
+          </button>
+        </Show>
+        <Show when={canInstall()}>
+          <button
+            class="ex-lua-install"
+            ref={el => tooltip(el, () => (isBusy() ? t.STORE_INSTALLING : updatable() ? t.STORE_UPDATE : t.STORE_INSTALL))}
+            disabled={isBusy()}
+            onClick={() => void install(entry())}
+          >
+            <Icon name={updatable() ? 'refresh-cw' : 'download'} />
+          </button>
+        </Show>
+        <Show when={filter()}>
+          <button
+            class="ex-lua-uninstall"
+            ref={el => tooltip(el, () => t.STORE_UNINSTALL)}
+            disabled={isBusy()}
+            onClick={() => void uninstall(entry())}
+          >
+            <Icon name="trash-2" />
+          </button>
+        </Show>
+      </>
+    );
+
     return (
       <div class="ex-lua-card" classList={{ 'is-installed': !!filter() }}>
         <div class="ex-lua-card-main">
@@ -234,54 +411,39 @@ export default (props: {
             <span class="ex-lua-name">{entry().storeName}</span>
             <Icon class="ex-lua-category-icon" name={CATEGORY_ICON[entry().category]} tooltip={t.STORE_CATEGORY_LABELS[entry().category]} />
           </div>
-          <Show when={entry().description}>
-            <p class="ex-lua-desc">{entry().description}</p>
-          </Show>
+          {/* What the card says gives way to the fields it is being rewritten in. */}
+          <Show when={!editing()}>
+            <Show when={entry().description}>
+              <p class="ex-lua-desc">{entry().description}</p>
+            </Show>
 
-          {/* Said before installing, not discovered in a failed export. */}
-          <Show when={entry().requires}>
-            <div class="ex-lua-requires">
-              <span class="ex-lua-requires-label">{t.STORE_REQUIREMENTS}</span>
-              <ul class="ex-lua-requires-list">
-                <For each={requirements()}>{item => <li>{item}</li>}</For>
-              </ul>
-            </div>
+            {/* Said before installing, not discovered in a failed export. */}
+            <Show when={entry().requires}>
+              <div class="ex-lua-requires">
+                <span class="ex-lua-requires-label">{t.STORE_REQUIREMENTS}</span>
+                <ul class="ex-lua-requires-list">
+                  <For each={requirements()}>{item => <li>{item}</li>}</For>
+                </ul>
+              </div>
+            </Show>
           </Show>
+          <Collapsible when={editing()}>
+            <DraftForm />
+          </Collapsible>
         </div>
 
         {/* A card with neither a credit nor anything to do has no row along its foot, and no line over one. */}
-        <Show when={credited() || hasActions()}>
-          <div class="ex-lua-actions" classList={{ 'is-credited': credited() }}>
-            {/* The credit stands in the same row as the buttons, at the end the row is read from. */}
-            <Show when={credited()}>
+        <Show when={credited() || hasActions() || editable()}>
+          <div class="ex-lua-actions" classList={{ 'is-credited': credited() && !editing() }}>
+            {/* The credit stands in the same row as the buttons, at the end the row is read from. Not while the card
+                is being written in: those buttons are the whole row. */}
+            <Show when={credited() && !editing()}>
               <span class="ex-lua-author" ref={el => tooltip(el, creditInFull)}>
                 {credit()}
               </span>
             </Show>
-            <Show when={entry().homepage}>
-              <button class="ex-lua-readme" ref={el => tooltip(el, () => t.STORE_README)} onClick={() => openExternal(entry().homepage)}>
-                <Icon name="book-open" />
-              </button>
-            </Show>
-            <Show when={canInstall()}>
-              <button
-                class="ex-lua-install"
-                ref={el => tooltip(el, () => (isBusy() ? t.STORE_INSTALLING : updatable() ? t.STORE_UPDATE : t.STORE_INSTALL))}
-                disabled={isBusy()}
-                onClick={() => void install(entry())}
-              >
-                <Icon name={updatable() ? 'refresh-cw' : 'download'} />
-              </button>
-            </Show>
-            <Show when={filter()}>
-              <button
-                class="ex-lua-uninstall"
-                ref={el => tooltip(el, () => t.STORE_UNINSTALL)}
-                disabled={isBusy()}
-                onClick={() => void uninstall(entry())}
-              >
-                <Icon name="trash-2" />
-              </button>
+            <Show when={editing()} fallback={<CatalogueActions />}>
+              <DraftActions />
             </Show>
           </div>
         </Show>
@@ -336,6 +498,37 @@ export default (props: {
       </div>
 
       <div class="ex-lua-list">
+        {/* Standing above the catalogue rather than in it: a filter of the user's own is theirs to add whether the
+            catalogue loaded or not. */}
+        <div class="ex-lua-card ex-lua-add" classList={{ 'is-open': drafting() === DRAFT }}>
+          <div class="ex-lua-card-main">
+            {/* Open, the head is a card head like any other — the title, and nothing to press: the way out of the
+                card is in the row along its foot. Closed, the card is only that head, so the head is the button
+                that opens it, which is a button so that a key can reach it too. */}
+            <Show
+              when={drafting() === DRAFT}
+              fallback={
+                <button class="ex-lua-card-head ex-lua-add-head" onClick={openNewDraft}>
+                  <Icon name="plus" />
+                  <span class="ex-lua-name">{t.STORE_ADD_OWN}</span>
+                </button>
+              }
+            >
+              <div class="ex-lua-card-head">
+                <span class="ex-lua-name">{t.STORE_ADD_OWN}</span>
+              </div>
+            </Show>
+            <Collapsible when={drafting() === DRAFT}>
+              <DraftForm />
+            </Collapsible>
+          </div>
+          <Show when={drafting() === DRAFT}>
+            <div class="ex-lua-actions">
+              <DraftActions />
+            </div>
+          </Show>
+        </div>
+
         <Switch>
           <Match when={catalogue.loading}>
             <p class="ex-lua-status">{t.STORE_LOADING}</p>

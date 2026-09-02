@@ -33,7 +33,7 @@ The “Import a file and convert it to a note” command calls the import dialog
 
 ### 6. A store of lua filters
 
-A lua filter is a small script Pandoc applies to the document on export, which lets you tune the document more finely still: page breaks in Word, diagrams from Mermaid code blocks, embedded notes, chemical formulas or sheet music. The filter store offers more than three dozen of them, grouped by the problem they solve, each naming what it requires.
+A lua filter is a small script Pandoc applies to the document on export, which lets you tune the document more finely still: page breaks in Word, diagrams from Mermaid code blocks, embedded notes, chemical formulas or sheet music. The filter store offers more than three dozen of them, grouped by the problem they solve, each naming what it requires. A filter of your own can be added too — pasted into the store, or chosen as a file on the computer — and edited afterwards.
 
 ### 7. Pandoc, watched over
 

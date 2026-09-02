@@ -6,6 +6,7 @@
 ### New features
 
 * **Table of contents depth in the export window.** Where the template chosen for the export writes a format that has a table of contents, the export window carries an option for the depth of that table of contents. It lets the depth be changed for a single export where that is needed, without changing the template itself.
+* **Lua filters of your own.** The filter store carries an “Add my own lua-filter” card: a name, a description and a code field with line numbers, or a `.lua` file chosen on the computer. The file is written into the plugin folder, the filter is wired into templates like any other, and its card can be opened later to rewrite it.
 * **Text direction.** The template editor carries a text direction option: right to left for Word, OpenDocument, HTML and EPUB. Word and OpenDocument honour it from Pandoc 3.11 on.
 
 ### UI/UX enhancements and bug fixes

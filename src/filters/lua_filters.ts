@@ -75,6 +75,8 @@ export interface InstalledLuaFilter {
   id: string;
   fileName: string;
   storeName: string;
+  /** Only a filter of the user's own carries one: a catalogue's is read from the catalogue each time. */
+  description?: string;
   updated?: string;
   category: LuaFilterCategory;
   /**
@@ -83,6 +85,32 @@ export interface InstalledLuaFilter {
    */
   formats?: string[];
 }
+
+/**
+ * What tells a filter of the user's own from one the catalogue offers, in the id both are known by. No catalogue can
+ * take an id back off the user: an entry that named itself this way would be skipped as a duplicate.
+ */
+export const LOCAL_FILTER_PREFIX = 'local:';
+
+export const isLocalFilter = (id: string): boolean => id.startsWith(LOCAL_FILTER_PREFIX);
+
+/** The three things a filter of the user's own is written from. */
+export interface LuaFilterDraft {
+  name: string;
+  description?: string;
+  code: string;
+}
+
+/**
+ * A name as a file name: what a file system takes of it, and `filter` where that is nothing — a name written in
+ * another script has no letters for this to keep.
+ */
+export const luaFileSlug = (name: string): string =>
+  name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40) || 'filter';
 
 /** The catalogue, unless a vault points `luaFilterRepoUrl` elsewhere. */
 export const DEFAULT_LUA_FILTER_REPO_URL = 'https://raw.githubusercontent.com/pan4ratte/obsidian-pandoc-gui/main/lua-filters/';
@@ -274,6 +302,70 @@ export class LuaFilterManager {
       category: entry.category,
       formats: entry.formats,
     };
+  }
+
+  /** `<base>.lua`, or the first number after it that nothing on disk has taken. */
+  private freeFileName(base: string, installed: readonly InstalledLuaFilter[]): string {
+    const taken = (file: string) => this.isBundled(file) || installed.some(f => f.fileName === file);
+    for (let n = 1; n <= 99; n += 1) {
+      const candidate = n === 1 ? `${base}.lua` : `${base}-${n}.lua`;
+      if (!taken(candidate)) {
+        return candidate;
+      }
+    }
+    throw new Error(`There are already too many filters called "${base}"`);
+  }
+
+  /** What a draft says, checked and tidied: the same reading whether the filter is being written or rewritten. */
+  private draftOf(draft: LuaFilterDraft) {
+    const storeName = draft.name.trim();
+    if (!storeName) {
+      throw new Error('The filter needs a name');
+    }
+    // Written with the line endings a lua interpreter reads, and ending in the newline a text file ends in.
+    const code = draft.code.replace(/\r\n?/g, '\n').trimEnd();
+    if (!code) {
+      throw new Error('The filter is empty');
+    }
+    return { storeName, description: draft.description?.trim() || undefined, code };
+  }
+
+  private async writeFilter(fileName: string, code: string): Promise<void> {
+    await this.plugin.app.vault.adapter.write(this.filePath(fileName), `${code}\n`);
+  }
+
+  /**
+   * Write a filter of the user's own into `lua/`, and answer the record to store. From there on it stands among the
+   * installed ones: the template editor lists it, and removing it deletes the file as it does for any other. It is
+   * given no formats, which is what says it runs in all of them — a filter the user wrote is theirs to point wherever
+   * they like.
+   */
+  async create(draft: LuaFilterDraft, installed: readonly InstalledLuaFilter[]): Promise<InstalledLuaFilter> {
+    const { storeName, description, code } = this.draftOf(draft);
+    const fileName = this.freeFileName(luaFileSlug(storeName), installed);
+    await this.writeFilter(fileName, code);
+    return {
+      id: LOCAL_FILTER_PREFIX + fileName.slice(0, -'.lua'.length),
+      fileName,
+      storeName,
+      description,
+      category: DEFAULT_LUA_FILTER_CATEGORY,
+    };
+  }
+
+  /**
+   * Rewrite one that is already on disk. The file keeps the name it was given, whatever the filter is renamed to: a
+   * template runs a filter by naming its file, and a rename would leave every one of them pointing at nothing.
+   */
+  async update(filter: InstalledLuaFilter, draft: LuaFilterDraft): Promise<InstalledLuaFilter> {
+    const { storeName, description, code } = this.draftOf(draft);
+    await this.writeFilter(filter.fileName, code);
+    return { ...filter, storeName, description };
+  }
+
+  /** What a filter holds, read back into the field it was written in. */
+  async readFilter(filter: InstalledLuaFilter): Promise<string> {
+    return await this.plugin.app.vault.adapter.read(this.filePath(filter.fileName));
   }
 
   /** Delete a filter's file. A file already gone is the state that was wanted. */

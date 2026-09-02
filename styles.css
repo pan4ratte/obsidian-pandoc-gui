@@ -2119,6 +2119,137 @@
 }
 
 /*
+ * The card a filter of the user's own is written in, and the card of one being
+ * rewritten: the store's own card, with the fields standing where a description
+ * would and the buttons in the row along the foot. Closed, the card that adds
+ * one is drawn in a dashed border — it is the one card in the list that is a
+ * thing to do rather than a thing on offer.
+ *
+ * Every selector names the modal twice. The card is the one place in the store
+ * holding Obsidian's own controls — a button, two text fields, a textarea — and
+ * each of those is drawn by a rule of Obsidian's, and again by whatever rule the
+ * vault's theme has for it. Two classes and a descendant outrank both. It is
+ * the same trick `.ex-template-modal.ex-template-modal` plays above.
+ */
+.ex-lua-modal.ex-lua-modal .ex-lua-add:not(.is-open) {
+  border-style: dashed;
+  padding-top: 32px;
+  padding-bottom: 32px;
+}
+
+/* Closed, the head is a button, so a key reaches it as the pointer does. Open,
+   it is a plain card head and none of this is asked of it. */
+.ex-lua-modal.ex-lua-modal .ex-lua-add-head {
+  justify-content: center;
+  width: 100%;
+  height: auto;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  cursor: var(--cursor);
+}
+
+.ex-lua-modal.ex-lua-modal .ex-lua-add-head:hover {
+  background: transparent;
+  color: var(--text-accent);
+}
+
+/* The name is the card's own, drawn in whatever colour the head is in. */
+.ex-lua-modal.ex-lua-modal .ex-lua-add-head .ex-lua-name {
+  color: inherit;
+  font-size: var(--font-ui-normal);
+}
+
+.ex-lua-modal.ex-lua-modal .ex-lua-add-head .svg-icon {
+  width: var(--icon-s);
+  height: var(--icon-s);
+}
+
+.ex-lua-modal.ex-lua-modal .ex-lua-draft {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+  padding-top: var(--size-4-3);
+}
+
+.ex-lua-modal.ex-lua-modal .ex-lua-draft input[type='text'] {
+  width: 100%;
+}
+
+/* The buttons the card is written and saved from, coloured like the store's own. */
+.ex-lua-modal.ex-lua-modal .ex-lua-edit:hover,
+.ex-lua-modal.ex-lua-modal .ex-lua-pick:hover,
+.ex-lua-modal.ex-lua-modal .ex-lua-save:hover {
+  color: var(--text-accent);
+}
+
+/* The way out, which is not an undoing: the muted grey the row is drawn in. */
+.ex-lua-modal.ex-lua-modal .ex-lua-cancel:hover {
+  color: var(--text-normal);
+}
+
+/*
+ * A field for code: the numbers down one side and the text beside them, sharing
+ * a line height so the two columns stay level, and a font that does not wrap so
+ * a line of code is a line on screen.
+ *
+ * Named twice for the same reason the card above is, and on its own root rather
+ * than the modal's: what a textarea is drawn like is Obsidian's to say and a
+ * theme's to say again, and this field looks the same wherever it is put.
+ */
+.ex-code.ex-code {
+  --ex-code-line: 1.5;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: var(--background-primary);
+}
+
+.ex-code.ex-code .ex-code-gutter {
+  flex: 0 0 auto;
+  min-width: 2.5em;
+  padding: var(--size-4-2) var(--size-4-1);
+  /* Moved by however far the field has been scrolled, rather than scrolled itself. */
+  overflow: hidden;
+  border-right: 1px solid var(--background-modifier-border);
+  background-color: var(--background-secondary);
+  color: var(--text-faint);
+  font-family: var(--font-monospace);
+  font-size: var(--font-smaller);
+  line-height: var(--ex-code-line);
+  text-align: right;
+  white-space: pre;
+  user-select: none;
+}
+
+.ex-code.ex-code .ex-code-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 15em;
+  padding: var(--size-4-2);
+  overflow: auto;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-normal);
+  font-family: var(--font-monospace);
+  font-size: var(--font-smaller);
+  line-height: var(--ex-code-line);
+  white-space: pre;
+  tab-size: 4;
+  resize: vertical;
+}
+
+.ex-code.ex-code .ex-code-input:focus {
+  box-shadow: none;
+}
+
+/*
  * What the wasm build can be given past itself — typst, and the fonts it sets a
  * document in.
  *
