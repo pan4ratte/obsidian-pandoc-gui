@@ -62,6 +62,40 @@ const pandocInstalled = (() => {
   }
 })();
 
+/**
+ * What a zip holds, by entry name, as the bytes each is stored as.
+ *
+ * Compared this way rather than whole because pandoc assembles these documents when it is asked for one rather than
+ * keeping them ready-made, and stamps every entry with the clock as it does: two prints a second apart are the same
+ * length and the same content, and differ in the headers alone. What the entries hold is the document; when they were
+ * written is not. Read the way `src/wasm/zip.ts` reads one, which is the same format for the same reason.
+ */
+const entriesOf = (archive: Buffer): Record<string, string> => {
+  const view = new DataView(archive.buffer, archive.byteOffset, archive.byteLength);
+  // The end record is 22 bytes plus a comment of up to 64 KB, and is found by walking back from the end.
+  let eocd = view.byteLength - 22;
+  while (eocd >= 0 && view.getUint32(eocd, true) !== 0x06054b50) {
+    eocd -= 1;
+  }
+  expect(eocd).toBeGreaterThanOrEqual(0);
+
+  const found: Record<string, string> = {};
+  let at = view.getUint32(eocd + 16, true);
+  for (let i = view.getUint16(eocd + 10, true); i > 0; i -= 1) {
+    const compressed = view.getUint32(at + 20, true);
+    const nameLength = view.getUint16(at + 28, true);
+    const extraLength = view.getUint16(at + 30, true);
+    const commentLength = view.getUint16(at + 32, true);
+    const localAt = view.getUint32(at + 42, true);
+    const name = archive.subarray(at + 46, at + 46 + nameLength).toString('utf8');
+    // The local header repeats the name and can carry different extra fields, so its own lengths are the ones to use.
+    const start = localAt + 30 + view.getUint16(localAt + 26, true) + view.getUint16(localAt + 28, true);
+    found[name] = archive.subarray(start, start + compressed).toString('base64');
+    at += 46 + nameLength + extraLength + commentLength;
+  }
+  return found;
+};
+
 describe.skipIf(!pandocInstalled)('the document the installed pandoc writes', () => {
   /** The same file asked for at the command line, which is the whole of what this has to match. */
   const printed = (format: string): Buffer => {
@@ -75,16 +109,14 @@ describe.skipIf(!pandocInstalled)('the document the installed pandoc writes', ()
   };
 
   test.each([...REFERENCE_FORMATS])(
-    'is the %s `--print-default-data-file` prints, byte for byte',
+    'is the %s `--print-default-data-file` prints, entry for entry',
     async format => {
       const written = await referenceDocFromNative(format);
       const expected = printed(format);
-      // Said as three answers rather than one, so a mismatch says whether it is the wrong file or the wrong bytes.
-      expect({
-        zip: new TextDecoder().decode(written.slice(0, 2)),
-        length: written.byteLength,
-        same: Buffer.from(written).equals(expected),
-      }).toEqual({ zip: 'PK', length: expected.byteLength, same: true });
+      expect({ zip: new TextDecoder().decode(written.slice(0, 2)), entries: entriesOf(Buffer.from(written)) }).toEqual({
+        zip: 'PK',
+        entries: entriesOf(expected),
+      });
     },
     60_000
   );

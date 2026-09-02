@@ -188,6 +188,11 @@ Then move `BUNDLED_REFERENCE_VERSION` in `src/pandoc/reference_doc.ts` to the
 version they were printed from. `tests/pandoc/referenceDoc.spec.ts` checks the
 bundle against the files, so a stale build fails rather than ships.
 
+Pandoc assembles these zips as it prints them and stamps every entry with the
+clock, so reprinting always changes the bytes — a diff in `reference-docs/` is
+not by itself a sign that Pandoc changed anything. What the entries hold is what
+to compare; the spec does exactly that where it checks a printed document.
+
 ## Translations
 
 `src/lang/en.ts` is the shape every other locale must satisfy — `ru.ts` is one,
