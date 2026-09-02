@@ -40,5 +40,7 @@ jobs:
         run: npm ci
       - name: Catalogue is generated, not hand-edited
         run: npm run docs:catalogue:check
+      - name: Reference documents are generated, not hand-edited
+        run: npm run gen:references:check
       - name: Test
         run: npm test

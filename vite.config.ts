@@ -5,7 +5,6 @@ import { builtinModules as builtins } from 'node:module';
 import path from 'path';
 import * as fsp from 'fs/promises';
 import { TEXT_FILES, textLoader } from './tools/text-loader.ts';
-import { BINARY_FILES, binaryLoader } from './tools/binary-loader.ts';
 
 
 
@@ -44,7 +43,6 @@ export default defineConfig(({ mode }) => {
         ]
       }) : undefined,
       textLoader(TEXT_FILES), // src/resources.ts, src/lang/helpers.ts
-      binaryLoader(BINARY_FILES), // src/pandoc/reference_doc.ts
       stubImportMetaUrl(/@myriaddreamin[\\/]/),
       prod ? undefined : inject(['src/hmr.ts']),
     ],

@@ -110,7 +110,7 @@ their own. Anything else `package.json`'s `scripts` offers is fair game too.
 | `src/lang/` | Every string the user sees. `en.ts` is the type every other locale satisfies; `ru.ts` is the Russian one. |
 | `lua-filters/` | The filters: `bundled/` is what the plugin ships, the rest is the store's catalogue. See its [readme](../lua-filters/README.md). |
 | `textemplate/` | LaTeX templates embedded into the build alongside the bundled filters. |
-| `reference-docs/` | Pandoc's own `reference.docx`, `.odt` and `.pptx`, embedded into the build as base64. See below. |
+| `reference-docs/` | Pandoc's own `reference.docx`, `.odt` and `.pptx`. Carried into the build by the generated `src/pandoc/reference_data.ts`. See below. |
 | `docs/` | This file, the changelog, the user guide and the Russian readme. |
 | `scripts/` | `gen-catalogue.js`, which writes the catalogue table in the readme, and `version.mjs`, which bumps the version across `package.json`, `manifest.json` and `versions.json`. |
 | `tools/` | Build helpers the vite and vitest configs load. |
@@ -184,9 +184,21 @@ for f in docx odt pptx; do
 done
 ```
 
-Then move `BUNDLED_REFERENCE_VERSION` in `src/pandoc/reference_doc.ts` to the
-version they were printed from. `tests/pandoc/referenceDoc.spec.ts` checks the
-bundle against the files, so a stale build fails rather than ships.
+Then regenerate the module the plugin carries them in, and move
+`BUNDLED_REFERENCE_VERSION` in `src/pandoc/reference_doc.ts` to the version they
+were printed from:
+
+```bash
+npm run gen:references
+```
+
+`src/pandoc/reference_data.ts` is generated rather than read out of
+`reference-docs/` while the bundle is built because nothing in this tree may
+import node: the plugin runs on a phone, and Obsidian's review linter says so for
+every file in the repository, whatever `eslint.config.js` exempts locally.
+`tests/pandoc/referenceDoc.spec.ts` compares the module against the files, so a
+forgotten regeneration fails rather than ships — the same check runs in CI as
+`npm run gen:references:check`.
 
 Pandoc assembles these zips as it prints them and stamps every entry with the
 clock, so reprinting always changes the bytes — a diff in `reference-docs/` is

@@ -10,9 +10,7 @@
  * which is what makes them the same documents on a phone as on a computer, rather than something merely like them.
  */
 
-import docx from '../../reference-docs/reference.docx';
-import odt from '../../reference-docs/reference.odt';
-import pptx from '../../reference-docs/reference.pptx';
+import { docx, odt, pptx } from './reference_data';
 import { exec } from '../system/utils';
 import { nodeFs } from '../system/file_store';
 import { tempFolder } from '../system/platform';
@@ -34,7 +32,7 @@ export const isReferenceFormat = (format?: string): format is ReferenceFormat =>
  */
 export const BUNDLED_REFERENCE_VERSION = '3.11';
 
-/** The loader in `tools/binary-loader.ts` inlines each of them as base64 — a release ships no file to read. */
+/** Carried as base64 in a generated module — see `reference_data.ts`; a release ships no file to read. */
 const BUNDLED: Record<ReferenceFormat, string> = { docx, odt, pptx };
 
 /** Pandoc's own reference document for `format`, as the plugin carries it. */

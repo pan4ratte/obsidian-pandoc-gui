@@ -1,12 +1,10 @@
 import { defineConfig } from 'vitest/config';
 import path from 'node:path';
 import { TEXT_FILES, textLoader } from './tools/text-loader.ts';
-import { BINARY_FILES, binaryLoader } from './tools/binary-loader.ts';
 
 export default defineConfig({
-  // The same inlining the build does: a test reaching a localised string reaches the user guide with it, and one
-  // reaching the reference documents reaches the files themselves.
-  plugins: [textLoader(TEXT_FILES), binaryLoader(BINARY_FILES)],
+  // The same inlining the build does: a test reaching a localised string reaches the user guide with it.
+  plugins: [textLoader(TEXT_FILES)],
   test: {
     // `describe`/`test`/`expect` stay global, as they were under jest. `vi` is imported where it is used.
     globals: true,
