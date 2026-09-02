@@ -19,6 +19,25 @@ import { download } from '../system/download';
 import { basename, dirname, normalize, resolve, stem } from '../system/paths';
 import { PATH_SEPARATOR, chooseSavePath, isDesktop, isMobile, openFile, showInFolder, vaultRoot } from '../system/platform';
 
+const encoder = new TextEncoder();
+
+/**
+ * One field of the embed map, as plain ASCII, percent-escaped byte by byte.
+ *
+ * Windows hands a program its environment in the machine's own code page, and a variable that cannot be written in it
+ * arrives with a `?` where every such character was: a note called `Тест.md` reached `embeds.lua` as `????.md`, matched
+ * nothing, and was written into the document as the broken image pandoc had read it to be. Nothing but ASCII survives
+ * that trip for certain, so nothing but ASCII is sent — `embeds.lua` reads it back with the percent-decoding it already
+ * had for links.
+ *
+ * The tab and the newline the map is laid out with are escaped along with the rest, so a link with either in it can no
+ * longer break the line it is written on.
+ */
+export const escapeForEnv = (text: string): string =>
+  text.replace(/[^\x20-\x24\x26-\x7e]/g, character =>
+    [...encoder.encode(character)].map(byte => `%${byte.toString(16).toUpperCase().padStart(2, '0')}`).join('')
+  );
+
 export async function exportNote(
   plugin: PandocGuiPlugin,
   currentFile: TFile,
@@ -205,11 +224,12 @@ export async function exportNote(
   try {
     const env = (variables.env = createEnv(getPlatformValue(globalSetting.env) ?? {}, variables));
 
-    // The embed map goes to `embeds.lua` in the environment, not on the command line: a link is whatever someone typed.
+    // The embed map goes to `embeds.lua` in the environment, not on the command line: a link is whatever someone
+    // typed. Escaped on the way in, and read back escaped by the filter — see `escapeForEnv`.
     const EMBED_ENV_LIMIT = 30000;
     let embedLines = '';
     for (const [link, file] of noteEmbeds) {
-      const line = `${link}\t${file}\n`;
+      const line = `${escapeForEnv(link)}\t${escapeForEnv(file)}\n`;
       if (embedLines.length + line.length > EMBED_ENV_LIMIT) {
         console.warn(`Too many embedded notes to pass to pandoc; ${link} and any after it are left as they are.`);
         break;

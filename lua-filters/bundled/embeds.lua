@@ -61,34 +61,46 @@ local MAX_DEPTH = 8
 --- link -> absolute path, as the plugin resolved them.
 local targets = {}
 
---- The list as the plugin passed it: in the environment, or in a file in the
---- folder pandoc runs from where there is no environment to pass it in.
-local function embeds()
-  local given = os.getenv('OBSIDIAN_EMBEDS')
-  if given and given ~= '' then
-    return given
-  end
-  local file = io.open('.obsidian-embeds', 'r')
-  if not file then
-    return ''
-  end
-  local text = file:read('a')
-  file:close()
-  return text
-end
-
-for line in embeds():gmatch('[^\n]+') do
-  local link, path = line:match('^(.-)\t(.+)$')
-  if link and path then
-    targets[link] = path
-  end
-end
-
---- Percent-encoding, for the vault that writes markdown links rather than wikilinks.
+--- Percent-decoding: for the escaping the environment is written with, and for
+--- the vault that writes markdown links rather than wikilinks.
 local function decode(text)
   return (text:gsub('%%(%x%x)', function(hex)
     return string.char(tonumber(hex, 16))
   end))
+end
+
+--- The list as the plugin passed it, and whether it came percent-escaped.
+---
+--- In the environment, or in a file in the folder pandoc runs from where there
+--- is no environment to pass it in. The environment carries plain ASCII and
+--- nothing else: Windows hands a program its environment in the machine's own
+--- code page, and a note named in anything that code page cannot write arrived
+--- here as a row of `?`, matched nothing, and was left in the document as the
+--- broken image pandoc had read it to be. The file is written and read as bytes,
+--- so it needs none of that and is left as it stands.
+local function embeds()
+  local given = os.getenv('OBSIDIAN_EMBEDS')
+  if given and given ~= '' then
+    return given, true
+  end
+  local file = io.open('.obsidian-embeds', 'r')
+  if not file then
+    return '', false
+  end
+  local text = file:read('a')
+  file:close()
+  return text, false
+end
+
+local given, escaped = embeds()
+for line in given:gmatch('[^\n]+') do
+  local link, path = line:match('^(.-)\t(.+)$')
+  if link and path then
+    if escaped then
+      link, path = decode(link), decode(path)
+    end
+    targets[link] = path
+  end
 end
 
 --- The file an embed's target names, or nil where it names none of ours.
@@ -138,7 +150,19 @@ end
 
 local FORMAT_IN = reader_spec()
 
+--- A note's text, read through pandoc where pandoc can read it.
+---
+--- `io.open` goes through the C runtime, which on Windows takes a path in the
+--- machine's own code page: a vault whose notes are named in anything but ASCII
+--- — Cyrillic, Greek, an accented word — hands it a name it cannot find, and the
+--- embed is left in the document as the broken image it was read as. Pandoc
+--- reads a path as the text it is, on every platform, so the file is asked of it
+--- first; `io.open` stays underneath for whatever pandoc will not fetch.
 local function read_file(path)
+  local ok, _, fetched = pcall(pandoc.mediabag.fetch, path)
+  if ok and fetched then
+    return fetched
+  end
   local file = io.open(path, 'r')
   if not file then
     return nil
