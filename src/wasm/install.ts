@@ -15,8 +15,12 @@ import { pandocWasmSupport } from './support';
 export const WASM_DIR = 'wasm';
 export const WASM_FILE = 'pandoc.wasm';
 
-/** The name of the asset in a pandoc release, and of the file inside it. */
-const ASSET = /^pandoc-wasm-([\d.]+)\.zip$/;
+/**
+ * The wasm archive in a pandoc release. Its name has been spelled three ways so far — `pandoc-wasm.zip`,
+ * `pandoc-wasm-3.10.2.zip`, `pandoc-3.11.wasm.zip` — so it is matched loosely, and the version is taken from the tag
+ * rather than from the name. No other asset in a release has `wasm` in its name.
+ */
+const ASSET = /^pandoc-.*wasm.*\.zip$/i;
 
 const RELEASES_API = 'https://api.github.com/repos/jgm/pandoc/releases';
 
@@ -35,13 +39,13 @@ export interface WasmRelease {
  */
 export type InstallProgress = (stage: 'downloading' | 'extracting' | 'writing') => void;
 
-interface Asset {
+export interface Asset {
   name: string;
   size: number;
   browser_download_url: string;
 }
 
-interface Release {
+export interface Release {
   tag_name: string;
   assets?: Asset[];
 }
@@ -60,11 +64,14 @@ export const isNewerRelease = (release: WasmRelease, installed?: string): boolea
 let releaseCache: { fetchedAt: number; release: WasmRelease } | undefined;
 
 /** The wasm archive a release carries, if it has one — pandoc only started publishing one with 3.9. */
-const assetOf = (release: Release): WasmRelease | undefined => {
+export const assetOf = (release: Release): WasmRelease | undefined => {
+  // The tag is what pandoc's own repository is browsed by, which is what the recorded version is later read as.
+  if (!release.tag_name || !parsePandocVersion(release.tag_name)) {
+    return undefined;
+  }
   for (const asset of release.assets ?? []) {
-    const matched = ASSET.exec(asset.name);
-    if (matched) {
-      return { version: matched[1], url: asset.browser_download_url, size: asset.size };
+    if (ASSET.test(asset.name)) {
+      return { version: release.tag_name.trim(), url: asset.browser_download_url, size: asset.size };
     }
   }
   return undefined;

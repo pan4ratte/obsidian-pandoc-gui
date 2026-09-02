@@ -15,6 +15,7 @@
 * The math flags follow the Pandoc version: 3.11 and later get `--math-method`, earlier ones keep `--mathjax` and the rest.
 * The number of categories in the lua-filter store was reduced to five.
 * Fixed a bug where images in embedded notes were not included in the document on export.
+* Fixed a bug where a Pandoc WASM update was not offered: the archive in Pandoc's releases was renamed.
 
 
 

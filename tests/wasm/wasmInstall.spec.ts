@@ -6,7 +6,7 @@
  * which is how "Not installed" survived an install.
  */
 
-import { PandocWasmManager, WASM_FILE } from '../../src/wasm/install';
+import { assetOf, isNewerRelease, PandocWasmManager, WASM_FILE } from '../../src/wasm/install';
 
 /** What this vault happens to call its config folder — a fixture, not a lookup. */
 const CONFIG = '.config';
@@ -85,5 +85,34 @@ describe('PandocWasmManager', () => {
     // Untouched: the panel writes this through its store, and two writers is the bug this guards.
     expect(host.settings.wasmVersion).toBe('3.10.2');
     expect(host.saves).toEqual([]);
+  });
+});
+
+describe('assetOf', () => {
+  const release = (tag: string, name: string) => ({
+    tag_name: tag,
+    assets: [
+      { name: `pandoc-${tag}-windows-x86_64.zip`, size: 1, browser_download_url: 'w' },
+      { name, size: 16, browser_download_url: 'u' },
+    ],
+  });
+
+  // Pandoc has renamed this asset twice; the version comes from the tag so none of the spellings has to carry it.
+  test.each([
+    ['3.10.1', 'pandoc-wasm.zip'],
+    ['3.10.2', 'pandoc-wasm-3.10.2.zip'],
+    ['3.11', 'pandoc-3.11.wasm.zip'],
+  ])('finds the archive in %s, named %s', (tag, name) => {
+    expect(assetOf(release(tag, name))).toEqual({ version: tag, url: 'u', size: 16 });
+  });
+
+  test('a release without one is not one to offer', () => {
+    expect(
+      assetOf({ tag_name: '3.10', assets: [{ name: 'pandoc-3.10-1-amd64.deb', size: 1, browser_download_url: 'd' }] })
+    ).toBeUndefined();
+  });
+
+  test('3.11 is newer than the 3.10.2 on disk', () => {
+    expect(isNewerRelease({ version: '3.11', url: 'u', size: 16 }, '3.10.2')).toBe(true);
   });
 });
