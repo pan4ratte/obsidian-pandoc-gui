@@ -13,12 +13,12 @@
 ### UI/UX enhancements and bug fixes
 
 * Pandoc’s reference documents (reference.docx, reference.odt, reference.pptx) now come with the plugin rather than being assembled by Pandoc WASM.
-* Math rendering gained "Plain text (Unicode)", the method that can be named explicitly from Pandoc 3.11.0 on.
+* Math rendering gained “Plain text (Unicode)”, the method that can be named explicitly from Pandoc 3.11.0 on.
 * The math flags follow the Pandoc version: 3.11 and later get `--math-method`, earlier ones keep `--mathjax` and the rest.
 * The number of categories in the lua-filter store was reduced to five.
 * Fixed a bug where images in embedded notes were not included in the document on export.
 * Fixed a bug where an embedded note whose name is not Latin (Cyrillic, say) was left out of the document on Windows.
-* Fixed a bug where a Pandoc WASM update was not offered: the archive in Pandoc's releases was renamed.
+* Fixed a bug where a Pandoc WASM update was not offered even though a newer version was out.
 
 
 
