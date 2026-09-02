@@ -5,8 +5,8 @@
 
 ### New features
 
-* **Lua filters of your own.** The filter store carries an “Add my own lua-filter” card. Fill in a name and a description and paste the filter’s code to save it into the plugin (or choose a `.lua` file on the computer). Your own filters are wired into templates as usual, and can be edited later.
-* **Generating a reference document.** The template editor carries a new option under “Reference document” that generates Pandoc’s reference document for the format the template writes. On a computer it goes into the default export folder; on mobile devices into the plugin folder.
+* **Add your own Lua filters.** The filter store carries an “Add my own lua-filter” card. Fill in a name and a description and paste the filter’s code to save it into the plugin (or choose a `.lua` file on the computer). Your own filters are wired into templates as usual, and can be edited later.
+* **Generate a reference document.** The template editor carries a new option under “Reference document” that generates Pandoc’s reference document for the format the template writes. On a computer it goes into the default export folder; on mobile devices into the plugin folder.
 * **Table of contents depth in the export window.** Where the template chosen for the export writes a format that has a table of contents, the export window carries an option for its depth. It lets the depth be changed for a single export where that is needed, without changing the template itself.
 * **Text direction.** The template editor carries a text direction option: right to left for Word, OpenDocument, HTML and EPUB. Word and OpenDocument support it from Pandoc 3.11.0 on — update the program to use it.
 
