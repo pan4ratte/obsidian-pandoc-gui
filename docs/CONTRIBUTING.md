@@ -110,6 +110,7 @@ their own. Anything else `package.json`'s `scripts` offers is fair game too.
 | `src/lang/` | Every string the user sees. `en.ts` is the type every other locale satisfies; `ru.ts` is the Russian one. |
 | `lua-filters/` | The filters: `bundled/` is what the plugin ships, the rest is the store's catalogue. See its [readme](../lua-filters/README.md). |
 | `textemplate/` | LaTeX templates embedded into the build alongside the bundled filters. |
+| `reference-docs/` | Pandoc's own `reference.docx`, `.odt` and `.pptx`, embedded into the build as base64. See below. |
 | `docs/` | This file, the changelog, the user guide and the Russian readme. |
 | `scripts/` | `gen-catalogue.js`, which writes the catalogue table in the readme, and `version.mjs`, which bumps the version across `package.json`, `manifest.json` and `versions.json`. |
 | `tools/` | Build helpers the vite and vitest configs load. |
@@ -163,6 +164,29 @@ or CI's `docs:catalogue:check` will fail.
 
 Only add filters whose licence permits redistribution, and keep the original
 licence header in the file. Every entry has to name its author and licence.
+
+## Refreshing the reference documents
+
+`reference-docs/` holds the three documents a word processor's export takes its
+styles from — the files `--print-default-data-file` prints. They are in the
+repository because the wasm build has no way to reach them: its `convert`
+refuses the option and its `query` answers only for versions and formats, and
+Pandoc's own repository keeps no copy of them either, assembling that folder at
+build time. So a phone gets them from the bundle. A computer prints its own from
+the Pandoc it has, which is the one its exports are styled by.
+
+Pandoc changes them between releases, so print them again whenever a new release
+is looked at, with that release's Pandoc:
+
+```bash
+for f in docx odt pptx; do
+  pandoc -o "reference-docs/reference.$f" --print-default-data-file "reference.$f"
+done
+```
+
+Then move `BUNDLED_REFERENCE_VERSION` in `src/pandoc/reference_doc.ts` to the
+version they were printed from. `tests/pandoc/referenceDoc.spec.ts` checks the
+bundle against the files, so a stale build fails rather than ships.
 
 ## Translations
 

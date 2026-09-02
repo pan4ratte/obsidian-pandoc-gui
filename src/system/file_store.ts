@@ -15,7 +15,7 @@ import { dirname } from './paths';
  * the stricter question of whether node can be reached at all — see `isDesktop` — and the two only part where a
  * phone is being emulated, which every caller either catches or was going to fail in anyway.
  */
-const nodeFs = async () => {
+export const nodeFs = async () => {
   if (!Platform.isDesktop) {
     throw new Error('There is no file system outside the vault to reach on this device');
   }

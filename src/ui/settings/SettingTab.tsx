@@ -12,7 +12,9 @@ import { t } from '../../lang/helpers';
 
 import pandoc from '../../pandoc/pandoc';
 import { resolveEngine } from '../../pandoc/engine';
-import { chooseFile, documentsFolder, isMobileUi, vaultRoot } from '../../system/platform';
+import { bundledReferenceDoc, isReferenceFormat, referenceDocFromNative } from '../../pandoc/reference_doc';
+import { chooseFile, documentsFolder, isMobileUi, showInFolder, vaultRoot } from '../../system/platform';
+import { FileStore } from '../../system/file_store';
 import ChangelogNotice from './ChangelogNotice';
 import PandocDashboard from './PandocDashboard';
 import PandocLinks from './PandocLinks';
@@ -205,7 +207,7 @@ import {
   supportsVariable,
   supportsWrap,
 } from '../../pandoc/pandoc_format';
-import { MessageBox } from '../message_box';
+import { MessageBox, confirm } from '../message_box';
 import Modal from '../components/Modal';
 import Button from '../components/Button';
 import Icon from '../components/Icon';
@@ -521,7 +523,6 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
       app={app}
       manager={plugin.typst}
       extensions={plugin.extensions}
-      pandoc={plugin.wasm}
       version={settings.typstVersion}
       fontsDir={settings.typstFontsDir}
       onInstalled={version => setSettings('typstVersion', version)}
@@ -762,6 +763,86 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
       });
     };
 
+    const [makingReference, setMakingReference] = createSignal(false);
+
+    /**
+     * Where a generated reference document goes, and how the template names it.
+     *
+     * On a computer it goes where exports go, which is where someone would look for a document the plugin made them.
+     * A phone has no such folder outside the vault, so there it goes into the plugin's own — named with `${pluginDir}`,
+     * which travels with the vault. The name is not one of the three the extensions store owns, so removing those
+     * leaves an edited document alone.
+     */
+    const referenceDocPath = (writer: string): { path: string; named: string } => {
+      const name = `custom-reference.${writer}`;
+      const vaultDir = vaultRoot(app.vault.adapter);
+      if (isMobileUi()) {
+        const path = `${vaultDir}/${plugin.manifest.dir.replaceAll('\\', '/')}/reference/${name}`;
+        return { path, named: `\${pluginDir}/reference/${name}` };
+      }
+      // `Same` is the note's own folder, and there is no note here — the last export's folder is the nearest thing.
+      const custom = settings.defaultExportDirectoryMode === 'Custom' ? getPlatformValue(settings.customDefaultExportDirectory) : undefined;
+      const path = `${custom ?? getPlatformValue(settings.lastExportDirectory) ?? vaultDir}/${name}`;
+      return { path, named: path };
+    };
+
+    /**
+     * Ask whichever pandoc this vault exports with for its own reference document, and point the template at it.
+     *
+     * Both engines write it the same way — see `src/pandoc/reference_doc.ts` — so the file is the same one wherever
+     * the template is edited, and the styles someone changes in it are the styles they will see on either.
+     */
+    const generateReferenceDoc = async (): Promise<void> => {
+      const writer = format();
+      // A button of this size has nothing to show for being busy, so a second press is turned away rather than drawn
+      // against: two runs at once would race each other to the same file.
+      if (!isReferenceFormat(writer) || makingReference()) {
+        return;
+      }
+      const { path, named } = referenceDocPath(writer);
+      // The folder can be outside the vault, which only this reaches.
+      const files = new FileStore(app.vault, vaultRoot(app.vault.adapter));
+
+      // Written over rather than added to, so the one thing worth asking is whether anything is being lost.
+      if (
+        (await files.exists(path)) &&
+        !(await confirm(app, {
+          title: t.REFERENCE_DOC_GENERATE(`.${writer}`),
+          message: t.REFERENCE_DOC_OVERWRITE(named),
+          accept: t.ACTION_GENERATE,
+          destructive: true,
+        }))
+      ) {
+        return;
+      }
+
+      setMakingReference(true);
+      try {
+        // The installed pandoc's own, where there is one: the bundle carries whatever release it was built against,
+        // and an export on this machine is styled by the pandoc on it.
+        const bytes =
+          engine() === 'native'
+            ? await referenceDocFromNative(writer, {
+                path: getPlatformValue(settings.pandocPath),
+                env: createEnv(getPlatformValue(settings.env) ?? {}, {
+                  pluginDir: `${vaultRoot(app.vault.adapter)}/${plugin.manifest.dir}`,
+                }),
+              })
+            : bundledReferenceDoc(writer);
+
+        await files.write(path, bytes);
+        setReferenceDocument(named);
+        new Notice(t.REFERENCE_DOC_MADE(named));
+        // Shown rather than opened: launching a word processor is not what the button was pressed for.
+        await showInFolder(path);
+      } catch (e) {
+        console.error(e);
+        new Notice(t.REFERENCE_DOC_FAILED(e instanceof Error ? e.message : String(e)));
+      } finally {
+        setMakingReference(false);
+      }
+    };
+
     /** The line pandoc is given, assembled as `exportNote` assembles it. The `${...}` are
         left standing: they are filled in at export from a note that does not exist yet. */
     const resultingCommand = createMemo(() =>
@@ -799,9 +880,27 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
         {/* A word processor is laid out by a reference document, everything else by a
             template — the same question two ways, so exactly one row stands here. */}
         <Show when={supportsReferenceDoc(format())}>
-          <Setting name={t.REFERENCE_DOC} description={t.REFERENCE_DOC_DESC} class="ex-template-modal-reference-doc">
-            <FileInput value={referenceDoc(args())} filters={referenceDocFiles()} tooltip={t.CHOOSE_FILE} onChange={setReferenceDocument} />
-          </Setting>
+          {/* Naming a document and making one share a card: the second is where the first comes from. */}
+          <div class="ex-card ex-template-modal-reference">
+            <Setting name={t.REFERENCE_DOC} description={t.REFERENCE_DOC_DESC} class="ex-template-modal-reference-doc">
+              <FileInput
+                value={referenceDoc(args())}
+                filters={referenceDocFiles()}
+                tooltip={t.CHOOSE_FILE}
+                onChange={setReferenceDocument}
+              />
+            </Setting>
+
+            {/* Nobody has a reference document until pandoc has written one, and only pandoc can. The row is the
+                environment variables' row: a question, and the one small button that answers it. */}
+            <Setting name={t.REFERENCE_DOC_GENERATE(`.${format()}`)} class="ex-template-modal-generate-reference-doc ex-inline-setting">
+              <ExtraButton
+                icon="file-plus-2"
+                tooltip={makingReference() ? t.REFERENCE_DOC_GENERATING : t.ACTION_GENERATE}
+                onClick={() => void generateReferenceDoc()}
+              />
+            </Setting>
+          </div>
         </Show>
 
         <Show when={supportsTemplate(format())}>

@@ -8,20 +8,20 @@
 
 import { requestUrl } from 'obsidian';
 import type PandocGuiPlugin from '../main';
-import type { PandocWasm } from './runtime';
+import { bundledReferenceDoc, REFERENCE_FORMATS, type ReferenceFormat } from '../pandoc/reference_doc';
 
 export type ExtensionId = 'csl' | 'templates' | 'reference' | 'mathjax';
 
 /**
- * Where a file comes from, and what it is called once it is here — fetched from somewhere, or written by pandoc
- * itself, which is the only way to have the documents it styles a word processor's output after: they are not one
- * file in its repository but a folder it assembles at build time.
+ * Where a file comes from, and what it is called once it is here — fetched from somewhere, or carried in the bundle,
+ * which is the only way to have the documents pandoc styles a word processor's output after: they are not one file in
+ * its repository but a folder it assembles at build time.
  */
 export interface ExtensionFile {
   name: string;
   url?: string;
-  /** The writer that makes it, for a file there is nothing to download. */
-  write?: string;
+  /** The format whose bundled document it is, for a file there is nothing to download. */
+  bundled?: ReferenceFormat;
 }
 
 export interface Extension {
@@ -57,50 +57,7 @@ const STYLES = [
 const TEMPLATES = ['default.html5', 'default.latex', 'default.typst', 'default.epub3'];
 
 /** The documents pandoc styles a word processor's output after — the ones `--reference-doc` is given a copy of. */
-const REFERENCES = [
-  { name: 'reference.docx', write: 'docx' },
-  { name: 'reference.odt', write: 'odt' },
-  { name: 'reference.pptx', write: 'pptx' },
-];
-
-/**
- * What those documents are written from: every style pandoc defines, used once, so that opening one in a word
- * processor shows the thing to change rather than a blank page with a style list.
- */
-const SAMPLE = `% Reference document
-% Pandoc GUI
-
-# Heading 1
-
-Body text, with *emphasis*, **strong emphasis** and \`inline code\`.
-
-## Heading 2
-
-> A block quote.
-
-### Heading 3
-
-- A bullet list
-- Its second item
-
-1. A numbered list
-2. Its second item
-
-| Column | Column |
-|--------|-------:|
-| Cell   |      1 |
-
-: A table caption
-
-\`\`\`python
-def code_block():
-    return "styled as source code"
-\`\`\`
-
-A footnote[^1] and a [link](https://pandoc.org).
-
-[^1]: The footnote's own text.
-`;
+const REFERENCES = REFERENCE_FORMATS.map(format => ({ name: `reference.${format}`, bundled: format }));
 
 /** What a version has to be for pandoc's repository to have a tag by that name. */
 const asTag = (pandoc: string): string => (/^\d+\.\d+/.test(pandoc) ? pandoc : 'main');
@@ -135,6 +92,9 @@ export const EXTENSIONS: Record<ExtensionId, Extension> = {
 /** How far through the files an install is. */
 export type ExtensionProgress = (done: number, total: number) => void;
 
+const asBuffer = (bytes: Uint8Array): ArrayBuffer =>
+  bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+
 export class ExtensionManager {
   constructor(private plugin: PandocGuiPlugin) {}
 
@@ -157,11 +117,8 @@ export class ExtensionManager {
     return await this.plugin.app.vault.adapter.exists(`${this.directory(id)}/${this.#files(id)[0].name}`);
   }
 
-  /**
-   * Put an extension in place. `pandoc` is only wanted by the one whose files it writes rather than fetches — see
-   * `ExtensionFile` — and a caller that has none is refused rather than left with half a folder.
-   */
-  async install(id: ExtensionId, onProgress?: ExtensionProgress, pandoc?: PandocWasm): Promise<void> {
+  /** Put an extension in place: every file fetched, or taken out of the bundle where there is nothing to fetch. */
+  async install(id: ExtensionId, onProgress?: ExtensionProgress): Promise<void> {
     const { adapter } = this.plugin.app.vault;
     const files = this.#files(id);
     await adapter.mkdir(this.directory(id));
@@ -169,7 +126,7 @@ export class ExtensionManager {
     let done = 0;
     onProgress?.(0, files.length);
     for (const file of files) {
-      const bytes = file.url ? await this.#fetch(file) : this.#write(file, pandoc);
+      const bytes = file.url ? await this.#fetch(file) : asBuffer(bundledReferenceDoc(file.bundled));
       await adapter.writeBinary(`${this.directory(id)}/${file.name}`, bytes);
       onProgress?.((done += 1), files.length);
     }
@@ -181,22 +138,6 @@ export class ExtensionManager {
       throw new Error(`${file.name}: ${status}`);
     }
     return arrayBuffer;
-  }
-
-  /** A document pandoc writes for itself, which is what makes it one pandoc will read back as a reference. */
-  #write(file: ExtensionFile, pandoc?: PandocWasm): ArrayBuffer {
-    if (!pandoc) {
-      throw new Error(`${file.name} is written by pandoc, and there is no pandoc here to write it`);
-    }
-    // Written under a name of no meaning: a word processor's writer looks for `reference.docx` beside it before it
-    // falls back to its own, and the empty file an output is made in first is exactly what it would find.
-    const output = `out.${file.write}`;
-    const { files, stderr } = pandoc.run({ from: 'markdown', to: file.write, standalone: true, 'output-file': output }, SAMPLE);
-    const written = files[output];
-    if (!written) {
-      throw new Error(stderr.trim() || `Pandoc wrote no ${file.name}`);
-    }
-    return written.buffer.slice(written.byteOffset, written.byteOffset + written.byteLength) as ArrayBuffer;
   }
 
   async remove(id: ExtensionId): Promise<void> {

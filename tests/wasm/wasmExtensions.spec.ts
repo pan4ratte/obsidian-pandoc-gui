@@ -2,14 +2,12 @@
  * What the wasm build can be given past itself.
  *
  * The downloads are not exercised here — there is no network in a test run, and the manager's own share of that is a
- * loop. What is: where the files go, what a template is told to call them, and the one extension that is written
- * rather than fetched, which is checked against the real binary when it is named. See wasmConvert.spec.ts.
+ * loop. What is: where the files go, what a template is told to call them, and the one extension that is carried in
+ * the bundle rather than fetched.
  */
 
-import { existsSync, readFileSync } from 'fs';
 import { ExtensionManager, EXTENSIONS } from '../../src/wasm/extensions';
-import { PandocWasm } from '../../src/wasm/runtime';
-import { pandocWasmSupport } from '../../src/wasm/support';
+import { bundledReferenceDoc, REFERENCE_FORMATS } from '../../src/pandoc/reference_doc';
 
 const CONFIG = '.config';
 const DIR = `${CONFIG}/plugins/pandoc-gui`;
@@ -90,29 +88,18 @@ describe('pandoc’s own data files', () => {
   });
 });
 
-const binary = process.env['PANDOC_WASM'];
-
-describe.skipIf(!(binary && existsSync(binary)))('the reference documents', () => {
-  let pandoc: PandocWasm;
-
-  beforeAll(async () => {
-    expect((await pandocWasmSupport()).ok).toBe(true);
-    pandoc = await PandocWasm.load(await WebAssembly.compile(readFileSync(binary)));
-  }, 120_000);
-
-  test('are written by pandoc rather than downloaded', async () => {
+describe('the reference documents', () => {
+  test('are taken out of the bundle rather than downloaded', async () => {
     const p = plugin();
-    await manager(p).install('reference', undefined, pandoc);
+    await manager(p).install('reference');
 
-    for (const name of ['reference.docx', 'reference.odt', 'reference.pptx']) {
-      const written = p.files.get(`${DIR}/reference/${name}`) ?? new ArrayBuffer(0);
-      // Every one of the three is a zip, and every zip starts `PK`.
-      const head = new TextDecoder().decode(new Uint8Array(written).slice(0, 2));
-      expect({ name, head, big: written.byteLength > 1000 }).toEqual({ name, head: 'PK', big: true });
+    for (const format of REFERENCE_FORMATS) {
+      const written = p.files.get(`${DIR}/reference/reference.${format}`) ?? new ArrayBuffer(0);
+      // What the bundle carries and nothing else, which is pandoc's own data file — see referenceDoc.spec.ts.
+      expect({ format, same: Buffer.from(new Uint8Array(written)).equals(Buffer.from(bundledReferenceDoc(format))) }).toEqual({
+        format,
+        same: true,
+      });
     }
-  }, 120_000);
-
-  test('and are refused rather than half written where there is no pandoc to write them', async () => {
-    await expect(manager().install('reference')).rejects.toThrow(/no pandoc/);
   });
 });

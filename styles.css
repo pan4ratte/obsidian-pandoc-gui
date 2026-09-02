@@ -1092,27 +1092,33 @@
  * chevron that opens it share a line, and a control given the full width would
  * leave the name a sliver to be cut short in.
  */
-.ex-template-modal.ex-template-modal .setting-item:not(.mod-toggle):not(.setting-item-heading) {
+.ex-template-modal.ex-template-modal .setting-item:not(.mod-toggle):not(.ex-inline-setting):not(.setting-item-heading) {
   flex-direction: column;
   align-items: stretch;
 }
 
 /*
- * The one that does share its row sits in the middle of it. Obsidian starts a
- * row's control at the top, which is right where the control is as tall as the
- * text beside it — and wrong here: a description running to a second line left
- * the switch floating up beside the first, reading as though it answered that
- * line rather than the row.
+ * The two that do share their row sit in the middle of it — a toggle, and any
+ * row marked `ex-inline-setting`, which is how a control small enough to stand
+ * beside its own question says so. Obsidian starts a row's control at the top,
+ * which is right where the control is as tall as the text beside it — and wrong
+ * here: a description running to a second line left the switch floating up
+ * beside the first, reading as though it answered that line rather than the row.
  */
-.ex-template-modal.ex-template-modal .setting-item.mod-toggle {
+.ex-template-modal.ex-template-modal .setting-item.mod-toggle,
+.ex-template-modal.ex-template-modal .setting-item.ex-inline-setting {
   align-items: center;
 }
 
-.ex-template-modal.ex-template-modal .setting-item:not(.mod-toggle):not(.setting-item-heading) > .setting-item-info {
+.ex-template-modal.ex-template-modal
+  .setting-item:not(.mod-toggle):not(.ex-inline-setting):not(.setting-item-heading)
+  > .setting-item-info {
   margin-right: 0;
 }
 
-.ex-template-modal.ex-template-modal .setting-item:not(.mod-toggle):not(.setting-item-heading) > .setting-item-control {
+.ex-template-modal.ex-template-modal
+  .setting-item:not(.mod-toggle):not(.ex-inline-setting):not(.setting-item-heading)
+  > .setting-item-control {
   width: 100%;
   justify-content: flex-start;
 }

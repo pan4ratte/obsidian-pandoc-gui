@@ -157,6 +157,15 @@ export const chooseSavePath = async (options: { title?: string; defaultPath?: st
   return chosen.canceled ? undefined : chosen.filePath;
 };
 
+/** The folder the system keeps for files nothing is meant to keep — where a run's scratch input goes. */
+export const tempFolder = async (): Promise<string | undefined> => {
+  if (!isDesktop()) {
+    return undefined;
+  }
+  const ct = await electron();
+  return ct.remote.app.getPath('temp');
+};
+
 /** The folder a file dialog starts in when nothing better is known. */
 export const documentsFolder = async (): Promise<string | undefined> => {
   if (!isDesktop()) {

@@ -87,7 +87,7 @@ export default tseslint.config(
     // Written here rather than in the files because a reviewer's own eslint run
     // does not read this config — anything that has to be said to that run is
     // said in the file itself, as `tools/text-loader.ts` does.
-    files: ['vite.config.ts', 'vitest.config.ts', 'version.mjs', 'scripts/**', 'tests/**'],
+    files: ['vite.config.ts', 'vitest.config.ts', 'version.mjs', 'scripts/**', 'tools/**', 'tests/**'],
     rules: { 'obsidianmd/no-nodejs-modules': 'off' },
   },
   {

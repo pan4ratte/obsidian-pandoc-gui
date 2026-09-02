@@ -7,10 +7,12 @@
 
 * **Table of contents depth in the export window.** Where the template chosen for the export writes a format that has a table of contents, the export window carries an option for the depth of that table of contents. It lets the depth be changed for a single export where that is needed, without changing the template itself.
 * **Lua filters of your own.** The filter store carries an “Add my own lua-filter” card: a name, a description and a code field with line numbers, or a `.lua` file chosen on the computer. The file is written into the plugin folder, the filter is wired into templates like any other, and its card can be opened later to rewrite it.
+* **Generating a reference document.** The template editor carries a “Generate” button beside the “Reference document” field: Pandoc writes a document with its own styles, the template starts taking its styles from it, and on a computer the folder it went to is shown. On a computer it goes to the default export folder and is printed by the installed Pandoc through `--print-default-data-file`; on mobile into the plugin folder, taken from Pandoc’s own document that the plugin now carries.
 * **Text direction.** The template editor carries a text direction option: right to left for Word, OpenDocument, HTML and EPUB. Word and OpenDocument honour it from Pandoc 3.11 on.
 
 ### UI/UX enhancements and bug fixes
 
+* Pandoc’s reference documents (reference.docx, reference.odt, reference.pptx) now come with the plugin rather than being written by Pandoc WASM: the extension installs at once and needs no Pandoc WASM installed.
 * Math rendering gained "Plain text (Unicode)", the method Pandoc 3.11 made it possible to name explicitly.
 * The math flags follow the Pandoc version: 3.11 and later get `--math-method`, earlier ones keep `--mathjax` and the rest.
 * The number of categories in the lua-filter store was reduced to five.

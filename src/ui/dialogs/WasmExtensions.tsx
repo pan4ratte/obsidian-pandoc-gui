@@ -3,7 +3,6 @@ import { For, Show, createMemo, createResource, createSignal, type JSX } from 's
 import { t } from '../../lang/helpers';
 import { FONT_PACKS, TYPST_VERSION, type FontPackId, type TypstWasmManager } from '../../wasm/typst';
 import { EXTENSIONS, type ExtensionId, type ExtensionManager } from '../../wasm/extensions';
-import type { PandocWasmManager } from '../../wasm/install';
 import Modal from '../components/Modal';
 import Icon from '../components/Icon';
 import FolderInput from '../components/FolderInput';
@@ -27,8 +26,6 @@ export default (props: {
   app: App;
   manager: TypstWasmManager;
   extensions: ExtensionManager;
-  /** Pandoc's own build, which writes the one extension nothing can be downloaded for. */
-  pandoc: PandocWasmManager;
   /** The typst version on disk, as the settings recorded it. */
   version?: string;
   fontsDir?: string;
@@ -110,14 +107,7 @@ export default (props: {
 
   const installFiles = (id: ExtensionId): void =>
     void withBusy(id, async (report): Promise<void> => {
-      // The reference documents are pandoc's own work — see `ExtensionFile`. Bringing the build up takes a moment,
-      // which is what the line says while it happens.
-      const needsPandoc = id === 'reference';
-      if (needsPandoc) {
-        report(t.WASM_PREPARING);
-      }
-      const pandoc = needsPandoc ? await props.pandoc.load() : undefined;
-      await props.extensions.install(id, (done, total) => report(t.EXT_DOWNLOADING(done, total)), pandoc);
+      await props.extensions.install(id, (done, total) => report(t.EXT_DOWNLOADING(done, total)));
       void lookForFiles();
     });
 
