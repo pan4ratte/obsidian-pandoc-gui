@@ -21,8 +21,8 @@
     },
     {
       "id": "pandoc-ext:include-files",
-      "storeName": "Include other notes",
-      "description": "Splices whole notes into the document where you name them, so a thesis or a manual can stay a folder of small notes and still export as one file.",
+      "storeName": "Include files by path",
+      "description": "Assembles the document from file paths listed in a code block with the class .include — not from ![[…]] links, which the “Write in embedded notes” setting already handles. It is for what a link cannot name: files outside the vault, and files that are not Markdown (LaTeX, HTML, reStructuredText).",
       "author": "Albert Krewinkel",
       "license": "MIT",
       "category": "structure",
@@ -32,8 +32,8 @@
       "homepage": "https://github.com/pandoc-ext/include-files",
       "i18n": {
         "ru": {
-          "storeName": "Вставка других заметок",
-          "description": "Вставляет целые заметки в документ там, где вы их называете, так что диссертация или руководство могут оставаться папкой небольших заметок и всё равно экспортироваться одним файлом."
+          "storeName": "Сборка документа из файлов",
+          "description": "Собирает документ из путей к файлам, перечисленных в блоке кода с классом .include, — не по ссылкам ![[…]], для них есть настройка «Вставлять содержимое вложенных заметок». Нужен для того, что ссылкой не назвать: файлов вне хранилища и файлов не в Markdown (LaTeX, HTML, reStructuredText)."
         }
       }
     },

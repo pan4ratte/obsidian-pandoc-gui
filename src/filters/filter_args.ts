@@ -173,7 +173,15 @@ export const setTodayFormat = (args: string | undefined, format?: TodayFormat): 
 
 /* -- Embedded notes ------------------------------------------------------- */
 
+const EMBED_SHIFT_HEADINGS = 'embed-shift-headings';
+
 /** Whether `args` writes embedded notes into the document. */
 export const embedNotes = (args?: string): boolean => runs(args, FILTERS.embeds);
 
-export const setEmbedNotes = (args: string | undefined, on: boolean): string => setRuns(args, FILTERS.embeds, on);
+export const setEmbedNotes = (args: string | undefined, on: boolean): string => setRuns(args, FILTERS.embeds, on, [EMBED_SHIFT_HEADINGS]);
+
+/** Whether an embedded note's headings are fitted under the heading it stands under. */
+export const embedShiftHeadings = (args?: string): boolean => embedNotes(args) && metadata(args, EMBED_SHIFT_HEADINGS) === 'true';
+
+export const setEmbedShiftHeadings = (args: string | undefined, on: boolean): string =>
+  setMetadata(args, EMBED_SHIFT_HEADINGS, on ? 'true' : undefined);

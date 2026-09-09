@@ -4,12 +4,14 @@ import {
   TABLE_DEFAULT_STYLE,
   TODAY_DEFAULT_FORMAT,
   embedNotes,
+  embedShiftHeadings,
   figureStyle,
   flattenOrdered,
   keywords,
   keywordsTitle,
   listStyles,
   setEmbedNotes,
+  setEmbedShiftHeadings,
   setFigureStyle,
   setFlattenOrdered,
   setKeywords,
@@ -211,11 +213,24 @@ describe("today's date", () => {
 describe('embedded notes', () => {
   const EMBEDS = luaFilterArg(FILTERS.embeds);
 
-  test('one filter, no fields', () => {
+  test('one filter, and a field under it', () => {
     expect(embedNotes(undefined)).toBe(false);
     expect(setEmbedNotes(undefined, true)).toBe(EMBEDS);
     expect(embedNotes(EMBEDS)).toBe(true);
     expect(setEmbedNotes(EMBEDS, false)).toBe('');
+  });
+
+  test('heading levels are a second answer, written only when it is yes', () => {
+    expect(embedShiftHeadings(EMBEDS)).toBe(false);
+    const fitted = setEmbedShiftHeadings(EMBEDS, true);
+    expect(fitted).toBe(`${EMBEDS} -M embed-shift-headings=true`);
+    expect(embedShiftHeadings(fitted)).toBe(true);
+    expect(setEmbedShiftHeadings(fitted, false)).toBe(EMBEDS);
+  });
+
+  test('it goes when the row does, and is not read without it', () => {
+    expect(setEmbedNotes(setEmbedShiftHeadings(EMBEDS, true), false)).toBe('');
+    expect(embedShiftHeadings('-M embed-shift-headings=true')).toBe(false);
   });
 
   test('the rows keep out of each other’s way', () => {

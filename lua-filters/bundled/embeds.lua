@@ -45,6 +45,17 @@
   stands — which is the only way to keep a document finite.
 
   ---------------------------------------------------------------------------
+  Heading levels
+
+  Left alone unless the template asks with `-M embed-shift-headings=true`. Asked
+  for, an embedded note is fitted under the heading it stands under: its
+  shallowest heading becomes that heading's child, and the rest of the note
+  moves with it, so a chapter written as `# Title` reads as `##` under
+  `# Part one`. Only headings typed in the host count, so two embeds under one
+  heading are siblings rather than a staircase; an embed with no heading above
+  it is left as it stands.
+
+  ---------------------------------------------------------------------------
   Why the blocks are rewritten by hand rather than by `walk`
 
   Both of the obvious ways to write this are wrong. Bottom-up, the `Plain` a
@@ -57,6 +68,14 @@
 
 --- How deep one embed may reach before the document is simply too far in.
 local MAX_DEPTH = 8
+
+--- The deepest a heading can be written: past it there is no heading left for
+--- a writer to give, so what would go deeper is written at the bottom instead.
+local MAX_LEVEL = 6
+
+--- Whether an embedded note is fitted under the heading it stands under. Set
+--- from the template editor, which writes `-M embed-shift-headings=true`.
+local SHIFT_HEADINGS = false
 
 --- link -> absolute path, as the plugin resolved them.
 local targets = {}
@@ -194,6 +213,36 @@ local function section_of(blocks, wanted)
   return #out > 0 and out or nil
 end
 
+--- An embedded note's headings, moved to sit under the heading it stands under.
+---
+--- The note keeps its own shape: the shallowest heading in it becomes a child
+--- of `anchor` and everything else moves by the same amount. A note standing
+--- where no heading has been written yet has nothing to be a child of, and is
+--- left as it is.
+local function fitted(blocks, anchor)
+  if not SHIFT_HEADINGS or anchor == 0 then
+    return blocks
+  end
+  local top
+  pandoc.walk_block(pandoc.Div(blocks), {
+    Header = function(header)
+      if not top or header.level < top then
+        top = header.level
+      end
+    end,
+  })
+  local by = top and anchor + 1 - top or 0
+  if by == 0 then
+    return blocks
+  end
+  return pandoc.walk_block(pandoc.Div(blocks), {
+    Header = function(header)
+      header.level = math.max(1, math.min(MAX_LEVEL, header.level + by))
+      return header
+    end,
+  }).content
+end
+
 --- The one image a list of inlines holds, where that is all it holds.
 local function lone_image(inlines)
   if #inlines == 1 and inlines[1].t == 'Image' then
@@ -227,7 +276,7 @@ end
 local expand
 
 --- The blocks an embed stands for, or nil to leave the block as it was.
-local function blocks_of(target, seen, depth)
+local function blocks_of(target, seen, depth, anchor)
   -- A block reference is a lookup in Obsidian's index, not a piece of the text.
   if depth > MAX_DEPTH or target:find('#%^') then
     return nil
@@ -261,33 +310,40 @@ local function blocks_of(target, seen, depth)
   for name in pairs(seen) do
     within[name] = true
   end
-  return expand(blocks, within, depth + 1)
+  -- Written in at the levels the note itself uses, and moved as one afterwards:
+  -- an embed inside it anchors to that note's headings, not to the host's.
+  return fitted(expand(blocks, within, depth + 1, 0), anchor)
 end
 
 --- Every list of blocks a block holds, rewritten in place.
-local function descend(block, seen, depth)
+local function descend(block, seen, depth, anchor)
   if block.t == 'Div' or block.t == 'BlockQuote' then
-    block.content = expand(block.content, seen, depth)
+    block.content = expand(block.content, seen, depth, anchor)
   elseif block.t == 'BulletList' or block.t == 'OrderedList' then
     for index, item in ipairs(block.content) do
-      block.content[index] = expand(item, seen, depth)
+      block.content[index] = expand(item, seen, depth, anchor)
     end
   end
   return block
 end
 
 --- A list of blocks with every embed in it written out.
-expand = function(blocks, seen, depth)
+expand = function(blocks, seen, depth, anchor)
   local out = {}
   for _, block in ipairs(blocks) do
     local target = embed_target(block)
-    local embedded = target and blocks_of(target, seen, depth)
+    local embedded = target and blocks_of(target, seen, depth, anchor)
     if embedded then
       for _, embedded_block in ipairs(embedded) do
         out[#out + 1] = embedded_block
       end
     else
-      out[#out + 1] = descend(block, seen, depth)
+      -- Only what the host itself says: headings written in by an embed would
+      -- make the next embed that note's child rather than its sibling.
+      if block.t == 'Header' then
+        anchor = block.level
+      end
+      out[#out + 1] = descend(block, seen, depth, anchor)
     end
   end
   return pandoc.Blocks(out)
@@ -302,7 +358,9 @@ end
 return {
   {
     Pandoc = function(doc)
-      doc.blocks = expand(doc.blocks, {}, 1)
+      local shift = doc.meta['embed-shift-headings']
+      SHIFT_HEADINGS = shift ~= nil and (shift == true or pandoc.utils.stringify(shift) == 'true')
+      doc.blocks = expand(doc.blocks, {}, 1, 0)
       return doc
     end,
   },

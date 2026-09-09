@@ -94,7 +94,7 @@ The catalogue currently offers:
 | Filter | What it does | Needs |
 | :--- | :---------- | :--- |
 | [Abstract as a section](https://github.com/pandoc-ext/abstract-section) | Lets you write the abstract as an ordinary "# Abstract" heading instead of putting it in the note's properties. The filter moves that section into the metadata the templates read. | — |
-| [Include other notes](https://github.com/pandoc-ext/include-files) | Splices whole notes into the document where you name them, so a thesis or a manual can stay a folder of small notes and still export as one file. | — |
+| [Include files by path](https://github.com/pandoc-ext/include-files) | Assembles the document from file paths listed in a code block with the class .include — not from ![[…]] links, which the “Write in embedded notes” setting already handles. It is for what a link cannot name: files outside the vault, and files that are not Markdown (LaTeX, HTML, reStructuredText). | — |
 | [Include code from files](https://github.com/pandoc/lua-filters/tree/master/include-code-files) | Fills an empty code block from a file on disk — all of it, or just a range of lines. Code samples in the note can never drift from the code they came from. | — |
 | [Manual page breaks](https://github.com/pandoc-ext/pagebreak) | Turns a \\newpage or \\pagebreak line in the note into a real page break — in Word, ODT, LaTeX/PDF, EPUB and HTML. | — |
 | [Format-only content](https://github.com/pandoc/lua-filters/tree/master/not-in-format) | Keeps a block or a span out of the formats it was not written for, so one note can carry both the printed wording and the web wording. | — |

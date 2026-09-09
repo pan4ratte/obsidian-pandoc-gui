@@ -286,6 +286,8 @@ export default {
   STRIP_COMMENTS_DESC: 'Leave <!-- … --> out of the written document rather than passing it through.',
   EMBED_NOTES: 'Write in embedded notes',
   EMBED_NOTES_DESC: 'Replace ![[a note]] with what that note says, and ![[a note#heading]] with that section.',
+  EMBED_SHIFT_HEADINGS: 'Fit embedded headings to where they stand',
+  EMBED_SHIFT_HEADINGS_DESC: 'An embedded note’s headings move one level below the heading it stands under: a note written as “# Chapter 1” reads as “## Chapter 1” under “# Part one”.',
   TODAY: 'Insert today’s date instead of $today on export',
   TODAY_DESC: 'Every $today anywhere in the note, properties included, becomes today’s date.',
   TODAY_NONE: 'Select date formatting…',

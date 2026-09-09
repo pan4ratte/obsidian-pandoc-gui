@@ -48,14 +48,21 @@ describe('the map the plugin puts in the environment', () => {
   });
 });
 
+/** The map as the plugin writes it: one embed to a line, the link against the file it means. */
+const mapOf = (links: Record<string, string>): string =>
+  Object.entries(links)
+    .map(([link, file]) => `${escapeForEnv(link)}\t${escapeForEnv(file)}`)
+    .join('\n');
+
+const convertWith = async (host: string, map: string, meta = ''): Promise<string> => {
+  const { stdout } = await run(`pandoc -s -L "${filter}" ${meta} -t native -f markdown+wikilinks_title_after_pipe "${host}" -o -`, {
+    env: { ...process.env, OBSIDIAN_EMBEDS: map },
+  });
+  return stdout;
+};
+
 describe.skipIf(!pandocInstalled)('the filter, given that map', () => {
-  const convert = async (): Promise<string> => {
-    const host = join(markdowns, 'embeds-host.md');
-    const { stdout } = await run(`pandoc -s -L "${filter}" -t native -f markdown+wikilinks_title_after_pipe "${host}" -o -`, {
-      env: { ...process.env, OBSIDIAN_EMBEDS: `${escapeForEnv(LINK)}\t${escapeForEnv(embedded)}\n` },
-    });
-    return stdout;
-  };
+  const convert = (): Promise<string> => convertWith(join(markdowns, 'embeds-host.md'), mapOf({ [LINK]: embedded }));
 
   // Read as the native AST, where a word is a `Str` of its own — so the words are what is looked for, not the sentence.
   test('writes the note in, rather than leaving the image pandoc read', async () => {
@@ -67,5 +74,38 @@ describe.skipIf(!pandocInstalled)('the filter, given that map', () => {
       image: native.includes('Image'),
       around: native.includes('"before"') && native.includes('"after"'),
     }).toEqual({ embedded: true, image: false, around: true });
+  }, 60_000);
+});
+
+/*
+ * Heading levels: the one thing an embed cannot get right on its own, since a chapter written as `# Title` lands in
+ * the document as another `#` however deep it stands. Asked for, the note is fitted under the heading above it.
+ */
+describe.skipIf(!pandocInstalled)('heading levels', () => {
+  const host = join(markdowns, 'embeds-headings-host.md');
+  const map = mapOf({
+    'embeds-chapter': join(markdowns, 'embeds-chapter.md'),
+    'embeds-nested': join(markdowns, 'embeds-nested.md'),
+  });
+
+  /** Every heading the document ends up with, in the order it is written, as its level. The whitespace is loose
+      because the native writer breaks a long node over lines, leaving the level on one of its own. */
+  const levels = (native: string): number[] => [...native.matchAll(/Header\s+(\d)/g)].map(match => Number(match[1]));
+
+  test('are left exactly as the note wrote them unless the template asks', async () => {
+    expect(levels(await convertWith(host, map))).toEqual([1, 2, 1, 1, 2, 1, 2, 2, 2, 1, 1, 1, 2]);
+  }, 60_000);
+
+  test('are fitted under the heading the embed stands under when it does', async () => {
+    expect(levels(await convertWith(host, map, '-M embed-shift-headings=true'))).toEqual([
+      // Nothing above the leading embed to be a child of, so it is left as it stands.
+      1, 2,
+      // "# Part one", and two embeds under it: siblings, not a staircase.
+      1, 2, 3, 2, 3,
+      // "## Details", and a section embed, which moves by its own top heading.
+      2, 3,
+      // "# Part two", and a note that embeds another: both move, keeping their distance.
+      1, 2, 3, 4,
+    ]);
   }, 60_000);
 });

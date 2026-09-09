@@ -43,12 +43,14 @@ import {
   TODAY_FORMATS,
   type TodayFormat,
   embedNotes,
+  embedShiftHeadings,
   figureStyle,
   flattenOrdered,
   keywords,
   keywordsTitle,
   listStyles,
   setEmbedNotes,
+  setEmbedShiftHeadings,
   setFigureStyle,
   setFlattenOrdered,
   setKeywords,
@@ -1053,6 +1055,11 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
             <Setting name={t.EMBED_NOTES} description={t.EMBED_NOTES_DESC} class="mod-toggle">
               <Toggle checked={embedNotes(args())} onChange={on => writeArgs(a => setEmbedNotes(a, on))} />
             </Setting>
+            <Show when={embedNotes(args())}>
+              <Setting name={t.EMBED_SHIFT_HEADINGS} description={t.EMBED_SHIFT_HEADINGS_DESC} class="mod-toggle">
+                <Toggle checked={embedShiftHeadings(args())} onChange={on => writeArgs(a => setEmbedShiftHeadings(a, on))} />
+              </Setting>
+            </Show>
 
             <Setting name={t.TODAY} description={t.TODAY_DESC}>
               <DropDown
