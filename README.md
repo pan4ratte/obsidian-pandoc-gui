@@ -52,7 +52,7 @@ This is what you want if you are going to use the full Pandoc on a computer. For
 
 3. Exporting straight to PDF additionally needs a LaTeX distribution — MiKTeX, TeX Live, the [TinyTeX](https://github.com/rstudio/tinytex-releases) I recommend, or any other engine Pandoc supports.
 
-### Option 1: Obsidian plugin store
+### Install plugin, option 1: Obsidian plugin store
 
 1. In Obsidian settings open the tab "Community plugins" and click "Browse" button.
 
@@ -60,7 +60,7 @@ This is what you want if you are going to use the full Pandoc on a computer. For
 
 Alternatively, you can install the plugin by following the link to the community website: [https://community.obsidian.md/plugins/pandoc-gui](https://community.obsidian.md/plugins/pandoc-gui)
 
-### Option 2: BRAT plugin
+### Install plugin, option 2: BRAT plugin
 
 If you want to test beta-versions of the plugin or use previous versions, you can do that with `BRAT` plugin:
 
@@ -72,15 +72,15 @@ If you want to test beta-versions of the plugin or use previous versions, you ca
 
 4. Under “Select a version” choose the desired version and click the “Add plugin” button. The plugin will be automatically installed and will be ready to use.
 
-### Mobile support: Pandoc WASM
+### Download Pandoc WASM for mobile support
 
-The full Pandoc runs on a computer only, so to use it on a phone or a tablet you can install Pandoc WASM into the plugin itself: the process is fully automatic and asks nothing of you.
+The full Pandoc runs on a computer only, so to use it on mobile devices you can install Pandoc WASM into the plugin itself: the process is fully automatic and asks nothing of you.
 
 1. In the plugin settings find the “Pandoc WASM” card and press the install icon. The plugin downloads Pandoc's own official build, unpacks it and puts it in the plugin folder — there is nothing else to do.
 
-2. Turn on “Use Pandoc WASM on this computer” to have Pandoc WASM convert instead of the installed Pandoc. It is off by default, and the installed Pandoc does the work. A phone and a tablet are not asked: WASM is the only thing that converts there, so everything about an installed Pandoc is left out of the settings.
+2. If you want that, turn on “Use Pandoc WASM on this computer” to have Pandoc WASM convert instead of the installed Pandoc. It is off by default, and the installed Pandoc does the work. The option is not available on mobile devices because WASM is the only thing that converts there, so everything about an installed Pandoc is left out of the settings.
 
-So you need never install Pandoc on your computer at all, and can use Pandoc WASM instead. Pandoc WASM does have limits the ordinary version does not — they are built into the program itself. The user guide has the details.
+That means you don't have to install full Pandoc on your computer at all, and can use Pandoc WASM instead. Pandoc WASM does have its own limitation and the "full" version does not — refer to the user guide to know more about the differences.
 
 
 ## The lua-filter catalogue
