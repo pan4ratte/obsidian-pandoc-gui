@@ -114,6 +114,7 @@ describe('the bundled templates', () => {
     currentPath: '/vault/Notes/note.md',
     currentFileName: 'note',
     attachmentFolderPath: '/vault/Attachments',
+    vaultDir: '/vault',
     embedDirs: '/vault/Images',
     outputDir: '/out',
     outputPath: '/out/note.docx',
@@ -152,9 +153,9 @@ describe('the bundled templates', () => {
     const { defaults } = commandToDefaults(command(export_templates['Word (.docx)'] as never));
     expect(defaults.to).toBe('docx');
     expect(defaults['output-file']).toBe('/out/note.docx');
-    expect(defaults['resource-path']).toEqual(['/vault/Notes', '/vault/Attachments', '/vault/Images']);
-    // embeds, math_block, figures and table-styles.
-    expect(defaults.filters).toHaveLength(4);
+    expect(defaults['resource-path']).toEqual(['/vault/Notes', '/vault/Attachments', '/vault', '/vault/Images']);
+    // embeds, math_block, wikilink_images, figures and table-styles.
+    expect(defaults.filters).toHaveLength(5);
   });
 });
 

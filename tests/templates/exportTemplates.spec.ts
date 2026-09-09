@@ -77,6 +77,20 @@ describe('every preset renders a command', () => {
       expect(render(preset)).toContain('--resource-path="/vault/Notes/Note-attachments"');
     }
   });
+
+  test('and so is the vault itself, which is what a link written as a whole path is read against', () => {
+    // `![[Folder/folder/image.png]]`: Obsidian reads it from the vault root, and pandoc given only the note's own
+    // folder cannot find it at all.
+    for (const preset of ['PDF', 'Word (.docx)', 'OpenOffice', 'Html', 'Epub', 'PowerPoint (.pptx)', 'Latex', 'Markdown']) {
+      expect(render(preset)).toContain('--resource-path="/vault"');
+    }
+  });
+
+  test('what carries images reads Obsidian’s own way of naming them', () => {
+    for (const preset of ['PDF', 'Word (.docx)', 'OpenOffice', 'Html', 'Epub', 'PowerPoint (.pptx)', 'Latex']) {
+      expect(render(preset)).toContain('wikilink_images.lua');
+    }
+  });
 });
 
 describe('what the defaults are', () => {

@@ -7,6 +7,12 @@
 
 * **An embedded note’s headings, where they stand.** The template editor carries a new option under “Write in embedded notes”: “Fit embedded headings to where they stand”. An embedded note’s headings move one level below the heading it stands under, so a note written as “# Title” reads as “##” under “# Part one”, and two notes under one heading stay neighbours rather than a staircase. A note with no heading above it is left as it is.
 
+### UI/UX enhancements and bug fixes
+
+* Fixed a bug where an image named by its whole path (`![[Folder/folder/image.png]]`) did not reach the document.
+* An image’s size from the link (`![[image.png|Description|500]]`) is no longer printed in the caption: it sets the width the image is drawn at.
+* An image with no description of its own (`![[image.png]]`) is no longer captioned with the file’s name.
+
 
 ## 2.2.0
 

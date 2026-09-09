@@ -5,10 +5,19 @@ import type { ExportSetting } from '../settings';
 // `test.pdf`. The `current*` set says the same of the note being exported, and
 // `${attachmentFolderPath}` comes from Obsidian's own settings.
 
-/* Two things every template that carries images says, and one every template that renders a note for reading says. */
-const RESOURCE_PATHS = '--resource-path="${currentDir}" --resource-path="${attachmentFolderPath}"';
+/* What every template that carries images says, and what every template that renders a note for reading says. */
+// The vault's own folder is on the list because a wikilink may be written as the whole path from the vault root —
+// `![[Folder/folder/image.png]]` — which Obsidian reads against the vault and pandoc, given only the note's folder,
+// cannot find at all.
+const RESOURCE_PATHS = '--resource-path="${currentDir}" --resource-path="${attachmentFolderPath}" --resource-path="${vaultDir}"';
 const EMBED_DIRS = '${ embedDirs ? `--resource-path="${embedDirs}"` : ` ` }';
-const IMAGE_PATHS = `${RESOURCE_PATHS} ${EMBED_DIRS}`;
+/**
+ * Obsidian's own image syntax, which pandoc's wikilink reader takes differently: the width written after the last
+ * `|` is part of the description to it, and an embed that describes nothing is captioned with the file's own name.
+ */
+const WIKILINK_IMAGES = '--lua-filter="${luaDir}/wikilink_images.lua"';
+/** What a template carrying images needs: where to look for them, and what the note means by naming them. */
+const IMAGES = `${RESOURCE_PATHS} ${EMBED_DIRS} ${WIKILINK_IMAGES}`;
 /** Two things every template that renders a note for reading starts with. */
 const OBSIDIAN_SYNTAX = '--lua-filter="${luaDir}/embeds.lua" -f ${fromFormat}+mark';
 
@@ -50,7 +59,7 @@ export default {
     type: 'pandoc',
     // `-V pagetitle` rather than `-M title`: the page needs a title, but a note that gives itself one in its
     // frontmatter has said what it is, and `--metadata` would overrule it.
-    arguments: `-f \${fromFormat} ${IMAGE_PATHS} ${MATH_BLOCK} --embed-resources --standalone -V pagetitle="\${currentFileName}" -s -o "\${outputPath}" -t html`,
+    arguments: `-f \${fromFormat} ${IMAGES} ${MATH_BLOCK} --embed-resources --standalone -V pagetitle="\${currentFileName}" -s -o "\${outputPath}" -t html`,
     customArguments: `--mathjax="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js" ${OBSIDIAN_SYNTAX}`,
     extension: '.html',
   },
@@ -72,7 +81,7 @@ export default {
     type: 'pandoc',
     // `math_block` before `pdf`: the first puts a broken `$$…$$` back together, the second is what the engine then
     // needs made of it.
-    arguments: `-f \${fromFormat} ${IMAGE_PATHS} ${MATH_BLOCK} --lua-filter="\${luaDir}/pdf.lua" \${ options.textemplate ? \`--resource-path="\${pluginDir}/textemplate" --template="\${options.textemplate}"\` : \` \` } -o "\${outputPath}" -t pdf`,
+    arguments: `-f \${fromFormat} ${IMAGES} ${MATH_BLOCK} --lua-filter="\${luaDir}/pdf.lua" \${ options.textemplate ? \`--resource-path="\${pluginDir}/textemplate" --template="\${options.textemplate}"\` : \` \` } -o "\${outputPath}" -t pdf`,
     // XeLaTeX rather than pdfLaTeX: pdfLaTeX cannot set a character it has no 8-bit font for, so a note with
     // Cyrillic, CJK or an emoji in it does not export at all.
     customArguments: `--pdf-engine=xelatex ${OBSIDIAN_SYNTAX}`,
@@ -87,14 +96,14 @@ export default {
     // `-t typst` with a `.pdf` to write: pandoc reads the extension and runs the typesetter over what the typst
     // writer produced. The same command works both ways — on an installed pandoc with typst beside it, and on the
     // wasm build, which carries its own typst and needs nothing installed. See `src/wasm/typst.ts`.
-    arguments: `-f \${fromFormat} ${IMAGE_PATHS} ${MATH_BLOCK} -s -o "\${outputPath}" -t typst`,
+    arguments: `-f \${fromFormat} ${IMAGES} ${MATH_BLOCK} -s -o "\${outputPath}" -t typst`,
     customArguments: `--pdf-engine=typst ${OBSIDIAN_SYNTAX}`,
     extension: '.pdf',
   },
   'Beamer slides (.pdf)': {
     name: 'Beamer slides',
     type: 'pandoc',
-    arguments: `-f \${fromFormat} ${IMAGE_PATHS} ${MATH_BLOCK} -s -o "\${outputPath}" -t beamer`,
+    arguments: `-f \${fromFormat} ${IMAGES} ${MATH_BLOCK} -s -o "\${outputPath}" -t beamer`,
     customArguments: `--pdf-engine=xelatex ${OBSIDIAN_SYNTAX}`,
     extension: '.pdf',
   },
@@ -103,21 +112,21 @@ export default {
     type: 'pandoc',
     // One file that opens in a browser. reveal.js itself is still fetched from its CDN — `--embed-resources` carries
     // the note's own images, not the library laying them out.
-    arguments: `-f \${fromFormat} ${IMAGE_PATHS} ${MATH_BLOCK} --embed-resources --standalone -s -o "\${outputPath}" -t revealjs`,
+    arguments: `-f \${fromFormat} ${IMAGES} ${MATH_BLOCK} --embed-resources --standalone -s -o "\${outputPath}" -t revealjs`,
     customArguments: OBSIDIAN_SYNTAX,
     extension: '.html',
   },
   'Word (.docx)': {
     name: 'Word (.docx)',
     type: 'pandoc',
-    arguments: `-f \${fromFormat} ${IMAGE_PATHS} ${MATH_BLOCK} -o "\${outputPath}" -t docx`,
+    arguments: `-f \${fromFormat} ${IMAGES} ${MATH_BLOCK} -o "\${outputPath}" -t docx`,
     customArguments: `${OBSIDIAN_SYNTAX} ${WORD_STYLES}`,
     extension: '.docx',
   },
   'OpenOffice': {
     name: 'OpenOffice',
     type: 'pandoc',
-    arguments: `-f \${fromFormat} ${IMAGE_PATHS} ${MATH_BLOCK} -o "\${outputPath}" -t odt`,
+    arguments: `-f \${fromFormat} ${IMAGES} ${MATH_BLOCK} -o "\${outputPath}" -t odt`,
     customArguments: OBSIDIAN_SYNTAX,
     extension: '.odt',
   },
@@ -130,14 +139,14 @@ export default {
   'Epub': {
     name: 'Epub',
     type: 'pandoc',
-    arguments: `-f \${fromFormat} ${IMAGE_PATHS} ${MATH_BLOCK} -o "\${outputPath}" -t epub`,
+    arguments: `-f \${fromFormat} ${IMAGES} ${MATH_BLOCK} -o "\${outputPath}" -t epub`,
     customArguments: OBSIDIAN_SYNTAX,
     extension: '.epub',
   },
   'Latex': {
     name: 'Latex',
     type: 'pandoc',
-    arguments: `-f \${fromFormat} ${IMAGE_PATHS} \${ options.textemplate ? \`--resource-path="\${pluginDir}/textemplate" --template="\${options.textemplate}"\` : \` \` } --extract-media="\${outputDir}" -s -o "\${outputPath}" -t latex`,
+    arguments: `-f \${fromFormat} ${IMAGES} \${ options.textemplate ? \`--resource-path="\${pluginDir}/textemplate" --template="\${options.textemplate}"\` : \` \` } --extract-media="\${outputDir}" -s -o "\${outputPath}" -t latex`,
     customArguments: OBSIDIAN_SYNTAX,
     optionsMeta: {
       'textemplate': 'preset:textemplate', // reference from `PresetOptionsMeta` in `src/settings.ts`
@@ -149,7 +158,7 @@ export default {
     type: 'pandoc',
     // No `-s`: the body alone, for pasting into a document that already has a preamble — an Overleaf project, a
     // journal's class file.
-    arguments: `-f \${fromFormat} ${IMAGE_PATHS} --extract-media="\${outputDir}" -o "\${outputPath}" -t latex`,
+    arguments: `-f \${fromFormat} ${IMAGES} --extract-media="\${outputDir}" -o "\${outputPath}" -t latex`,
     customArguments: OBSIDIAN_SYNTAX,
     extension: '.tex',
   },
@@ -195,7 +204,7 @@ export default {
   'PowerPoint (.pptx)': {
     name: 'PowerPoint (.pptx)',
     type: 'pandoc',
-    arguments: `-f \${fromFormat} ${IMAGE_PATHS} ${MATH_BLOCK} -o "\${outputPath}" -t pptx`,
+    arguments: `-f \${fromFormat} ${IMAGES} ${MATH_BLOCK} -o "\${outputPath}" -t pptx`,
     customArguments: OBSIDIAN_SYNTAX,
     extension: '.pptx',
   },
