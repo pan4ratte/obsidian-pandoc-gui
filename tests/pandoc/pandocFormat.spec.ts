@@ -25,6 +25,7 @@ import {
   supportsTopLevelDivision,
   supportsVariable,
   supportsWrap,
+  writesLatex,
   templateExtension,
 } from '../../src/pandoc/pandoc_format';
 import { CURATED_VARIABLES } from '../../src/args/writer_args';
@@ -365,5 +366,27 @@ describe('the extension a template is expected to carry', () => {
     expect(templateExtension('odt')).toBeUndefined();
     expect(templateExtension('pptx')).toBeUndefined();
     expect(templateExtension(undefined)).toBeUndefined();
+  });
+});
+
+describe('which templates write through LaTeX', () => {
+  test('the two writers that are LaTeX, and the PDFs an engine of its own sets', () => {
+    expect(writesLatex('latex')).toBe(true);
+    expect(writesLatex('beamer')).toBe(true);
+    // No engine named is pandoc's own default, which is LaTeX.
+    expect(writesLatex('pdf')).toBe(true);
+    expect(writesLatex('pdf', 'xelatex')).toBe(true);
+    expect(writesLatex('pdf', 'lualatex')).toBe(true);
+    expect(writesLatex('pdf', 'tectonic')).toBe(true);
+  });
+
+  test('and nothing else, a PDF set by another engine included', () => {
+    expect(writesLatex('pdf', 'typst')).toBe(false);
+    expect(writesLatex('pdf', 'context')).toBe(false);
+    expect(writesLatex('pdf', 'weasyprint')).toBe(false);
+    expect(writesLatex('docx')).toBe(false);
+    expect(writesLatex('html')).toBe(false);
+    expect(writesLatex('typst')).toBe(false);
+    expect(writesLatex(undefined)).toBe(false);
   });
 });

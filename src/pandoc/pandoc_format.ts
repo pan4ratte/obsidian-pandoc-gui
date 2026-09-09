@@ -186,6 +186,13 @@ export const templateExtension = (writer?: string, pdfEngine?: string): string |
   return `.${isPdfOutput(writer) ? (PDF_TEMPLATE_WRITERS[pdfEngine ?? ''] ?? 'latex') : writer}`;
 };
 
+/**
+ * Whether what the template writes goes through LaTeX, where a captioned image is a float and moves. A PDF says
+ * nothing about that on its own: it is the engine that decides, and every engine not named here is a LaTeX one.
+ */
+export const writesLatex = (writer?: string, pdfEngine?: string): boolean =>
+  writer === 'latex' || writer === 'beamer' || (isPdfOutput(writer) && !PDF_TEMPLATE_WRITERS[pdfEngine ?? '']);
+
 /** `--eol`: the writers whose output is a text file with lines to end. */
 const EOL_UNSUPPORTED = new Set(['docx', 'odt', 'opendocument', 'pptx', 'epub', 'epub2', 'epub3', 'pdf']);
 

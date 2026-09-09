@@ -7,6 +7,7 @@ import {
   embedShiftHeadings,
   figureStyle,
   flattenOrdered,
+  floatPlacement,
   keywords,
   keywordsTitle,
   listStyles,
@@ -14,6 +15,7 @@ import {
   setEmbedShiftHeadings,
   setFigureStyle,
   setFlattenOrdered,
+  setFloatPlacement,
   setKeywords,
   setKeywordsTitle,
   setListStyles,
@@ -245,5 +247,22 @@ describe('embedded notes', () => {
     expect(embedNotes(withoutToday)).toBe(true);
     expect(figureStyle(withoutToday)).toBe('Picture');
     expect(todayFormat(withoutToday)).toBeUndefined();
+  });
+});
+
+describe('where a figure stands', () => {
+  const FLOATS = luaFilterArg(FILTERS.floatPlacement);
+
+  test('the filter is the switch, and it says nothing more', () => {
+    expect(floatPlacement(undefined)).toBe(false);
+    expect(setFloatPlacement(undefined, true)).toBe(FLOATS);
+    expect(floatPlacement(FLOATS)).toBe(true);
+    expect(setFloatPlacement(FLOATS, false)).toBe('');
+  });
+
+  test('it is one row among the others, and leaves them alone', () => {
+    const args = setFloatPlacement(setEmbedNotes(undefined, true), true);
+    expect([embedNotes(args), floatPlacement(args)]).toEqual([true, true]);
+    expect(embedNotes(setFloatPlacement(args, false))).toBe(true);
   });
 });

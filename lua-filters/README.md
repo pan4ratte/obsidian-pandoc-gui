@@ -57,6 +57,7 @@ its `--lua-filter` and its `-M` fields together.
 | `figures.lua` | Style images as figures | A captionless image is a paragraph to pandoc, so it lands in body text. |
 | `table-styles.lua` | Style text in table cells | The docx writer stamps "Compact" on every cell, which outranks the table style in Word. |
 | `list-styles.lua` | Use Word's list styles | Pandoc's own numbering carries its own indent and bullet, and direct formatting beats a style. |
+| `float_placement.lua` | Keep images where they stand | LaTeX carries a captioned image off to wherever it fits best, so two pictures with a paragraph between them come out as one picture, all of the text, and the other picture alone on the next page. |
 | `wikilink_images.lua` | — | Pandoc's wikilink reader takes everything after the first `\|` as the image's description, so Obsidian's `![[image.png\|описание\|500]]` prints the width as part of the caption, and `![[image.png]]` is captioned with the file's own name. Runs in every preset that carries images. |
 | `markdown.lua`, `markdown+hugo.lua`, `math_block.lua`, `pdf.lua`, `citefilter.lua` | — | Named by the presets themselves rather than by a row. |
 | `polyfill.lua`, `url.lua` | — | Libraries `markdown.lua` requires. |

@@ -45,6 +45,7 @@ import {
   embedNotes,
   embedShiftHeadings,
   figureStyle,
+  floatPlacement,
   flattenOrdered,
   keywords,
   keywordsTitle,
@@ -53,6 +54,7 @@ import {
   setEmbedShiftHeadings,
   setFigureStyle,
   setFlattenOrdered,
+  setFloatPlacement,
   setKeywords,
   setKeywordsTitle,
   setListStyles,
@@ -208,6 +210,7 @@ import {
   supportsTopLevelDivision,
   supportsVariable,
   supportsWrap,
+  writesLatex,
 } from '../../pandoc/pandoc_format';
 import { MessageBox, confirm } from '../message_box';
 import Modal from '../components/Modal';
@@ -1061,6 +1064,13 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
               </Setting>
             </Show>
 
+            {/* Only LaTeX has floats to place, and only its engines make a PDF out of them. */}
+            <Show when={writesLatex(format(), pdfEngine(args()))}>
+              <Setting name={t.FLOAT_PLACEMENT} description={t.FLOAT_PLACEMENT_DESC} class="mod-toggle">
+                <Toggle checked={floatPlacement(args())} onChange={on => writeArgs(a => setFloatPlacement(a, on))} />
+              </Setting>
+            </Show>
+
             <Setting name={t.TODAY} description={t.TODAY_DESC}>
               <DropDown
                 options={todayOptions()}
@@ -1805,6 +1815,7 @@ export default class extends PluginSettingTab {
               t.TAB_STOP,
               t.STRIP_COMMENTS,
               t.EMBED_NOTES,
+              t.FLOAT_PLACEMENT,
               t.TODAY,
               t.KEYWORDS,
               t.WORD_STYLES,

@@ -3,15 +3,17 @@
 
 ## 2.3.0
 
-### New feature: fitting the headings of embedded notes
+### New features
 
-* **An embedded note’s headings, where they stand.** The template editor carries a new option under “Write in embedded notes”: “Fit embedded headings to where they stand”. An embedded note’s headings move one level below the heading it stands under, so a note written as “# Title” reads as “##” under “# Part one”, and two notes under one heading stay neighbours rather than a staircase. A note with no heading above it is left as it is.
+* **Fitting the headings of embedded notes.** The template editor carries a new option under “Write in embedded notes”: “Fit the headings of embedded notes”. The headings inside an embedded note are rebuilt one level below the heading the note stands under: “# Chapter 1” under “# Part one” is formatted as “## Chapter 1”, and two notes under one heading stay neighbours rather than a staircase. A note with no heading above it is left unchanged.
+* **Pinning images in place in PDF and LaTeX.** The editor of those templates carries a new option, “Keep images in place”. LaTeX treats a captioned image as a floating object and moves it about on its own, leaving a gap in the text — the option pins images where they stand in the note.
 
 ### UI/UX enhancements and bug fixes
 
-* Fixed a bug where an image named by its whole path (`![[Folder/folder/image.png]]`) did not reach the document.
-* An image’s size from the link (`![[image.png|Description|500]]`) is no longer printed in the caption: it sets the width the image is drawn at.
-* An image with no description of its own (`![[image.png]]`) is no longer captioned with the file’s name.
+* Fixed a bug where an image embedded by its whole path (`![[Folder/folder/image.png]]`) did not reach the document.
+* Fixed a bug where the image size given in the link (`![[image.png|Description|500]]`) went into the caption instead of setting the image’s width.
+* Fixed a bug where an embedded image with no description (`![[image.png]]`) was captioned with the file name after the export.
+* The filter store’s “Include other notes” card is renamed “Include files by path”, and its description says how the filter differs from the built-in embedding of notes.
 
 
 ## 2.2.0

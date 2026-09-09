@@ -10,6 +10,7 @@ export const FILTERS = {
   keywords: 'keywords.lua',
   today: 'today.lua',
   embeds: EMBEDS_FILTER,
+  floatPlacement: 'float_placement.lua',
 } as const;
 
 /* -- The primitives ------------------------------------------------------- */
@@ -185,3 +186,10 @@ export const embedShiftHeadings = (args?: string): boolean => embedNotes(args) &
 
 export const setEmbedShiftHeadings = (args: string | undefined, on: boolean): string =>
   setMetadata(args, EMBED_SHIFT_HEADINGS, on ? 'true' : undefined);
+
+/* -- Where a figure stands ------------------------------------------------ */
+
+/** Whether `args` pins figures to the place they were written rather than letting LaTeX float them. */
+export const floatPlacement = (args?: string): boolean => runs(args, FILTERS.floatPlacement);
+
+export const setFloatPlacement = (args: string | undefined, on: boolean): string => setRuns(args, FILTERS.floatPlacement, on);
