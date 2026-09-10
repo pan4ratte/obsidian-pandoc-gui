@@ -3,6 +3,7 @@ import { createEnv } from '../settings';
 import { exec, getPlatformValue } from '../system/utils';
 import { t } from '../lang/helpers';
 import { MessageBox, confirm } from '../ui/message_box';
+import { reportRun } from '../ui/report_box';
 import { IMPORT_MESSAGES, PandocProgress } from '../ui/progress';
 import { describeExportFailure } from './export_error';
 import type PandocGuiPlugin from '../main';
@@ -131,10 +132,20 @@ export async function importFile(plugin: PandocGuiPlugin, request: ImportRequest
       warnings = stderr.trim();
     }
 
-    // Pandoc warns here and writes the file all the same, so a warning is reported rather than thrown.
+    // Pandoc warns here and writes the note all the same, so a warning is reported rather than thrown — and reported
+    // where it will be read, the notice saying only that there were some. See `exportNote`.
     if (warnings) {
       console.warn(cmd, warnings);
       progress.warn(noteName);
+      reportRun(app, {
+        title: t.WARNINGS_TITLE,
+        facts: [
+          { label: t.IMPORT_ERROR_SOURCE, value: basename(request.source), title: request.source },
+          { label: t.ERROR_FILE, value: noteName, title: outputPath },
+        ],
+        output: warnings,
+        tone: 'warning',
+      });
     } else {
       progress.succeed(noteName);
     }
@@ -144,24 +155,16 @@ export async function importFile(plugin: PandocGuiPlugin, request: ImportRequest
     progress.stop();
     const { detail, recommendation } = describeExportFailure(err, cmd);
     console.error(cmd, err);
-    new MessageBox(app, {
+    reportRun(app, {
       title: t.IMPORT_ERROR_TITLE,
-      buttons: 'Ok',
-      render: contentEl => {
-        const root = contentEl.createDiv({ cls: 'ex-export-error' });
-        const fact = (label: string, value: string, title?: string) =>
-          root.createDiv({ cls: 'ex-export-error-fact' }, el => {
-            el.createSpan({ cls: 'ex-export-error-label', text: label });
-            el.createSpan({ cls: 'ex-export-error-value', text: value, title: title ?? value });
-          });
-        fact(t.IMPORT_ERROR_SOURCE, basename(request.source), request.source);
-        fact(t.ERROR_FILE, noteName, outputPath);
-        root.createDiv({ cls: 'ex-export-error-detail', text: detail });
-        if (recommendation) {
-          root.createDiv({ cls: 'ex-export-error-hint', text: recommendation });
-        }
-      },
-    }).open();
+      facts: [
+        { label: t.IMPORT_ERROR_SOURCE, value: basename(request.source), title: request.source },
+        { label: t.ERROR_FILE, value: noteName, title: outputPath },
+      ],
+      output: detail,
+      hint: recommendation,
+      tone: 'error',
+    });
     return false;
   }
 }

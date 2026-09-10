@@ -5,10 +5,12 @@
 
 ### New features
 
-* **Support for exporting Excalidraw drawings.** Excalidraw drawings embedded in notes (`![[Drawing.excalidraw]]`) are now exported as images. Word, OpenDocument, HTML, EPUB, PowerPoint and Typst get a vector image, PDF and LaTeX get a PNG. A new “Excalidraw drawing format” option in those templates lets you choose SVG. Using the feature needs the Excalidraw plugin installed.
+* **Support for exporting Excalidraw drawings.** Excalidraw drawings embedded in notes (`![[Drawing.excalidraw]]`) are now exported as images. HTML and EPUB get a vector image; Word, OpenDocument, PowerPoint and Typst do too, except that a drawing with text in it goes in as a PNG, none of them reading Excalidraw's own fonts; PDF and LaTeX get a PNG. A new “Excalidraw drawing format” option in those templates lets you choose SVG. Using the feature needs the Excalidraw plugin installed.
 
 ### UI/UX enhancements and bug fixes
 
+* Pandoc's warnings after an export or an import are shown in a window of their own rather than in the console alone.
+* Excalidraw drawings are set at the size they were drawn — the PNG used to arrive twice as large.
 * Fixed a bug where, with “Paths relative to the note” on, embedded notes were left out of the document and a blank image stood in their place.
 * Fixed a bug where “Paths relative to the note” broke links to external apps (`zotero://`, `obsidian://`) by writing the note's folder in front of them.
 

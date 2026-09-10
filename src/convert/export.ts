@@ -1,5 +1,6 @@
 import { Variables, ExportSetting, extractDefaultExtension as extractExtension, createEnv, today } from '../settings';
 import { MessageBox, confirm } from '../ui/message_box';
+import { reportRun } from '../ui/report_box';
 import { Platform, TFile, getLinkpath, moment } from 'obsidian';
 import type { SemVer } from 'semver';
 import { exec, renderTemplate, getPlatformValue, trimQuotes } from '../system/utils';
@@ -19,7 +20,7 @@ import { download } from '../system/download';
 import { basename, dirname, normalize, resolve, stem } from '../system/paths';
 import { PATH_SEPARATOR, chooseSavePath, isDesktop, isMobile, openFile, showInFolder, tempFolder, vaultRoot } from '../system/platform';
 import { type DrawingFormat, isDrawing, renderDrawing } from './excalidraw';
-import { outputFormat, takesSvg, writesLatex } from '../pandoc/pandoc_format';
+import { outputFormat, readsInlinedFonts, takesSvg, writesLatex } from '../pandoc/pandoc_format';
 import { drawingFormat } from '../filters/filter_args';
 import { pdfEngine } from '../args/writer_args';
 
@@ -53,21 +54,24 @@ const drawDrawings = async (
   files: FileStore,
   folder: string,
   drawings: Map<string, TFile>,
-  format: DrawingFormat
+  format: DrawingFormat,
+  inlinedFontsRead: boolean
 ): Promise<Map<string, string>> => {
   const drawn = new Map<string, string>();
   let index = 0;
   for (const [link, file] of drawings) {
-    const bytes = await renderDrawing(app, link, format);
-    if (!bytes) {
+    const drawing = await renderDrawing(app, link, format, inlinedFontsRead);
+    if (!drawing) {
       console.warn(`Could not draw the Excalidraw file "${link}"; the embed is left as it was written.`);
       continue;
     }
     // Named after the drawing so an export left half-finished can be read, but only in the characters every file
     // system spells the same way — the name itself is nobody's business but this folder's.
     const name = stem(file.name).replace(/[^A-Za-z0-9._-]+/g, '-');
-    const path = `${folder}/${name}-${index++}.${format}`;
-    await files.write(path, bytes);
+    // What it was actually drawn into: a drawing with words in it comes back a picture where an SVG's fonts would
+    // not have been read.
+    const path = `${folder}/${name}-${index++}.${drawing.format}`;
+    await files.write(path, drawing.bytes);
     drawn.set(link, path);
   }
   return drawn;
@@ -364,7 +368,10 @@ export async function exportNote(
       const writer = outputFormat(cmd);
       const asked = writesLatex(writer, pdfEngine(cmd)) ? drawingFormat(cmd) : undefined;
       const format: DrawingFormat = asked ?? (takesSvg(writer) ? 'svg' : 'png');
-      drawnDrawings = await drawDrawings(plugin.app, files, drawingsDir, drawings, format);
+      // An SVG asked for by name is written as one whatever it costs; where the choice was the plugin's, a drawing
+      // with words in it is drawn as a picture rather than left in fonts the document will not read — see
+      // `renderDrawing`.
+      drawnDrawings = await drawDrawings(plugin.app, files, drawingsDir, drawings, format, asked === 'svg' || readsInlinedFonts(writer));
       for (const image of drawnDrawings.values()) {
         // A wasm run has no vault to look in: everything it is to see has to be handed to it.
         embeddedFiles.add(image);
@@ -443,16 +450,22 @@ export async function exportNote(
       onSuccess?.();
     };
 
-    if (showCommandLineOutput) {
-      // The box says everything the notice would, and says it until it is closed.
+    // Warnings are worth reading, so they are put where they will be — a notice says only that there were some, and
+    // says it for four seconds. The box is the same one a failure is reported in, and the export goes on when it is
+    // closed: the file opens after it has been read rather than over it.
+    if (warnings || showCommandLineOutput) {
       progress.stop();
-      const message = [t.EXPORT_COMMAND_OUTPUT(cmd), warnings].filter(Boolean).join('\n\n');
-      const box = new MessageBox(plugin.app, message);
-      box.onClose = () => void next();
-      box.open();
-    } else if (warnings) {
-      progress.warn(variables.outputFileFullName);
-      await next();
+      reportRun(plugin.app, {
+        title: warnings ? t.WARNINGS_TITLE : t.NOTICE_EXPORT_SUCCESS(variables.outputFileFullName),
+        facts: [
+          { label: t.ERROR_TEMPLATE, value: setting.name },
+          { label: t.ERROR_FILE, value: variables.outputFileFullName, title: variables.outputPath },
+        ],
+        command: showCommandLineOutput ? t.EXPORT_COMMAND_OUTPUT(cmd) : undefined,
+        output: warnings,
+        tone: 'warning',
+        onClose: () => void next(),
+      });
     } else {
       progress.succeed(variables.outputFileFullName);
       await next();
@@ -462,24 +475,16 @@ export async function exportNote(
     const { detail, recommendation } = describeExportFailure(err, cmd);
     // Only what the reader can act on. The command line stays in the console.
     console.error(cmd, err);
-    new MessageBox(plugin.app, {
+    reportRun(plugin.app, {
       title: t.ERROR_TITLE,
-      buttons: 'Ok',
-      render: contentEl => {
-        const root = contentEl.createDiv({ cls: 'ex-export-error' });
-        const fact = (label: string, value: string, title?: string) =>
-          root.createDiv({ cls: 'ex-export-error-fact' }, el => {
-            el.createSpan({ cls: 'ex-export-error-label', text: label });
-            el.createSpan({ cls: 'ex-export-error-value', text: value, title: title ?? value });
-          });
-        fact(t.ERROR_TEMPLATE, setting.name);
-        fact(t.ERROR_FILE, variables.outputFileFullName, variables.outputPath);
-        root.createDiv({ cls: 'ex-export-error-detail', text: detail });
-        if (recommendation) {
-          root.createDiv({ cls: 'ex-export-error-hint', text: recommendation });
-        }
-      },
-    }).open();
+      facts: [
+        { label: t.ERROR_TEMPLATE, value: setting.name },
+        { label: t.ERROR_FILE, value: variables.outputFileFullName, title: variables.outputPath },
+      ],
+      output: detail,
+      hint: recommendation,
+      tone: 'error',
+    });
     onFailure?.();
   } finally {
     // The images were pandoc's to read, and pandoc has read them.

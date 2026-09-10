@@ -2363,6 +2363,24 @@
   user-select: text;
 }
 
+/* The command line itself, where the template asks for it to be shown. */
+.ex-export-error-command {
+  padding: var(--size-4-2) var(--size-4-3);
+  border-radius: var(--radius-s);
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+
+/* Warnings are the same report with a milder outcome: the file was written. */
+.ex-export-error.is-warning .ex-export-error-detail {
+  border-left-color: var(--text-warning);
+}
+
 /* The one line that says what to do next, so it is not read as more output. */
 .ex-export-error-hint {
   padding: var(--size-4-2) var(--size-4-3);

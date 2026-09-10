@@ -8,11 +8,12 @@ export default {
   NOTICE_EXPORT_PREPARING: 'Preparing…',
   NOTICE_EXPORTING: (file: string) => `Generating “${file}”…`,
   NOTICE_EXPORT_SUCCESS: (file: string) => `Exported “${file}”.`,
-  NOTICE_EXPORT_WARNINGS: (file: string) => `Exported “${file}”, but Pandoc had warnings — see the console.`,
+  NOTICE_EXPORT_WARNINGS: (file: string) => `Exported “${file}”, but Pandoc had warnings.`,
   NOTICE_IMPORTING: (file: string) => `Reading “${file}”…`,
   NOTICE_IMPORT_SUCCESS: (file: string) => `Imported “${file}”.`,
-  NOTICE_IMPORT_WARNINGS: (file: string) => `Imported “${file}”, but Pandoc had warnings — see the console.`,
+  NOTICE_IMPORT_WARNINGS: (file: string) => `Imported “${file}”, but Pandoc had warnings.`,
   EXPORT_COMMAND_OUTPUT: (cmd: string) => `Command: ${cmd}`,
+  WARNINGS_TITLE: 'Pandoc warnings',
 
   // ─── Export dialog ───────────────────────────────────────────────────────────
   EXPORT_DIALOG_TITLE: 'Export with Pandoc',

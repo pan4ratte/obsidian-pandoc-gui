@@ -8,11 +8,12 @@ export default {
   NOTICE_EXPORT_PREPARING: 'Подготовка…',
   NOTICE_EXPORTING: (file: string) => `Создаётся «${file}»…`,
   NOTICE_EXPORT_SUCCESS: (file: string) => `Экспортировано «${file}».`,
-  NOTICE_EXPORT_WARNINGS: (file: string) => `Экспортировано «${file}», но Pandoc предупреждает — подробности в консоли.`,
+  NOTICE_EXPORT_WARNINGS: (file: string) => `Экспортировано «${file}», но Pandoc предупреждает.`,
   NOTICE_IMPORTING: (file: string) => `Читается «${file}»…`,
   NOTICE_IMPORT_SUCCESS: (file: string) => `Импортировано «${file}».`,
-  NOTICE_IMPORT_WARNINGS: (file: string) => `Импортировано «${file}», но Pandoc предупреждает — подробности в консоли.`,
+  NOTICE_IMPORT_WARNINGS: (file: string) => `Импортировано «${file}», но Pandoc предупреждает.`,
   EXPORT_COMMAND_OUTPUT: (cmd: string) => `Команда: ${cmd}`,
+  WARNINGS_TITLE: 'Предупреждения Pandoc',
 
   // ─── Export dialog ───────────────────────────────────────────────────────────
   EXPORT_DIALOG_TITLE: 'Экспорт с помощью Pandoc',

@@ -461,6 +461,13 @@ export const supportsEmbedResources = supportedBy(HTML_PAGE_WRITERS.filter(w => 
  */
 export const takesSvg = supportedBy(['docx', 'odt', 'opendocument', 'pptx', 'typst', ...HTML_WRITERS, ...EPUB_WRITERS]);
 
+/**
+ * The writers whose documents are opened by a browser engine, and so the only ones that read the fonts an SVG carries
+ * in it as `@font-face`. Word, LibreOffice, typst and librsvg all put a system font in their place instead — which is
+ * what an Excalidraw drawing is written as a picture for everywhere else. See `renderDrawing`.
+ */
+export const readsInlinedFonts = supportedBy([...HTML_WRITERS, ...EPUB_WRITERS]);
+
 export const supportsDpi = supportedBy(['latex', 'beamer', 'pdf', 'context', 'typst', 'docx', 'odt', 'icml', 'ms', 'rtf', 'texinfo']);
 
 /* The families a filter can be written for. */
