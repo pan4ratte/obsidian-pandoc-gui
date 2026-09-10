@@ -122,9 +122,59 @@ for line in given:gmatch('[^\n]+') do
   end
 end
 
+--- Whether `rebase_relative_paths` was switched on for this run.
+local REBASING = (function()
+  for _, extension in ipairs(PANDOC_READER_OPTIONS.extensions) do
+    if tostring(extension) == 'rebase_relative_paths' then
+      return true
+    end
+  end
+  return false
+end)()
+
+--- The folder the note sits in, which is what a rebased path was rebased onto.
+local SOURCE_DIR = REBASING and PANDOC_STATE.input_files[1] and PANDOC_STATE.input_files[1]:match('^(.*)[/\\][^/\\]*$')
+
+--- A target with the rebasing taken back off it, or nil where there was none.
+---
+--- `rebase_relative_paths` writes the note's own folder in front of every path
+--- it takes for a relative one, which is how this filter's own embeds arrive
+--- named by something no vault ever wrote. The folder is known, so what was
+--- written is recoverable.
+local function unrebased(target)
+  if not SOURCE_DIR or target:sub(1, #SOURCE_DIR) ~= SOURCE_DIR then
+    return nil
+  end
+  return target:sub(#SOURCE_DIR + 1):match('^[/\\](.+)$')
+end
+
 --- The file an embed's target names, or nil where it names none of ours.
 local function resolve(target)
-  return targets[target] or targets[decode(target)]
+  local found = targets[target] or targets[decode(target)]
+  if found then
+    return found
+  end
+  local written = unrebased(target)
+  return written and (targets[written] or targets[decode(written)]) or nil
+end
+
+--- Whether a path names a scheme — a link to an app rather than to a file.
+---
+--- Pandoc leaves a URI alone when rebasing, but only where it knows the scheme:
+--- one it has never heard of — `zotero:`, `obsidian:` — it reads as a relative
+--- path and writes the note's folder in front of, leaving a link that opens
+--- nothing. Anything that was written with a scheme is put back as it was.
+local function names_a_scheme(path)
+  return path:match('^%a[%a%d+.-]+:') ~= nil
+end
+
+--- A link or image target with a mistaken rebasing undone, or nil to leave it.
+local function unmangled(target)
+  local written = unrebased(target)
+  if written and names_a_scheme(written) then
+    return written
+  end
+  return nil
 end
 
 --- The reader spec the note itself was read with, rebuilt.
@@ -349,13 +399,35 @@ expand = function(blocks, seen, depth, anchor)
   return pandoc.Blocks(out)
 end
 
--- Nothing to do at all where the plugin resolved no note embeds, which is the
--- overwhelming majority of exports.
+--- Links and images pandoc rebased when it should not have, put back.
+local restore = {
+  Link = function(link)
+    local target = unmangled(link.target)
+    if not target then
+      return nil
+    end
+    link.target = target
+    return link
+  end,
+
+  Image = function(image)
+    local src = unmangled(image.src)
+    if not src then
+      return nil
+    end
+    image.src = src
+    return image
+  end,
+}
+
+-- Nothing to do at all where the plugin resolved no note embeds and nothing was
+-- rebased, which is the overwhelming majority of exports.
 if next(targets) == nil then
-  return {}
+  return REBASING and { restore } or {}
 end
 
 return {
+  restore,
   {
     Pandoc = function(doc)
       local shift = doc.meta['embed-shift-headings']

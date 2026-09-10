@@ -1,6 +1,14 @@
 # Changelog
 
 
+## 2.3.1
+
+### Hotfix
+
+* Fixed a bug where, with “Paths relative to the note” on, embedded notes were left out of the document and a blank image stood in their place.
+* Fixed a bug where “Paths relative to the note” broke links to external apps (`zotero://`, `obsidian://`) by writing the note's folder in front of them.
+
+
 ## 2.3.0
 
 ### New features

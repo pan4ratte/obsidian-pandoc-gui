@@ -109,3 +109,61 @@ describe.skipIf(!pandocInstalled)('heading levels', () => {
     ]);
   }, 60_000);
 });
+
+/*
+ * `rebase_relative_paths`, which writes the note's own folder in front of every path pandoc takes for a relative one.
+ *
+ * Pandoc takes two kinds of thing for one that are not: an embed, which this filter has to find again by what the
+ * note wrote, and a link whose scheme pandoc has never heard of — `zotero:`, `obsidian:` — which is a link to an app
+ * and belongs to no folder at all. Both are put back; a path that really is a file's is left rebased.
+ */
+describe.skipIf(!pandocInstalled)('paths rebased onto the note’s folder', () => {
+  const host = join(markdowns, 'embeds-rebased-host.md');
+  const map = mapOf({ 'embeds-chapter.md': join(markdowns, 'embeds-chapter.md') });
+
+  const rebased = async (extensions: string): Promise<string> => {
+    const { stdout } = await run(`pandoc -s -L "${filter}" -t native -f markdown${extensions} "${host}" -o -`, {
+      env: { ...process.env, OBSIDIAN_EMBEDS: map },
+    });
+    return stdout;
+  };
+
+  test('leave the embed still written in, rather than the image pandoc read', async () => {
+    const native = await rebased('+rebase_relative_paths');
+    expect({
+      embedded: native.includes('"Chapter"') && native.includes('"Section"'),
+      image: native.includes('embeds-chapter.md'),
+    }).toEqual({ embedded: true, image: false });
+  }, 60_000);
+
+  test('leave a link to an app as the note wrote it', async () => {
+    const native = await rebased('+rebase_relative_paths');
+    for (const target of [
+      'zotero://select/library/items/ABCD1234',
+      'zotero://open-pdf/library/items/XYZ?page=3&annotation=Q1',
+      'obsidian://open?vault=V&file=note',
+      'https://example.com/a',
+    ]) {
+      expect(native).toContain(`"${target}"`);
+    }
+  }, 60_000);
+
+  // The folder keeps whatever separators the path pandoc was handed was written with, and the name is joined onto it
+  // with a `/` either way — so what is checked is the joining, not the spelling of the folder above it.
+  test('but still rebase a path that really is a file’s', async () => {
+    const native = await rebased('+rebase_relative_paths');
+    expect({
+      rebased: native.includes('markdowns/picture.png'),
+      bare: native.includes('"picture.png"'),
+    }).toEqual({ rebased: true, bare: false });
+  }, 60_000);
+
+  test('and leave every one of them alone where the extension is off', async () => {
+    const native = await rebased('');
+    expect({
+      embedded: native.includes('"Chapter"'),
+      zotero: native.includes('"zotero://select/library/items/ABCD1234"'),
+      picture: native.includes('"picture.png"'),
+    }).toEqual({ embedded: true, zotero: true, picture: true });
+  }, 60_000);
+});
