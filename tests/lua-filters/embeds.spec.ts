@@ -167,3 +167,69 @@ describe.skipIf(!pandocInstalled)('paths rebased onto the note’s folder', () =
     }).toEqual({ embedded: true, zotero: true, picture: true });
   }, 60_000);
 });
+
+/*
+ * Excalidraw drawings, which reach the filter already drawn.
+ *
+ * A drawing is markdown — the scene is JSON buried in a `.excalidraw.md` note — so Obsidian resolves an embed of one
+ * like any other note, and without this the export writes that JSON into the document. The plugin draws it first and
+ * hands over the same kind of map the embedded notes arrive in; all the filter does is point the image at the result.
+ */
+describe.skipIf(!pandocInstalled)('Excalidraw drawings', () => {
+  const host = join(markdowns, 'embeds-drawing-host.md');
+  const image = join(markdowns, 'drawing.png');
+  const wikilinkImages = resolve(here, '..', '..', 'lua-filters', 'bundled', 'wikilink_images.lua');
+
+  /** The whole chain a Word or PDF template runs, which is where a drawing is actually met. */
+  const convertDrawing = async (map: string, extensions = ''): Promise<string> => {
+    const { stdout } = await run(
+      `pandoc -s -L "${filter}" -L "${wikilinkImages}" -t native -f markdown+wikilinks_title_after_pipe${extensions} "${host}" -o -`,
+      { env: { ...process.env, OBSIDIAN_DRAWINGS: map } }
+    );
+    return stdout;
+  };
+
+  const map = mapOf({
+    'Sketch.excalidraw': image,
+    'Sketch.excalidraw|400': image,
+    'Sketch.excalidraw|A caption|400': image,
+  });
+
+  test('point the image at the file the drawing was drawn into', async () => {
+    const native = await convertDrawing(map);
+    expect({
+      drawn: native.split('drawing.png').length - 1,
+      // The embed as pandoc read it: a target no writer could have done anything with.
+      left: native.includes('Sketch.excalidraw'),
+    }).toEqual({ drawn: 3, left: false });
+  }, 60_000);
+
+  test('are not captioned with their own file name where the embed described nothing', async () => {
+    const native = await convertDrawing(map);
+    expect({
+      // Two of the three describe nothing, and neither may be captioned with the target — which is what pandoc
+      // captions a bare wikilink embed with, and what the drawn image is no longer even named after.
+      undescribed: (native.match(/Image\s+\( "" , \[ "wikilink" \] , \[[^\]]*\] \)\s+\[\]/g) ?? []).length,
+      // The one that describes something keeps exactly what was written.
+      described: native.includes('[ Str "A" , Space , Str "caption" ]'),
+      // The size is a width, not a caption.
+      size: native.includes('Str "400"'),
+    }).toEqual({ undescribed: 2, described: true, size: false });
+  }, 60_000);
+
+  test('keep the width Obsidian writes after the pipe', async () => {
+    expect(await convertDrawing(map)).toContain('"400px"');
+  }, 60_000);
+
+  test('are found again even when rebase_relative_paths rewrote the embed', async () => {
+    const native = await convertDrawing(map, '+rebase_relative_paths');
+    expect(native.includes('drawing.png')).toBe(true);
+  }, 60_000);
+
+  test('leave a note carrying none of them exactly as it was', async () => {
+    const { stdout } = await run(`pandoc -s -L "${filter}" -t native -f markdown+wikilinks_title_after_pipe "${host}" -o -`, {
+      env: { ...process.env, OBSIDIAN_DRAWINGS: '' },
+    });
+    expect(stdout).toContain('Sketch.excalidraw');
+  }, 60_000);
+});

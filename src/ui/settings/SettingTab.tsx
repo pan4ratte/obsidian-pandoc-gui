@@ -42,6 +42,7 @@ import {
   TABLE_DEFAULT_STYLE,
   TODAY_FORMATS,
   type TodayFormat,
+  drawingFormat,
   embedNotes,
   embedShiftHeadings,
   figureStyle,
@@ -50,6 +51,7 @@ import {
   keywords,
   keywordsTitle,
   listStyles,
+  setDrawingFormat,
   setEmbedNotes,
   setEmbedShiftHeadings,
   setFigureStyle,
@@ -1064,10 +1066,22 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
               </Setting>
             </Show>
 
-            {/* Only LaTeX has floats to place, and only its engines make a PDF out of them. */}
+            {/* Only LaTeX has floats to place, and only its engines make a PDF out of them. Nor is it asked anywhere
+                else what a drawing should be written as: every other writer either takes an SVG or does not. */}
             <Show when={writesLatex(format(), pdfEngine(args()))}>
               <Setting name={t.FLOAT_PLACEMENT} description={t.FLOAT_PLACEMENT_DESC} class="mod-toggle">
                 <Toggle checked={floatPlacement(args())} onChange={on => writeArgs(a => setFloatPlacement(a, on))} />
+              </Setting>
+              <Setting name={t.DRAWING_FORMAT} description={t.DRAWING_FORMAT_DESC}>
+                <DropDown
+                  options={[
+                    { value: 'png', name: t.DRAWING_FORMAT_PNG },
+                    { value: 'svg', name: t.DRAWING_FORMAT_SVG },
+                  ]}
+                  selected={drawingFormat(args()) ?? 'png'}
+                  autofocus={false}
+                  onChange={value => writeArgs(a => setDrawingFormat(a, value === 'svg' ? 'svg' : undefined))}
+                />
               </Setting>
             </Show>
 

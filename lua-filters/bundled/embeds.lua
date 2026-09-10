@@ -77,9 +77,6 @@ local MAX_LEVEL = 6
 --- from the template editor, which writes `-M embed-shift-headings=true`.
 local SHIFT_HEADINGS = false
 
---- link -> absolute path, as the plugin resolved them.
-local targets = {}
-
 --- Percent-decoding: for the escaping the environment is written with, and for
 --- the vault that writes markdown links rather than wikilinks.
 local function decode(text)
@@ -88,7 +85,7 @@ local function decode(text)
   end))
 end
 
---- The list as the plugin passed it, and whether it came percent-escaped.
+--- A list as the plugin passed it, and whether it came percent-escaped.
 ---
 --- In the environment, or in a file in the folder pandoc runs from where there
 --- is no environment to pass it in. The environment carries plain ASCII and
@@ -97,12 +94,12 @@ end
 --- here as a row of `?`, matched nothing, and was left in the document as the
 --- broken image pandoc had read it to be. The file is written and read as bytes,
 --- so it needs none of that and is left as it stands.
-local function embeds()
-  local given = os.getenv('OBSIDIAN_EMBEDS')
+local function list(variable, filename)
+  local given = os.getenv(variable)
   if given and given ~= '' then
     return given, true
   end
-  local file = io.open('.obsidian-embeds', 'r')
+  local file = io.open(filename, 'r')
   if not file then
     return '', false
   end
@@ -111,16 +108,33 @@ local function embeds()
   return text, false
 end
 
-local given, escaped = embeds()
-for line in given:gmatch('[^\n]+') do
-  local link, path = line:match('^(.-)\t(.+)$')
-  if link and path then
-    if escaped then
-      link, path = decode(link), decode(path)
+--- One list read out: the link exactly as a note wrote it, against the file it means.
+local function mapped(variable, filename)
+  local out = {}
+  local given, escaped = list(variable, filename)
+  for line in given:gmatch('[^\n]+') do
+    local link, path = line:match('^(.-)\t(.+)$')
+    if link and path then
+      if escaped then
+        link, path = decode(link), decode(path)
+      end
+      out[link] = path
     end
-    targets[link] = path
   end
+  return out
 end
+
+--- link -> absolute path, as the plugin resolved them.
+local targets = mapped('OBSIDIAN_EMBEDS', '.obsidian-embeds')
+
+--- link -> the image file the plugin drew that Excalidraw drawing into.
+---
+--- A drawing is markdown and resolves like a note, so without this it would be
+--- written into the document as one — the whole of the JSON it keeps its scene
+--- in. Only the plugin can draw it, Excalidraw's own API being the one thing
+--- that can resolve what a scene names, so the drawing arrives here already
+--- drawn and all that is left is to point the image at it.
+local drawings = mapped('OBSIDIAN_DRAWINGS', '.obsidian-drawings')
 
 --- Whether `rebase_relative_paths` was switched on for this run.
 local REBASING = (function()
@@ -148,14 +162,19 @@ local function unrebased(target)
   return target:sub(#SOURCE_DIR + 1):match('^[/\\](.+)$')
 end
 
---- The file an embed's target names, or nil where it names none of ours.
-local function resolve(target)
-  local found = targets[target] or targets[decode(target)]
+--- What `map` holds for a target: as it stands, decoded, and un-rebased.
+local function lookup(map, target)
+  local found = map[target] or map[decode(target)]
   if found then
     return found
   end
   local written = unrebased(target)
-  return written and (targets[written] or targets[decode(written)]) or nil
+  return written and (map[written] or map[decode(written)]) or nil
+end
+
+--- The file an embed's target names, or nil where it names none of ours.
+local function resolve(target)
+  return lookup(targets, target)
 end
 
 --- Whether a path names a scheme — a link to an app rather than to a file.
@@ -399,7 +418,9 @@ expand = function(blocks, seen, depth, anchor)
   return pandoc.Blocks(out)
 end
 
---- Links and images pandoc rebased when it should not have, put back.
+--- What an image is really pointing at: a drawing, drawn, or a mistaken rebasing
+--- put back. Runs ahead of the rest, so what is written in is looked up by what
+--- the note wrote rather than by what pandoc made of it.
 local restore = {
   Link = function(link)
     local target = unmangled(link.target)
@@ -411,6 +432,18 @@ local restore = {
   end,
 
   Image = function(image)
+    local drawn = lookup(drawings, image.src)
+    if drawn then
+      -- Where the embed described nothing, pandoc captioned it with the target's
+      -- own name — and the target is about to stop being that name.
+      -- `wikilink_images.lua` takes such a caption off, but it runs after this and
+      -- would no longer recognise one.
+      if #image.caption > 0 and pandoc.utils.stringify(image.caption) == image.src then
+        image.caption = pandoc.Inlines({})
+      end
+      image.src = drawn
+      return image
+    end
     local src = unmangled(image.src)
     if not src then
       return nil
@@ -418,12 +451,36 @@ local restore = {
     image.src = src
     return image
   end,
+
+  -- An embed on a line of its own is read as a Figure, and pandoc built that
+  -- figure's caption out of the alt text before any filter saw it — its own
+  -- copy, which changing the image no longer reaches. A drawing named and not
+  -- described would be captioned with its file name; a drawing described keeps
+  -- what was written, the caption then being something no link ever was.
+  Figure = function(figure)
+    if #figure.content ~= 1 then
+      return nil
+    end
+    local body = figure.content[1]
+    if (body.t ~= 'Plain' and body.t ~= 'Para') or #body.content ~= 1 then
+      return nil
+    end
+    local image = body.content[1]
+    if image.t ~= 'Image' or not lookup(drawings, pandoc.utils.stringify(figure.caption)) then
+      return nil
+    end
+    -- A Para rather than a Plain, as `wikilink_images.lua` has it: the writers
+    -- treat a lone Plain as compact body text.
+    return pandoc.Para({ image })
+  end,
 }
 
--- Nothing to do at all where the plugin resolved no note embeds and nothing was
--- rebased, which is the overwhelming majority of exports.
+-- Nothing to do at all where the plugin resolved no note embeds, drew no
+-- drawings and nothing was rebased, which is the overwhelming majority of
+-- exports.
+local restoring = REBASING or next(drawings) ~= nil
 if next(targets) == nil then
-  return REBASING and { restore } or {}
+  return restoring and { restore } or {}
 end
 
 return {

@@ -21,7 +21,7 @@ Word, OpenOffice, PDF, LaTeX (a whole document or a fragment to paste into an ex
 
 ### 3. Exports that respect Obsidian's syntax
 
-The plugin works around many of the problems of Pandoc itself and of other export plugins for Obsidian. Embedding `![[notes]]` and `![[notes#sections]]`, for one, works in full. `==Highlights==` survive, `$$…$$` blocks are put back together, and every `$today` in the note becomes today's date. Advanced settings and tweaks switch on the rest of the syntax — callouts, emoji shortcodes, bare URLs, hard line breaks and more.
+The plugin works around many of the problems of Pandoc itself and of other export plugins for Obsidian. Embedding `![[notes]]` and `![[notes#sections]]`, for one, works in full. Excalidraw drawings reach the document as pictures rather than as the JSON they are stored as. `==Highlights==` survive, `$$…$$` blocks are put back together, and every `$today` in the note becomes today's date. Advanced settings and tweaks switch on the rest of the syntax — callouts, emoji shortcodes, bare URLs, hard line breaks and more.
 
 ### 4. Mobile support
 

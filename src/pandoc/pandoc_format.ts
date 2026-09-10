@@ -449,6 +449,18 @@ export const supportsHtmlOptions = supportedBy(HTML_PAGE_WRITERS);
 export const supportsEmbedResources = supportedBy(HTML_PAGE_WRITERS.filter(w => w !== 'chunkedhtml'));
 
 /** `--dpi`: the writers that have to put a real size on an image in pixels. */
+/**
+ * The writers whose files can carry an SVG, measured against pandoc 3.11 by writing one into each and looking at what
+ * came out. Word and OpenDocument take it and keep it vector, PowerPoint likewise, HTML and EPUB have always taken it,
+ * and typst reads it natively.
+ *
+ * Everything else is handed a PNG, which no writer has ever refused. RTF is the reason the list is an allowlist rather
+ * than a short list of exceptions: it drops the image entirely, saying only that it "is not a jpeg or png". LaTeX is
+ * the interesting one — it writes `\includesvg`, which works or does not depending on what the reader has installed
+ * alongside their TeX, so it is left off the list and offered as a choice instead.
+ */
+export const takesSvg = supportedBy(['docx', 'odt', 'opendocument', 'pptx', 'typst', ...HTML_WRITERS, ...EPUB_WRITERS]);
+
 export const supportsDpi = supportedBy(['latex', 'beamer', 'pdf', 'context', 'typst', 'docx', 'odt', 'icml', 'ms', 'rtf', 'texinfo']);
 
 /* The families a filter can be written for. */

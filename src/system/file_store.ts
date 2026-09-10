@@ -100,4 +100,20 @@ export class FileStore {
     }
     await fs.writeFile(path, data);
   }
+
+  /** A folder the run made and no longer needs, and everything in it. */
+  async removeDir(path: string): Promise<void> {
+    const inside = this.#paths.inVault(path);
+    try {
+      if (inside !== undefined) {
+        await this.vault.adapter.rmdir(inside, true);
+        return;
+      }
+      if (isDesktop()) {
+        await (await nodeFs()).rm(path, { recursive: true, force: true });
+      }
+    } catch {
+      // Nothing here is worth failing an export that has already finished.
+    }
+  }
 }

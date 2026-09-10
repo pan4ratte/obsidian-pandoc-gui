@@ -3,6 +3,7 @@ import {
   FILTERS,
   TABLE_DEFAULT_STYLE,
   TODAY_DEFAULT_FORMAT,
+  drawingFormat,
   embedNotes,
   embedShiftHeadings,
   figureStyle,
@@ -11,6 +12,7 @@ import {
   keywords,
   keywordsTitle,
   listStyles,
+  setDrawingFormat,
   setEmbedNotes,
   setEmbedShiftHeadings,
   setFigureStyle,
@@ -264,5 +266,31 @@ describe('where a figure stands', () => {
     const args = setFloatPlacement(setEmbedNotes(undefined, true), true);
     expect([embedNotes(args), floatPlacement(args)]).toEqual([true, true]);
     expect(embedNotes(setFloatPlacement(args, false))).toBe(true);
+  });
+});
+
+/*
+ * What an Excalidraw drawing is written into a LaTeX document as. Only LaTeX asks: everywhere else the writer either
+ * takes an SVG or does not, and `takesSvg` answers without anyone being consulted.
+ */
+describe('the drawing format', () => {
+  test('is unset until it is chosen, which is what makes PNG the default', () => {
+    expect(drawingFormat(undefined)).toBeUndefined();
+    expect(drawingFormat('')).toBeUndefined();
+    expect(drawingFormat('--pdf-engine=xelatex')).toBeUndefined();
+  });
+
+  test('reads back what was written', () => {
+    expect(drawingFormat(setDrawingFormat('', 'svg'))).toBe('svg');
+    expect(drawingFormat(setDrawingFormat('', 'png'))).toBe('png');
+  });
+
+  test('is taken back out at undefined, leaving the rest of the line as it was', () => {
+    const args = '--pdf-engine=xelatex';
+    expect(setDrawingFormat(setDrawingFormat(args, 'svg'), undefined)).toBe(args);
+  });
+
+  test('ignores a value that names no format the plugin can draw', () => {
+    expect(drawingFormat('-M excalidraw-format=webp')).toBeUndefined();
   });
 });

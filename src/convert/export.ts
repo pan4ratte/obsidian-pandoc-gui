@@ -17,7 +17,11 @@ import { typesetTypstPdf } from './typst_pdf';
 import { FileStore } from '../system/file_store';
 import { download } from '../system/download';
 import { basename, dirname, normalize, resolve, stem } from '../system/paths';
-import { PATH_SEPARATOR, chooseSavePath, isDesktop, isMobile, openFile, showInFolder, vaultRoot } from '../system/platform';
+import { PATH_SEPARATOR, chooseSavePath, isDesktop, isMobile, openFile, showInFolder, tempFolder, vaultRoot } from '../system/platform';
+import { type DrawingFormat, isDrawing, renderDrawing } from './excalidraw';
+import { outputFormat, takesSvg, writesLatex } from '../pandoc/pandoc_format';
+import { drawingFormat } from '../filters/filter_args';
+import { pdfEngine } from '../args/writer_args';
 
 const encoder = new TextEncoder();
 
@@ -37,6 +41,37 @@ export const escapeForEnv = (text: string): string =>
   text.replace(/[^\x20-\x24\x26-\x7e]/g, character =>
     [...encoder.encode(character)].map(byte => `%${byte.toString(16).toUpperCase().padStart(2, '0')}`).join('')
   );
+
+/**
+ * Every drawing the note reaches, drawn — as the link the note wrote against the image file standing in for it.
+ *
+ * One that will not draw is dropped rather than fatal: the embed is left as it was written, which is what an export
+ * did before any of this existed.
+ */
+const drawDrawings = async (
+  app: PandocGuiPlugin['app'],
+  files: FileStore,
+  folder: string,
+  drawings: Map<string, TFile>,
+  format: DrawingFormat
+): Promise<Map<string, string>> => {
+  const drawn = new Map<string, string>();
+  let index = 0;
+  for (const [link, file] of drawings) {
+    const bytes = await renderDrawing(app, link, format);
+    if (!bytes) {
+      console.warn(`Could not draw the Excalidraw file "${link}"; the embed is left as it was written.`);
+      continue;
+    }
+    // Named after the drawing so an export left half-finished can be read, but only in the characters every file
+    // system spells the same way — the name itself is nobody's business but this folder's.
+    const name = stem(file.name).replace(/[^A-Za-z0-9._-]+/g, '-');
+    const path = `${folder}/${name}-${index++}.${format}`;
+    await files.write(path, bytes);
+    drawn.set(link, path);
+  }
+  return drawn;
+};
 
 export async function exportNote(
   plugin: PandocGuiPlugin,
@@ -129,6 +164,10 @@ export async function exportNote(
   // embedded note is written in where it stands but its images are still its own: they sit beside *it*, wherever that
   // is, so the walk has to reach as far as the writing does.
   const embedFolders = new Set<string>();
+  // Every Excalidraw drawing the note reaches, as the link written against the file holding the scene. A drawing is
+  // markdown, so without this it would be written into the document as a note — pages of the JSON it stores its scene
+  // as. It is a picture, and it is drawn as one below.
+  const drawings = new Map<string, TFile>();
   const walkedForEmbeds = new Set<string>([currentFile.path]);
   const collectNoteEmbeds = (file: TFile, depth: number) => {
     if (depth > 8) {
@@ -138,6 +177,11 @@ export async function exportNote(
       const target = metadataCache.getFirstLinkpathDest(getLinkpath(embed.link), file.path);
       if (!(target instanceof TFile)) {
         console.warn(`Could not resolve embedded file: ${embed.link}`);
+        continue;
+      }
+      if (isDrawing(plugin.app, target)) {
+        // Neither a note to write in nor a file pandoc can read: the image drawn from it takes its place.
+        drawings.set(embed.link, target);
         continue;
       }
       const path = adapter.getFullPath(target.path);
@@ -220,6 +264,10 @@ export async function exportNote(
   // Rendering a `${...}` can fail on a template the editor let through, and the notice is already up by here — so
   // everything from the environment onwards reports through the one handler rather than escaping past it.
   let cmd = '';
+  // Where the drawings are drawn: the system's own scratch folder, or the plugin's where the device has none. This
+  // run's alone, and taken away again when it is over.
+  const drawingsDir = `${(await tempFolder().catch<undefined>(() => undefined)) ?? pluginDir}/drawings-${Date.now().toString(36)}`;
+  let drawnDrawings = new Map<string, string>();
 
   try {
     const env = (variables.env = createEnv(getPlatformValue(globalSetting.env) ?? {}, variables));
@@ -308,6 +356,23 @@ export async function exportNote(
     // Pandoc writes into a folder, it does not make one.
     await files.mkdir(dirname(actualOutputPath));
 
+    // The drawings, drawn — read off the command rather than the template, so a hand-edited `-t` is answered to. The
+    // writer decides what they are drawn into: everything `takesSvg` names keeps the drawing vector, everything else
+    // is handed a PNG. LaTeX is the one that asks, `\includesvg` needing more of a TeX installation than this can
+    // promise, so there the template's own answer wins and PNG stands where it has none.
+    if (drawings.size > 0) {
+      const writer = outputFormat(cmd);
+      const asked = writesLatex(writer, pdfEngine(cmd)) ? drawingFormat(cmd) : undefined;
+      const format: DrawingFormat = asked ?? (takesSvg(writer) ? 'svg' : 'png');
+      drawnDrawings = await drawDrawings(plugin.app, files, drawingsDir, drawings, format);
+      for (const image of drawnDrawings.values()) {
+        // A wasm run has no vault to look in: everything it is to see has to be handed to it.
+        embeddedFiles.add(image);
+      }
+      // The same map `embeds.lua` is given the notes in, and for the same reasons — see `escapeForEnv`.
+      env['OBSIDIAN_DRAWINGS'] = [...drawnDrawings].map(([link, image]) => `${escapeForEnv(link)}\t${escapeForEnv(image)}\n`).join('');
+    }
+
     let warnings: string;
     if (engine === 'wasm') {
       // Bringing the binary up is seconds on the first export of a session, and nothing on every one after it.
@@ -323,6 +388,7 @@ export async function exportNote(
         vaultDir,
         resources: [...embeddedFiles],
         embeds: noteEmbeds,
+        drawings: drawnDrawings,
         typst,
         download,
       });
@@ -415,5 +481,10 @@ export async function exportNote(
       },
     }).open();
     onFailure?.();
+  } finally {
+    // The images were pandoc's to read, and pandoc has read them.
+    if (drawnDrawings.size > 0) {
+      await files.removeDir(drawingsDir);
+    }
   }
 }

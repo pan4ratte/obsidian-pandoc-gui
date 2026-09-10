@@ -1,9 +1,13 @@
 # Changelog
 
 
-## 2.3.1
+## 2.4.0
 
-### Hotfix
+### New features
+
+* **Support for exporting Excalidraw drawings.** Excalidraw drawings embedded in notes (`![[Drawing.excalidraw]]`) are now exported as images. Word, OpenDocument, HTML, EPUB, PowerPoint and Typst get a vector image, PDF and LaTeX get a PNG. A new “Excalidraw drawing format” option in those templates lets you choose SVG. Using the feature needs the Excalidraw plugin installed.
+
+### UI/UX enhancements and bug fixes
 
 * Fixed a bug where, with “Paths relative to the note” on, embedded notes were left out of the document and a blank image stood in their place.
 * Fixed a bug where “Paths relative to the note” broke links to external apps (`zotero://`, `obsidian://`) by writing the note's folder in front of them.

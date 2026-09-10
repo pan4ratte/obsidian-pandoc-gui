@@ -1,4 +1,5 @@
 import {
+  takesSvg,
   familiesOf,
   isEpubOutput,
   isPdfOutput,
@@ -388,5 +389,29 @@ describe('which templates write through LaTeX', () => {
     expect(writesLatex('html')).toBe(false);
     expect(writesLatex('typst')).toBe(false);
     expect(writesLatex(undefined)).toBe(false);
+  });
+});
+
+/*
+ * Which writers a drawing can be handed as an SVG. Measured against pandoc 3.11 by writing one into each and looking
+ * at what came out, so the list is what was seen rather than what the manual implies.
+ */
+describe('SVG support', () => {
+  test('covers the writers whose files carry one', () => {
+    for (const writer of ['docx', 'odt', 'opendocument', 'pptx', 'typst', 'html', 'html5', 'epub', 'epub3', 'chunkedhtml']) {
+      expect({ writer, svg: takesSvg(writer) }).toEqual({ writer, svg: true });
+    }
+  });
+
+  test('leaves out the writers that drop or mangle one', () => {
+    // RTF says so itself — "image is not a jpeg or png" — and LaTeX writes `\includesvg`, which is the reader's TeX
+    // installation's problem rather than something the plugin can promise.
+    for (const writer of ['rtf', 'latex', 'beamer', 'pdf', 'context', 'ms', 'icml', 'markdown', 'plain']) {
+      expect({ writer, svg: takesSvg(writer) }).toEqual({ writer, svg: false });
+    }
+  });
+
+  test('says nothing for a template that names no writer', () => {
+    expect(takesSvg(undefined)).toBe(false);
   });
 });

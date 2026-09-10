@@ -31,6 +31,8 @@ declare module 'obsidian' {
     plugins: {
       enablePlugin(id: string): Promise<void>;
       disablePlugin(id: string): Promise<void>;
+      /** Every plugin running in this vault, by its id. Another plugin's API is its own shape — see excalidraw.ts. */
+      plugins: Record<string, unknown>;
     }
   }
   

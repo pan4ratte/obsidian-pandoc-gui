@@ -187,6 +187,25 @@ export const embedShiftHeadings = (args?: string): boolean => embedNotes(args) &
 export const setEmbedShiftHeadings = (args: string | undefined, on: boolean): string =>
   setMetadata(args, EMBED_SHIFT_HEADINGS, on ? 'true' : undefined);
 
+/* -- Excalidraw drawings --------------------------------------------------- */
+
+const DRAWING_FORMAT = 'excalidraw-format';
+
+/**
+ * What an Excalidraw drawing is written into the document as, where the template lets that be asked.
+ *
+ * Only LaTeX does: every other writer either takes an SVG or does not, and `takesSvg` answers for it. LaTeX writes
+ * `\includesvg`, which needs more of a TeX installation than the plugin can promise, so the reader is given the
+ * choice and the safe answer is the default. Read as undefined anywhere else, so a template that stops writing LaTeX
+ * stops carrying the answer to a question nobody asked.
+ */
+export const drawingFormat = (args?: string): 'svg' | 'png' | undefined => {
+  const value = metadata(args, DRAWING_FORMAT);
+  return value === 'svg' || value === 'png' ? value : undefined;
+};
+
+export const setDrawingFormat = (args: string | undefined, format?: 'svg' | 'png'): string => setMetadata(args, DRAWING_FORMAT, format);
+
 /* -- Where a figure stands ------------------------------------------------ */
 
 /** Whether `args` pins figures to the place they were written rather than letting LaTeX float them. */
