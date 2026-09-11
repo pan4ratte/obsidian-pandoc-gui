@@ -10,8 +10,9 @@
   English | <a href="https://github.com/pan4ratte/obsidian-pandoc-gui/blob/main/docs/README_RU.md">Русский</a>
 </p>
 
+<p align="center">
 Export and import notes with Pandoc without touching the command line: every option Pandoc offers is available right in the Obsidian interface. Build export templates for Word, PDF, LaTeX, HTML, EPUB and many other formats, and install extra lua filters straight from the store inside the plugin.
-
+</p>
 
 ## Features
 
