@@ -2,6 +2,10 @@
 
 <img alt="Pandoc GUI for Obsidian" src="https://shieldcn.dev/header/graph.svg?title=Pandoc+GUI+for+Obsidian&subtitle=Obsidian+%2B+Pandoc+%2B+GUI+%3D+%E2%9D%A4%EF%B8%8F&logo=pandoc&size=wide&mode=dark">
 
+<div align="center">
+  <a href="https://pay.cloudtips.ru/p/c0e8eac4"><img alt="badge" src="https://shieldcn.dev/badge/Поддержать%20разработку-(RU%20карты).svg?size=lg&amp;logo=ri%3AFaHeart&amp;logoColor=ef4444&amp;color=09090b&amp;labelTextColor=ef4444"></a>
+</div>
+
 <p align="center">
   <a href="https://github.com/pan4ratte/obsidian-pandoc-gui/blob/main/README.md">English</a> | Русский
 </p>
