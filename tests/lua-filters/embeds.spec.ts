@@ -232,4 +232,35 @@ describe.skipIf(!pandocInstalled)('Excalidraw drawings', () => {
     });
     expect(stdout).toContain('Sketch.excalidraw');
   }, 60_000);
+
+  /*
+   * A drawing embedded by an embedded note, which is how a document assembled out of chapters meets one.
+   *
+   * The drawings are swapped in by a pass of their own, and an embedded note is written in after that pass has gone
+   * by — so the drawing in it kept the target pandoc read the embed as, a `.md` with a frame id on the end, and
+   * pandoc reported a resource it could not fetch. Both notes export correctly on their own, which is what made it
+   * hard to see: https://github.com/pan4ratte/obsidian-pandoc-gui/issues/8
+   */
+  test('are drawn in even where the note embedding them is itself embedded', async () => {
+    const { stdout } = await run(
+      `pandoc -s -L "${filter}" -L "${wikilinkImages}" -t native -f markdown+wikilinks_title_after_pipe "${join(
+        markdowns,
+        'embeds-drawing-nested.md'
+      )}" -o -`,
+      {
+        env: {
+          ...process.env,
+          OBSIDIAN_EMBEDS: mapOf({ 'embeds-drawing-note': join(markdowns, 'embeds-drawing-note.md') }),
+          OBSIDIAN_DRAWINGS: map,
+        },
+      }
+    );
+    expect({
+      embedded: stdout.includes('"Note"') && stdout.includes('"text."'),
+      drawn: stdout.split('drawing.png').length - 1,
+      left: stdout.includes('Sketch.excalidraw'),
+      // The one that describes something keeps what was written, as it does a level up.
+      described: stdout.includes('[ Str "A" , Space , Str "caption" ]'),
+    }).toEqual({ embedded: true, drawn: 2, left: false, described: true });
+  }, 60_000);
 });

@@ -342,6 +342,7 @@ local function embed_target(block)
   return nil
 end
 
+local restore
 local expand
 
 --- The blocks an embed stands for, or nil to leave the block as it was.
@@ -365,7 +366,10 @@ local function blocks_of(target, seen, depth, anchor)
     return nil
   end
 
-  local blocks = doc.blocks
+  -- Through `restore` on the way in: it runs as a pass of its own over what the note itself wrote, and what is
+  -- written in here arrives after that pass has gone by. A drawing embedded by an embedded note would keep the
+  -- target pandoc read it as — a `.md` with a frame id on the end — and be reported as a resource nothing can fetch.
+  local blocks = pandoc.walk_block(pandoc.Div(doc.blocks), restore).content
   if fragment then
     blocks = section_of(blocks, fragment)
     if not blocks then
@@ -420,8 +424,9 @@ end
 
 --- What an image is really pointing at: a drawing, drawn, or a mistaken rebasing
 --- put back. Runs ahead of the rest, so what is written in is looked up by what
---- the note wrote rather than by what pandoc made of it.
-local restore = {
+--- the note wrote rather than by what pandoc made of it — and over each embedded
+--- note as it is read, which this pass has already gone past by then.
+restore = {
   Link = function(link)
     local target = unmangled(link.target)
     if not target then

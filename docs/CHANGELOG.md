@@ -1,6 +1,13 @@
 # Changelog
 
 
+## 2.5.1
+
+### Hotfix
+
+* Fixed a bug where an Excalidraw drawing embedded in an embedded note did not reach the document.
+
+
 ## 2.5.0
 
 ### New features
