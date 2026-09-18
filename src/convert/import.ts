@@ -137,12 +137,13 @@ export async function importFile(plugin: PandocGuiPlugin, request: ImportRequest
     if (warnings) {
       console.warn(cmd, warnings);
       progress.warn(noteName);
-      reportRun(app, {
+      reportRun(plugin, {
         title: t.WARNINGS_TITLE,
         facts: [
           { label: t.IMPORT_ERROR_SOURCE, value: basename(request.source), title: request.source },
           { label: t.ERROR_FILE, value: noteName, title: outputPath },
         ],
+        command: cmd,
         output: warnings,
         tone: 'warning',
       });
@@ -155,12 +156,13 @@ export async function importFile(plugin: PandocGuiPlugin, request: ImportRequest
     progress.stop();
     const { detail, recommendation } = describeExportFailure(err, cmd);
     console.error(cmd, err);
-    reportRun(app, {
+    reportRun(plugin, {
       title: t.IMPORT_ERROR_TITLE,
       facts: [
         { label: t.IMPORT_ERROR_SOURCE, value: basename(request.source), title: request.source },
         { label: t.ERROR_FILE, value: noteName, title: outputPath },
       ],
+      command: cmd,
       output: detail,
       hint: recommendation,
       tone: 'error',

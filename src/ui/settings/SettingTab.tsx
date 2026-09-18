@@ -225,6 +225,7 @@ import FileInput from '../components/FileInput';
 import FolderInput from '../components/FolderInput';
 import export_templates from '../../templates/export_templates';
 import { BUNDLED_LUA_FILES } from '../../resources';
+import { copyText } from '../../system/diagnostics';
 
 // Whether the template editor's panels stand open. Module scope, so a modal rebuilt on
 // every open reopens where it was; not written to `data.json` — a scroll position is not a setting.
@@ -871,15 +872,7 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
     /** The same command, one option a line — for reading only; the single line gets copied. */
     const commandForReading = createMemo(() => commandLines(resultingCommand()).join('\n'));
 
-    const copyCommand = async () => {
-      try {
-        await navigator.clipboard.writeText(resultingCommand());
-        new Notice(t.COMMAND_COPIED, 1500);
-      } catch (e) {
-        console.error(e);
-        new Notice(t.COMMAND_COPY_FAILED);
-      }
-    };
+    const copyCommand = () => copyText(resultingCommand(), t.COMMAND_COPIED);
 
     // The rows a template is usually opened for come first; the rest folds into one panel.
     return (

@@ -5,6 +5,8 @@ export const requestUrl = async () => {
 
 export const moment = { locale: () => 'en-us' };
 
+export const apiVersion = '1.13.1';
+
 /** A desktop, which is what a test run is; the per-platform settings then key off node's own name for it. */
 export const Platform = {
   isDesktop: true,

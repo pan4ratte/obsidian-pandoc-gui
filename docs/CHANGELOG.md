@@ -1,6 +1,13 @@
 # Changelog
 
 
+## 2.5.0
+
+### New features
+
+* **One-click bug reports.** The window that reports an error or warnings after an export or an import has a new “Copy report” button. It copies everything a bug report needs to the clipboard: the template, the file, the Pandoc command, the program's output, the versions of the plugin, Obsidian, Pandoc and Typst, and the operating system. The path to the home folder is replaced with `~`.
+
+
 ## 2.4.0
 
 ### New features

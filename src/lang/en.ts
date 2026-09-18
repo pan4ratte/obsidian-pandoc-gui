@@ -77,6 +77,14 @@ export default {
   ERROR_TITLE: 'Export failed',
   ERROR_TEMPLATE: 'Template',
   ERROR_FILE: 'File',
+  REPORT_COPY: 'Copy report',
+  REPORT_COPIED: 'Report copied — paste it into your bug report.',
+  REPORT_COMMAND: 'Command',
+  REPORT_OUTPUT: 'Output',
+  REPORT_SYSTEM: 'System',
+  REPORT_INSTALLED: 'installed on the system',
+  REPORT_NOT_INSTALLED: 'not installed',
+  REPORT_NOT_FOUND: 'not found',
   ERROR_NO_OUTPUT: 'The command failed without reporting anything. Check the command in the template.',
   ERROR_HINTS: {
     fileInUse: 'The file may be open in another program — a PDF viewer, Word, or a preview pane. Close it and export again.',
@@ -105,6 +113,7 @@ export default {
   ACTION_REMOVE: 'Remove',
   CHOOSE_FILE: 'Choose file',
   CHOOSE_FOLDER: 'Choose folder',
+  COPY_FAILED: 'Could not copy to the clipboard.',
 
   // ─── Pandoc dashboard ────────────────────────────────────────────────────────
   // The settings tab's own name is the manifest's, so it is not repeated here.
@@ -232,7 +241,6 @@ export default {
   COMMAND_RESULT_DESC: 'The command as it will be handed to pandoc.',
   COMMAND_COPY: 'Copy command',
   COMMAND_COPIED: 'Command copied.',
-  COMMAND_COPY_FAILED: 'Could not copy the command.',
   USER_ARGS: 'Extra commands',
   USER_ARGS_DESC: 'Add if needed.',
 

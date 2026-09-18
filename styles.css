@@ -2347,9 +2347,21 @@
  * engine line theirs up in columns. A long log scrolls inside the box instead
  * of pushing the recommendation below the fold.
  */
-.ex-export-error-detail {
+.ex-export-error-output {
+  position: relative;
   margin-top: var(--size-4-1);
+}
+
+/* Over output that leaves it the room. */
+.ex-export-error-copy {
+  position: absolute;
+  top: var(--size-4-1);
+  inset-inline-end: var(--size-4-1);
+}
+
+.ex-export-error-detail {
   padding: var(--size-4-2) var(--size-4-3);
+  padding-inline-end: var(--size-4-12);
   max-height: 40vh;
   overflow: auto;
   border-radius: var(--radius-s);

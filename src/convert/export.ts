@@ -455,13 +455,14 @@ export async function exportNote(
     // closed: the file opens after it has been read rather than over it.
     if (warnings || showCommandLineOutput) {
       progress.stop();
-      reportRun(plugin.app, {
+      reportRun(plugin, {
         title: warnings ? t.WARNINGS_TITLE : t.NOTICE_EXPORT_SUCCESS(variables.outputFileFullName),
         facts: [
           { label: t.ERROR_TEMPLATE, value: setting.name },
           { label: t.ERROR_FILE, value: variables.outputFileFullName, title: variables.outputPath },
         ],
-        command: showCommandLineOutput ? t.EXPORT_COMMAND_OUTPUT(cmd) : undefined,
+        command: cmd,
+        showCommand: showCommandLineOutput,
         output: warnings,
         tone: 'warning',
         onClose: () => void next(),
@@ -473,14 +474,15 @@ export async function exportNote(
   } catch (err) {
     progress.stop();
     const { detail, recommendation } = describeExportFailure(err, cmd);
-    // Only what the reader can act on. The command line stays in the console.
+    // Only what the reader can act on. The command line goes to the console and the copied report.
     console.error(cmd, err);
-    reportRun(plugin.app, {
+    reportRun(plugin, {
       title: t.ERROR_TITLE,
       facts: [
         { label: t.ERROR_TEMPLATE, value: setting.name },
         { label: t.ERROR_FILE, value: variables.outputFileFullName, title: variables.outputPath },
       ],
+      command: cmd,
       output: detail,
       hint: recommendation,
       tone: 'error',

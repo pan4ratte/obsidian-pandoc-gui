@@ -77,6 +77,14 @@ export default {
   ERROR_TITLE: 'Ошибка экспорта',
   ERROR_TEMPLATE: 'Шаблон',
   ERROR_FILE: 'Файл',
+  REPORT_COPY: 'Скопировать отчёт',
+  REPORT_COPIED: 'Отчёт скопирован — вставьте его в сообщение об ошибке.',
+  REPORT_COMMAND: 'Команда',
+  REPORT_OUTPUT: 'Вывод',
+  REPORT_SYSTEM: 'Система',
+  REPORT_INSTALLED: 'установлен в системе',
+  REPORT_NOT_INSTALLED: 'не установлен',
+  REPORT_NOT_FOUND: 'не найден',
   ERROR_NO_OUTPUT: 'Команда завершилась с ошибкой, без сообщения. Проверьте команду в шаблоне.',
   ERROR_HINTS: {
     fileInUse: 'Возможно, файл открыт в другой программе — просмотрщике PDF, Word или панели предпросмотра. Закройте его и повторите экспорт.',
@@ -105,6 +113,7 @@ export default {
   ACTION_REMOVE: 'Удалить',
   CHOOSE_FILE: 'Выбрать файл',
   CHOOSE_FOLDER: 'Выбрать папку',
+  COPY_FAILED: 'Не удалось скопировать в буфер обмена.',
 
   // ─── Pandoc dashboard ────────────────────────────────────────────────────────
   // The settings tab's own name is the manifest's, so it is not repeated here.
@@ -232,7 +241,6 @@ export default {
   COMMAND_RESULT_DESC: 'Команда, которая будет передана в pandoc.',
   COMMAND_COPY: 'Скопировать команду',
   COMMAND_COPIED: 'Команда скопирована.',
-  COMMAND_COPY_FAILED: 'Не удалось скопировать команду.',
   USER_ARGS: 'Дополнительные команды',
   USER_ARGS_DESC: 'Добавьте при необходимости.',
 
