@@ -5,7 +5,13 @@
 
 ### New features
 
-* **One-click bug reports.** The window that reports an error or warnings after an export or an import has a new “Copy report” button. It copies everything a bug report needs to the clipboard: the template, the file, the Pandoc command, the program's output, the versions of the plugin, Obsidian, Pandoc and Typst, and the operating system. The path to the home folder is replaced with `~`.
+* **One-click bug reports.** The window that reports an error or a warning after an export or an import has a new “Copy report” button. It copies everything a bug report needs to the clipboard: the template, the file, the Pandoc command, the program's output, the versions of the plugin, Obsidian, Pandoc and Typst, and the operating system. The path to the home folder is replaced with `~`.
+
+### UI/UX enhancements and bug fixes
+
+* The Lua filter and Markdown extension lists are reworked for a better user experience.
+* The “Advanced” and “Resulting command” sections of the template editor work better.
+* The button that copies the resulting command now works in Obsidian's popout windows too.
 
 
 ## 2.4.0

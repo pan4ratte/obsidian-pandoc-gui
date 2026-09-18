@@ -29,6 +29,7 @@ export default (props: {
   return (
     <CheckGrid
       items={items()}
+      single={true}
       empty={props.installed.length === 0 ? t.LUA_FILTERS_NONE_INSTALLED : t.LUA_FILTERS_NONE_FOR_FORMAT}
       onToggle={(fileName, running) => (running ? props.onAdd(fileName) : props.onRemove(fileName))}
     />

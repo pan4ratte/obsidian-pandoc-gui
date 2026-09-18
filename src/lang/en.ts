@@ -238,11 +238,10 @@ export default {
 
   // ─── Resulting command ───────────────────────────────────────────────────────
   COMMAND_RESULT: 'Resulting command',
-  COMMAND_RESULT_DESC: 'The command as it will be handed to pandoc.',
+  COMMAND_RESULT_DESC: 'The command that will be handed to Pandoc:',
   COMMAND_COPY: 'Copy command',
   COMMAND_COPIED: 'Command copied.',
   USER_ARGS: 'Extra commands',
-  USER_ARGS_DESC: 'Add if needed.',
 
   // ─── Markdown extensions ─────────────────────────────────────────────────────
   EXTENSIONS: 'Extensions',
@@ -258,6 +257,18 @@ export default {
     tex_math_single_backslash: 'Math in \\( \\) and \\[ \\]',
     east_asian_line_breaks: 'East Asian line breaks',
     short_subsuperscripts: 'Short sub/superscripts',
+  },
+  EXTENSION_DESCRIPTIONS: {
+    alerts: 'Note, tip, important, warning and caution callouts will become titled blocks instead of quotes.',
+    mark: 'Text between == will be formatted as a highlight after export.',
+    hard_line_breaks: 'Every line break inside a paragraph will be treated as the start of a new line. Without it, the lines of a paragraph run together.',
+    lists_without_preceding_blankline: 'A list right below a line of text is read as a list. Without it, the list runs into the paragraph above.',
+    rebase_relative_paths: 'Paths to images and links (../image.png) will be read relative to the note, embedded notes included.',
+    emoji: 'Shortcodes like :smile: will be replaced with emoji.',
+    autolink_bare_uris: 'An address written in the text without brackets (https://…) will become a link.',
+    tex_math_single_backslash: 'Besides $…$ and $$…$$, text in \\( \\) and \\[ \\] will be read as math, as in LaTeX.',
+    east_asian_line_breaks: 'A line break between Chinese, Japanese or Korean characters will not turn into a space.',
+    short_subsuperscripts: 'x^2 and H~2, with no closing mark, will be treated as superscript and subscript.',
   },
 
   // ─── Lua filters ─────────────────────────────────────────────────────────────

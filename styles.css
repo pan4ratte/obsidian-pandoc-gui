@@ -1029,6 +1029,11 @@
   background: none;
 }
 
+/* Shut, the two folds are one list of headings. */
+.ex-template-modal.ex-template-modal .modal-content > .ex-section.ex-template-modal-advanced:not(.is-open) {
+  margin-bottom: 0;
+}
+
 /* The heading that folds it, drawn as the row it now is — and the whole of the
    section while it stands closed. Both margins are pinned: Obsidian gives a
    heading room above and below to set a new part of a form apart, and this one
@@ -1040,6 +1045,13 @@
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--setting-items-radius);
   background: var(--setting-items-background);
+}
+
+/* Just the words: the border stays, unseen, so the text keeps its place in line with the boxes. */
+.ex-template-modal.ex-template-modal .ex-template-modal-advanced > .setting-item.ex-section-header,
+.ex-template-modal.ex-template-modal .ex-template-modal-command-section > .setting-item.ex-section-header {
+  border-color: transparent;
+  background: transparent;
 }
 
 /*
@@ -1351,6 +1363,38 @@
   white-space: nowrap;
 }
 
+/* The box lines up with the name, not with the middle of name and description. */
+.ex-check.has-description {
+  align-items: flex-start;
+  padding-block: var(--size-2-1);
+  margin-bottom: 8px;
+}
+
+.ex-check.has-description .ex-check-label {
+  line-height: var(--checkbox-size);
+}
+
+/* Against the control block's `text-align: end`, which it would otherwise inherit. */
+.ex-check-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--size-2-1);
+  min-width: 0;
+  text-align: start;
+}
+
+.ex-check-description {
+  color: var(--text-faint);
+  line-height: var(--line-height-tight);
+  margin-top: 4px;
+}
+
+.ex-check.has-description.is-checked .ex-check-label {
+  color: var(--text-accent);
+}
+
 /* Said in the grid's place when there is nothing to tick — the card stays, so
    the row does not collapse to nothing. It is about the card rather than about
    a column of it, so it takes the whole width and sits in the middle instead of
@@ -1518,43 +1562,6 @@
 .ex-template-modal.ex-template-modal .ex-card.ex-card:not(.ex-section) .ex-collapsible + .setting-item:not(.setting-item-heading),
 .ex-import-modal.ex-import-modal .ex-card.ex-card:not(.ex-section) .setting-item:not(.setting-item-heading) + .setting-item {
   border-top: 1px solid var(--setting-items-border-color);
-}
-
-/*
- * The resulting command is one card with its heading inside it.
- *
- * The advanced panel cannot be: it holds a dozen groups, and a card around all
- * of them is the box around boxes that read as mud. This panel holds one group,
- * so the fold and the card are the same boundary, and drawing them as two said
- * the same thing twice.
- *
- * The card is the section itself. The `.ex-card` within keeps what it is for —
- * marking its rows as a divided list rather than a stack of boxes — and gives
- * up its own chrome to the one now drawn around it.
- */
-.ex-template-modal.ex-template-modal .modal-content > .ex-card.ex-template-modal-command-section {
-  padding: 0;
-  border: 1px solid var(--setting-items-border-color);
-  border-radius: var(--setting-items-radius);
-  background: var(--setting-items-background);
-}
-
-/* The heading is a row of the card now, not a card of its own. */
-.ex-template-modal.ex-template-modal .ex-card.ex-template-modal-command-section > .setting-item.ex-section-header {
-  border: none;
-  border-radius: 0;
-  background: none;
-}
-
-/* And what it opens sits straight under it: the heading's own padding and the
-   first row's are the gap between them, as a group's heading and its first row
-   are spaced everywhere else. */
-.ex-template-modal.ex-template-modal .ex-card.ex-template-modal-command-section > .ex-collapsible > .ex-card {
-  margin: 0;
-  padding: 0;
-  border: none;
-  border-radius: 0;
-  background: none;
 }
 
 /* The whole heading is the button, not the chevron at its end. */
@@ -1733,6 +1740,12 @@
      and a border stands outside it. */
   border-bottom: 1px solid var(--setting-items-border-color);
   background: none;
+}
+
+/* Not a group's name, only a word about the command under it. */
+.ex-template-modal.ex-template-modal .ex-card > .setting-item.setting-item-heading.ex-template-modal-command-desc {
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
 /* A heading is read in two beats — what the group is, then what it is for — and

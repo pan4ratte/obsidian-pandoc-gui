@@ -570,6 +570,7 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
       return PANDOC_EXTENSIONS.map(id => ({
         value: id,
         label: t.EXTENSION_LABELS[id],
+        description: t.EXTENSION_DESCRIPTIONS[id],
         // What the flag carries, as the filters' boxes do.
         tooltip: id,
         checked: on.includes(id),
@@ -1007,9 +1008,7 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
         {/* Ticking a box writes the extension into `-f`. Every one offered is a
             pandoc default-off, so a cleared box is the reader's own behaviour. */}
         <Setting name={t.EXTENSIONS} description={t.EXTENSIONS_DESC} class="ex-template-modal-extensions">
-          {/* One to a line where the width is a phone's: an extension is named the way pandoc names it, and two
-              columns of that is two columns of cut-off names. */}
-          <CheckGrid items={extensions()} onToggle={toggleExtension} single={isMobileUi()} />
+          <CheckGrid items={extensions()} onToggle={toggleExtension} single={true} />
         </Setting>
 
         {/* Not gated on the format: citations and variables are asked of every writer. */}
@@ -1478,15 +1477,10 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
         {/* The command is shown, not typed into: an edit here could not be told apart from
             what the rows and the preset wrote. `userArguments` below is the field no row
             can reach, written last so it has the final word. */}
-        <Section
-          name={t.COMMAND_RESULT}
-          description={t.COMMAND_RESULT_DESC}
-          class="ex-template-modal-command-section"
-          open={commandOpen()}
-          onToggle={setCommandOpen}
-        >
+        <Section name={t.COMMAND_RESULT} class="ex-template-modal-command-section" open={commandOpen()} onToggle={setCommandOpen}>
           {/* The command and the one field that adds to it share a card. */}
           <div class="ex-card ex-template-modal-command-card">
+            <Setting description={t.COMMAND_RESULT_DESC} heading={true} class="ex-template-modal-command-desc" />
             <Setting class="ex-template-modal-resulting-command ex-template-modal-nameless">
               {/* Copy sits over the field, not the heading: it copies what is on screen. */}
               <div class="ex-template-modal-command-preview">
@@ -1501,7 +1495,7 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
               </div>
             </Setting>
 
-            <Setting name={t.USER_ARGS} description={t.USER_ARGS_DESC} class="ex-template-modal-user-arguments">
+            <Setting name={t.USER_ARGS} class="ex-template-modal-user-arguments">
               <Text
                 style="width: 100%"
                 value={template()?.userArguments ?? ''}
