@@ -1,5 +1,8 @@
+import { Notice } from 'obsidian';
 import { Show } from 'solid-js';
-import { chooseFile, isDesktop, type FileFilter } from '../../system/platform';
+import { acceptedExtensions, acceptsFile, chooseFile, isDesktop, type FileFilter } from '../../system/platform';
+import { basename } from '../../system/paths';
+import { t } from '../../lang/helpers';
 import { Text, ExtraButton } from './Setting';
 
 /** Ask for a path, and answer with it — or with nothing, where the dialog was closed. */
@@ -24,16 +27,45 @@ export default (props: {
   tooltip?: string;
   onChange: (value: string) => void;
 }) => {
+  let field: HTMLInputElement | undefined;
+
+  /**
+   * A row that names the kinds it takes takes nothing else.
+   *
+   * The dialog offers those kinds and no others, but a path is as often typed as chosen — and on a phone there is no
+   * dialog at all. A file of the wrong kind is turned away here rather than at export, where it arrives as whatever
+   * pandoc makes of a document it cannot read: a template that is not a template, a bibliography in no format it
+   * knows. The row keeps what it had, so nothing is lost by the refusal.
+   */
+  const set = (value: string) => {
+    if (!props.folder && !acceptsFile(value, props.filters)) {
+      new Notice(t.WRONG_FILE_TYPE(basename(value.trim()), (acceptedExtensions(props.filters) ?? []).map(e => `.${e}`).join(', ')));
+      // The field holds what was typed into it, which is no longer what the row says.
+      if (field) {
+        field.value = props.value ?? '';
+      }
+      return;
+    }
+    props.onChange(value);
+  };
+
   const pick = async () => {
     const chosen = await choosePath(props);
     if (chosen !== undefined) {
-      props.onChange(chosen);
+      set(chosen);
     }
   };
 
   return (
     <>
-      <Text style="width: 100%" value={props.value ?? ''} tooltip={props.value} placeholder={props.placeholder} onChange={props.onChange} />
+      <Text
+        ref={el => (field = el)}
+        style="width: 100%"
+        value={props.value ?? ''}
+        tooltip={props.value}
+        placeholder={props.placeholder}
+        onChange={set}
+      />
       {/* Typed rather than chosen where there is no dialog to open — a phone, and a desktop emulating one. */}
       <Show when={isDesktop()}>
         <ExtraButton icon={props.folder ? 'folder' : 'folder-open'} tooltip={props.tooltip} onClick={() => void pick()} />

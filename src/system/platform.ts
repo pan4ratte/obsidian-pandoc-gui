@@ -6,7 +6,7 @@
  */
 
 import { Platform, type DataAdapter } from 'obsidian';
-import { normalize } from './paths';
+import { extname, normalize } from './paths';
 import type { PlatformKey } from './utils';
 
 /**
@@ -124,6 +124,33 @@ export interface FileFilter {
   name: string;
   extensions: string[];
 }
+
+/**
+ * The extensions a set of filters names, or nothing where they name every kind.
+ *
+ * `*` is the dialog's way of saying anything goes, and a row with no filters at all has said nothing either way — so
+ * both answer nothing here, and a caller asking what a value must be is told there is no such thing.
+ */
+export const acceptedExtensions = (filters?: FileFilter[]): string[] | undefined => {
+  const extensions = (filters ?? []).flatMap(filter => filter.extensions).map(extension => extension.toLowerCase());
+  return extensions.length === 0 || extensions.includes('*') ? undefined : extensions;
+};
+
+/**
+ * Whether a path is one of the kinds `filters` names.
+ *
+ * Nothing is: an empty field is a row being cleared rather than a row being filled in wrongly. A path that names a
+ * kind no filter does is not, which is the whole of the question — pandoc reads most of these files by their
+ * extension, and the ones it reads by their content still fail in a way nobody can act on.
+ */
+export const acceptsFile = (path: string, filters?: FileFilter[]): boolean => {
+  const accepted = acceptedExtensions(filters);
+  const value = path.trim();
+  if (!accepted || !value) {
+    return true;
+  }
+  return accepted.includes(extname(value).replace('.', '').toLowerCase());
+};
 
 /** A file or folder chosen from the system, or nothing where there is no such dialog to open. */
 export const chooseFile = async (options: {

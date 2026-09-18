@@ -232,15 +232,31 @@ import { copyText } from '../../system/diagnostics';
 const [advancedOpen, setAdvancedOpen] = createSignal(false);
 const [commandOpen, setCommandOpen] = createSignal(false);
 
-// What the file dialogs offer. Each ends in everything: a path a template names is as
-// often a file under a name of the user's own.
+/*
+ * What the file dialogs offer — and, for every row that names its kinds, all that row will take: `FileInput` turns
+ * the rest away rather than letting an export fail over it. A row whose file could be anything says so with
+ * `ANY_FILE`, and takes anything.
+ *
+ * Each list is what pandoc will actually read, which is not always the one extension the row is named after. It reads
+ * a bibliography by its extension and nothing else, so that list is exactly the one it knows; it reads a reference
+ * document by its contents, so the word processors' own template extensions stand beside the documents'.
+ */
 const ANY_FILE = { name: 'All files', extensions: ['*'] };
-const BIBLIOGRAPHY_FILES = [{ name: 'Bibliography', extensions: ['bib', 'bibtex', 'json', 'yaml', 'yml', 'ris', 'enl', 'xml'] }, ANY_FILE];
-const CSL_FILES = [{ name: 'Citation style', extensions: ['csl'] }, ANY_FILE];
-const CSS_FILES = [{ name: 'Stylesheet', extensions: ['css'] }, ANY_FILE];
-const SYNTAX_FILES = [{ name: 'Syntax definition', extensions: ['xml'] }, ANY_FILE];
-const IMAGE_FILES = [{ name: 'Image', extensions: ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'] }, ANY_FILE];
-const FONT_FILES = [{ name: 'Font', extensions: ['otf', 'ttf', 'woff', 'woff2'] }, ANY_FILE];
+const BIBLIOGRAPHY_FILES = [
+  { name: 'Bibliography', extensions: ['bib', 'bibtex', 'biblatex', 'json', 'yaml', 'yml', 'ris', 'enl', 'xml'] },
+];
+const CSL_FILES = [{ name: 'Citation style', extensions: ['csl'] }];
+const CSS_FILES = [{ name: 'Stylesheet', extensions: ['css'] }];
+const SYNTAX_FILES = [{ name: 'Syntax definition', extensions: ['xml'] }];
+const IMAGE_FILES = [{ name: 'Image', extensions: ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'] }];
+const FONT_FILES = [{ name: 'Font', extensions: ['otf', 'ttf', 'woff', 'woff2'] }];
+
+/** What a reference document may be, by writer: the document a word processor writes, and the template it writes one from. */
+const REFERENCE_DOC_FILES: Record<string, string[]> = {
+  docx: ['docx', 'dotx'],
+  odt: ['odt', 'ott'],
+  pptx: ['pptx', 'potx'],
+};
 
 /** The curated variables with an answer short enough to pick from a list; the rest are typed. */
 const VARIABLE_CHOICES: Partial<Record<CuratedVariable, readonly string[]>> = {
@@ -752,8 +768,7 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
 
     /** The document a docx, odt or pptx export takes its styles from. */
     const referenceDocFiles = createMemo(() => [
-      { name: t.REFERENCE_DOC, extensions: [format() === 'pptx' ? 'pptx' : format() === 'odt' ? 'odt' : 'docx'] },
-      ANY_FILE,
+      { name: t.REFERENCE_DOC, extensions: REFERENCE_DOC_FILES[format()] ?? REFERENCE_DOC_FILES.docx },
     ]);
 
     /**

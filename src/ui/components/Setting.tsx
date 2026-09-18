@@ -92,11 +92,16 @@ export const Text = (props: {
   disabled?: boolean;
   readOnly?: boolean;
   spellcheck?: boolean;
+  /** The field itself, for a caller that has to put back what was typed — see `FileInput`. */
+  ref?: (el: HTMLInputElement) => void;
   onChange?: (value: string) => void;
 }) => {
   return (
     <input
-      ref={el => tooltip(el, () => props.tooltip)}
+      ref={el => {
+        tooltip(el, () => props.tooltip);
+        props.ref?.(el);
+      }}
       type="text"
       readOnly={props.readOnly}
       placeholder={props.placeholder}

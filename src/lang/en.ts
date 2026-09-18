@@ -113,6 +113,7 @@ export default {
   ACTION_REMOVE: 'Remove',
   CHOOSE_FILE: 'Choose file',
   CHOOSE_FOLDER: 'Choose folder',
+  WRONG_FILE_TYPE: (name: string, extensions: string) => `“${name}” will not do here. What fits: ${extensions}.`,
   COPY_FAILED: 'Could not copy to the clipboard.',
 
   // ─── Pandoc dashboard ────────────────────────────────────────────────────────

@@ -113,6 +113,7 @@ export default {
   ACTION_REMOVE: 'Удалить',
   CHOOSE_FILE: 'Выбрать файл',
   CHOOSE_FOLDER: 'Выбрать папку',
+  WRONG_FILE_TYPE: (name: string, extensions: string) => `«${name}» здесь не подойдёт. Подходят: ${extensions}.`,
   COPY_FAILED: 'Не удалось скопировать в буфер обмена.',
 
   // ─── Pandoc dashboard ────────────────────────────────────────────────────────
