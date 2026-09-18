@@ -5,7 +5,7 @@
 
 ### UI/UX enhancements and bug fixes
 
-* The file rows of the template editor no longer take a file of the wrong kind: reference document, bibliography, citation style, stylesheet, syntax definition, EPUB cover and EPUB font. A notice names the extensions that fit, rather than the export failing over it.
+* The file rows of the template editor no longer take a file of the wrong kind.
 * Fixed a bug where an Excalidraw drawing embedded in an embedded note did not reach the document.
 
 
