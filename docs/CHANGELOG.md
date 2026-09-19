@@ -1,6 +1,13 @@
 # Changelog
 
 
+## 2.5.2
+
+### UI/UX enhancements and bug fixes
+
+* Fixed a bug where identical headings in embedded notes got identical identifiers, sending links and the table of contents to the wrong place.
+
+
 ## 2.5.1
 
 ### UI/UX enhancements and bug fixes

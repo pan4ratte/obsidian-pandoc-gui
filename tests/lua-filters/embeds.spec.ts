@@ -264,3 +264,36 @@ describe.skipIf(!pandocInstalled)('Excalidraw drawings', () => {
     }).toEqual({ embedded: true, drawn: 2, left: false, described: true });
   }, 60_000);
 });
+
+/*
+ * Identifiers, which a note cannot keep to itself.
+ *
+ * Every note is read on its own, so pandoc numbers its headings from nothing and two notes sharing a heading arrive
+ * holding the same identifier. Written into one document that is one anchor defined twice — LaTeX warns, HTML is
+ * invalid, and a link to it, or a line of the table of contents, lands in whichever of them came first:
+ * https://github.com/pan4ratte/obsidian-pandoc-gui/issues/9
+ */
+describe.skipIf(!pandocInstalled)('identifiers an embedded note brings with it', () => {
+  // HTML rather than the native AST, identifiers and what points at them being exactly what it writes.
+  const html = async (): Promise<string> => {
+    const { stdout } = await run(
+      `pandoc -L "${filter}" -t html -f markdown+wikilinks_title_after_pipe "${join(markdowns, 'embeds-identifiers-host.md')}" -o -`,
+      { env: { ...process.env, OBSIDIAN_EMBEDS: mapOf({ 'embeds-identifiers-note': join(markdowns, 'embeds-identifiers-note.md') }) } }
+    );
+    return stdout;
+  };
+
+  const ids = (out: string): string[] => [...out.matchAll(/<h\d id="([^"]+)"/g)].map(match => match[1]);
+  const hrefs = (out: string): string[] => [...out.matchAll(/href="#([^"]+)"/g)].map(match => match[1]);
+
+  test('are made unique, the host keeping the one it wrote', async () => {
+    const written = ids(await html());
+    expect(written).toEqual(['host', 'basis', 'basis-1', 'basis-1-1', 'basis-2', 'basis-1-2']);
+    expect(new Set(written).size).toBe(written.length);
+  }, 60_000);
+
+  test('take the links written beside them along, each note pointing inside itself', async () => {
+    // The host's own first, then each copy of the note: the second heading, then back to the first.
+    expect(hrefs(await html())).toEqual(['basis', 'basis-1-1', 'basis-1', 'basis-1-2', 'basis-2']);
+  }, 60_000);
+});

@@ -56,6 +56,16 @@
   it is left as it stands.
 
   ---------------------------------------------------------------------------
+  Identifiers
+
+  Renamed where they have to be. Each note is read on its own, so pandoc numbers
+  its headings from nothing and two notes that share one arrive holding the same
+  identifier — one anchor defined twice, which LaTeX warns about and HTML is
+  invalid for, and which sends every reference to it into whichever came first.
+  A note takes the next identifier free of the ones already written, and its own
+  links follow. Nothing the host itself wrote is renamed.
+
+  ---------------------------------------------------------------------------
   Why the blocks are rewritten by hand rather than by `walk`
 
   Both of the obvious ways to write this are wrong. Bottom-up, the `Plain` a
@@ -312,6 +322,94 @@ local function fitted(blocks, anchor)
   }).content
 end
 
+--- Every identifier the document holds so far, so that no two of them match.
+local used = {}
+
+--- The elements that carry one, named rather than caught by a `Block` and an
+--- `Inline` handler, which are newer than the pandoc this still runs on.
+local WITH_IDENTIFIER = { 'Header', 'Div', 'CodeBlock', 'Table', 'Figure', 'Span', 'Code', 'Link', 'Image' }
+
+--- A set of handlers, one for each of those, all doing the same thing.
+local function over_identifiers(handle)
+  local handlers = {}
+  for _, name in ipairs(WITH_IDENTIFIER) do
+    handlers[name] = handle
+  end
+  return handlers
+end
+
+--- `name`, or the first of `name-1`, `name-2` … that nothing has taken — which
+--- is how pandoc itself numbers a heading written twice in one note.
+local function free(name)
+  if not used[name] then
+    return name
+  end
+  local suffix = 1
+  while used[name .. '-' .. suffix] do
+    suffix = suffix + 1
+  end
+  return name .. '-' .. suffix
+end
+
+--- Every identifier in `blocks` written down as taken, renaming none of them.
+local function claim(blocks)
+  pandoc.walk_block(
+    pandoc.Div(blocks),
+    over_identifiers(function(element)
+      if element.identifier ~= '' then
+        used[element.identifier] = true
+      end
+    end)
+  )
+end
+
+--- An embedded note's identifiers made unique, its own links moving with them.
+---
+--- A note is read on its own, so pandoc numbers its headings from nothing and
+--- two notes that share a heading arrive holding the same identifier. In one
+--- document that is one anchor defined twice: LaTeX warns, HTML is invalid, and
+--- everything that points at it — a link written in the note, a line of the
+--- table of contents — lands in whichever of them came first. So each note takes
+--- the next identifier free of those already written, and the links inside that
+--- same note follow. What the host itself wrote is claimed before any expansion
+--- and never renamed, so a fragment somebody typed still points where it did.
+local function renamed(blocks)
+  local moved = {}
+  blocks = pandoc.walk_block(
+    pandoc.Div(blocks),
+    over_identifiers(function(element)
+      if element.identifier == '' then
+        return nil
+      end
+      local unique = free(element.identifier)
+      used[unique] = true
+      if unique == element.identifier then
+        return nil
+      end
+      moved[element.identifier] = unique
+      element.identifier = unique
+      return element
+    end)
+  ).content
+  if next(moved) == nil then
+    return blocks
+  end
+  -- A pass of its own, and over what was written rather than over each rename in
+  -- turn: a note whose second `Podstawy` pandoc numbered `podstawy-1` has that
+  -- name given to its first one here, and a link meaning the second would follow
+  -- it to the wrong heading.
+  return pandoc.walk_block(pandoc.Div(blocks), {
+    Link = function(link)
+      local unique = moved[link.target:match('^#(.+)$') or '']
+      if not unique then
+        return nil
+      end
+      link.target = '#' .. unique
+      return link
+    end,
+  }).content
+end
+
 --- The one image a list of inlines holds, where that is all it holds.
 local function lone_image(inlines)
   if #inlines == 1 and inlines[1].t == 'Image' then
@@ -376,6 +474,7 @@ local function blocks_of(target, seen, depth, anchor)
       return nil
     end
   end
+  blocks = renamed(blocks)
 
   -- `seen` is copied rather than added to: two notes may each embed the same
   -- third note without either of them being a loop.
@@ -494,6 +593,7 @@ return {
     Pandoc = function(doc)
       local shift = doc.meta['embed-shift-headings']
       SHIFT_HEADINGS = shift ~= nil and (shift == true or pandoc.utils.stringify(shift) == 'true')
+      claim(doc.blocks)
       doc.blocks = expand(doc.blocks, {}, 1, 0)
       return doc
     end,
