@@ -1,10 +1,9 @@
 import { Notice, type App } from 'obsidian';
-import { Show, createEffect, createMemo, createResource, createSignal } from 'solid-js';
+import { Show, createEffect, createMemo, createResource, createSignal, on } from 'solid-js';
 import { t } from '../../lang/helpers';
 import { isMobileUi } from '../../system/platform';
 import { isNewerRelease, type PandocWasmManager, type WasmRelease } from '../../wasm/install';
 import { pandocWasmSupport } from '../../wasm/support';
-import { MessageBox } from '../message_box';
 import Button from '../components/Button';
 import Icon from '../components/Icon';
 import type { PanelNotice } from './PandocNotices';
@@ -130,24 +129,19 @@ export default (props: {
     }
   };
 
-  const remove = () => {
-    new MessageBox(props.app, {
-      title: t.WASM_REMOVE,
-      message: t.WASM_REMOVE_CONFIRM,
-      buttons: 'OkCancel',
-      buttonsLabel: { ok: t.WASM_REMOVE },
-      destructive: true,
-      callback: {
-        ok: () => {
+  // Removed from the extensions window: what the old binary said about starting no longer applies.
+  createEffect(
+    on(
+      () => props.version,
+      version => {
+        if (!version) {
           setFailed(undefined);
-          void props.manager.remove().then(() => {
-            void lookAgain();
-            props.onInstalled(undefined);
-          });
-        },
+          void lookAgain();
+        }
       },
-    }).open();
-  };
+      { defer: true }
+    )
+  );
 
   return (
     <div class="ex-pandoc-dashboard-half ex-wasm-half">
@@ -192,11 +186,6 @@ export default (props: {
           <Show when={updatable() && !failed()}>
             <Button class="ex-pandoc-dashboard-inline" tooltip={t.WASM_UPDATE} disabled={!!busy()} onClick={() => void install(latest())}>
               <Icon name="download" />
-            </Button>
-          </Show>
-          <Show when={installed()}>
-            <Button class="ex-pandoc-dashboard-inline is-quiet" tooltip={t.WASM_REMOVE} disabled={!!busy()} onClick={remove}>
-              <Icon name="trash-2" />
             </Button>
           </Show>
         </div>

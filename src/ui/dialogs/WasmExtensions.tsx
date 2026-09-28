@@ -3,9 +3,12 @@ import { For, Show, createMemo, createResource, createSignal, type JSX } from 's
 import { t } from '../../lang/helpers';
 import { FONT_PACKS, TYPST_VERSION, type FontPackId, type TypstWasmManager } from '../../wasm/typst';
 import { EXTENSIONS, type ExtensionId, type ExtensionManager } from '../../wasm/extensions';
+import type { PandocWasmManager } from '../../wasm/install';
+import { MessageBox } from '../message_box';
 import Modal from '../components/Modal';
 import Icon from '../components/Icon';
 import FolderInput from '../components/FolderInput';
+import Setting from '../components/Setting';
 import { tooltip } from '../components/tooltip';
 
 const megabytes = (bytes: number) => (bytes < 1024 * 1024 ? (bytes / 1024 / 1024).toFixed(1) : String(Math.round(bytes / 1024 / 1024)));
@@ -24,6 +27,10 @@ const message = (e: unknown) => (e instanceof Error ? e.message : typeof e === '
  */
 export default (props: {
   app: App;
+  pandoc: PandocWasmManager;
+  /** The pandoc build on disk, which the window is only opened beside. */
+  pandocVersion?: string;
+  onPandocRemoved: () => void;
   manager: TypstWasmManager;
   extensions: ExtensionManager;
   /** The typst version on disk, as the settings recorded it. */
@@ -70,6 +77,25 @@ export default (props: {
     } finally {
       say(id, undefined);
     }
+  };
+
+  // Everything else here is of no use without it, so the window goes with it.
+  const removePandoc = (): void => {
+    new MessageBox(props.app, {
+      title: t.WASM_REMOVE,
+      message: t.WASM_REMOVE_CONFIRM,
+      buttons: 'OkCancel',
+      buttonsLabel: { ok: t.WASM_REMOVE },
+      destructive: true,
+      callback: {
+        ok: () =>
+          void withBusy('pandoc', async (): Promise<void> => {
+            await props.pandoc.remove();
+            props.onPandocRemoved();
+            props.onClose();
+          }),
+      },
+    }).open();
   };
 
   const installTypst = (): void =>
@@ -205,6 +231,20 @@ export default (props: {
   return (
     <Modal app={props.app} title={t.EXT_TITLE} classList={{ 'ex-lua-modal': true, 'ex-ext-modal': true }} onClose={props.onClose}>
       <p class="ex-ext-intro">{t.EXT_INTRO}</p>
+
+      {/* A plain row rather than a store card: it is the build the extensions are for, not one of them. Obsidian's own
+          group markup, which draws the border and is spared the flat look modals give their rows. */}
+      <Show when={props.pandocVersion}>
+        <div class="setting-group ex-wasm-installed">
+          <div class="setting-items">
+            <Setting name={t.WASM_INSTALLED_VERSION(props.pandocVersion)}>
+              <button class="mod-destructive" disabled={working('pandoc')} onClick={removePandoc}>
+                {t.WASM_REMOVE}
+              </button>
+            </Setting>
+          </div>
+        </div>
+      </Show>
 
       <div class="ex-lua-list">
         <Card

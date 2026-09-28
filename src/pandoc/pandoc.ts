@@ -124,5 +124,4 @@ export default {
   takesMathMethod,
   requiredVersion: PANDOC_REQUIRED_VERSION,
   manualUrl: PANDOC_MANUAL_URL,
-  latestReleaseUrl: PANDOC_LATEST_RELEASE_URL,
 };

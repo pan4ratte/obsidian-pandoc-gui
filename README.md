@@ -42,7 +42,7 @@ A lua filter is a small script Pandoc applies to the document on export, which l
 
 ### 7. Pandoc, watched over
 
-The plugin tracks Pandoc releases and offers to install them: the installed Pandoc is updated by hand, while Pandoc WASM updates itself. Pandoc's manual and its changelog can be opened straight from the plugin too.
+The plugin tracks Pandoc releases and offers to install them: the installed Pandoc is updated by hand, while Pandoc WASM updates itself. Pandoc's manual can be opened straight from the plugin too, and the update button leads to the new version's changelog.
 
 
 ## Installation

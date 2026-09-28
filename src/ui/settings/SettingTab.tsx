@@ -15,7 +15,6 @@ import { resolveEngine } from '../../pandoc/engine';
 import { bundledReferenceDoc, isReferenceFormat, referenceDocFromNative } from '../../pandoc/reference_doc';
 import { chooseFile, documentsFolder, isMobileUi, showInFolder, vaultRoot } from '../../system/platform';
 import { FileStore } from '../../system/file_store';
-import ChangelogNotice from './ChangelogNotice';
 import PandocDashboard from './PandocDashboard';
 import PandocLinks from './PandocLinks';
 import PandocNotices, { type PanelNotice } from './PandocNotices';
@@ -545,6 +544,9 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
   const WasmExtensionsModal = () => (
     <WasmExtensions
       app={app}
+      pandoc={plugin.wasm}
+      pandocVersion={settings.wasmVersion}
+      onPandocRemoved={() => setSettings('wasmVersion', undefined)}
       manager={plugin.typst}
       extensions={plugin.extensions}
       version={settings.typstVersion}
@@ -1599,14 +1601,6 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
     <>
       {/* One card: a pandoc to each half of it, and a row to each thing it is read for. */}
       <div class="ex-pandoc-panel">
-        {/* What this release brought, at the head of the card until it is read or dismissed. */}
-        <ChangelogNotice
-          app={app}
-          version={plugin.manifest.version}
-          dismissed={settings.dismissedChangelogVersion}
-          onDismiss={() => setSettings('dismissedChangelogVersion', plugin.manifest.version)}
-        />
-
         <div class="ex-pandoc-panel-row ex-pandoc-engines">
           {/* The installed program has nothing to say where it is not the one running. */}
           <Show when={engine() === 'native'}>
@@ -1626,7 +1620,11 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
         {/* Between the two pandocs and the pages to read: what neither half has the width to say. */}
         <PandocNotices notices={panelNotices()} />
 
-        <PandocLinks app={app} />
+        <PandocLinks
+          app={app}
+          changelogRead={settings.dismissedChangelogVersion === plugin.manifest.version}
+          onChangelog={() => plugin.openChangelog()}
+        />
       </div>
 
       <Setting name={t.SECTION_DEFAULTS} heading={true} />

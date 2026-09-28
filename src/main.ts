@@ -1,6 +1,6 @@
 import { App, Menu, Plugin, PluginManifest, TFile, Notice, debounce } from 'obsidian';
 import { PandocGuiSettings, ExportSetting, DEFAULT_SETTINGS, DEFAULT_ENV, restoreTemplates } from './settings';
-import { ExportSettingTab, ExportDialog, ImportDialog, UserGuideModal } from './ui';
+import { ExportSettingTab, ExportDialog, ImportDialog, UserGuideModal, ChangelogModal } from './ui';
 import { exportNote } from './convert/export';
 import { getPlatformValue, PlatformKey, clone } from './system/utils';
 import { t } from './lang/helpers';
@@ -83,6 +83,12 @@ export default class PandocGuiPlugin extends Plugin {
         new UserGuideModal(this.app).open();
       },
     });
+    this.addCommand({
+      id: 'changelog',
+      name: t.CMD_CHANGELOG,
+      icon: 'scroll-text',
+      callback: () => this.openChangelog(),
+    });
 
     this.registerEvent(
       this.app.workspace.on('file-menu', (menu: Menu, file) => {
@@ -120,6 +126,15 @@ export default class PandocGuiPlugin extends Plugin {
     this.settings.wasmUpdateSeen = release.version;
     await this.saveSettings();
     new Notice(t.WASM_UPDATE_AVAILABLE(release.version));
+  }
+
+  /** Opens the changelog and marks this release's as read, so the settings' changelog button stops announcing it. */
+  openChangelog(): void {
+    new ChangelogModal(this.app).open();
+    if (this.settings.dismissedChangelogVersion !== this.manifest.version) {
+      this.settings.dismissedChangelogVersion = this.manifest.version;
+      void this.saveSettings();
+    }
   }
 
   public async resetSettings(): Promise<void> {

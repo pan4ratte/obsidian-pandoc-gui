@@ -9,5 +9,14 @@ import { createEffect } from 'solid-js';
  * through a function so a tooltip that changes with the row — a path, a button that is busy — follows it.
  */
 export const tooltip = (el: HTMLElement, text: () => string | undefined) => {
-  createEffect(() => setTooltip(el, text() ?? ''));
+  createEffect(() => {
+    const said = text();
+    // Removed rather than left empty: Obsidian shows the innermost `aria-label`, so an empty one on an icon hides
+    // the tooltip of the button around it.
+    if (said) {
+      setTooltip(el, said);
+    } else {
+      el.removeAttribute('aria-label');
+    }
+  });
 };

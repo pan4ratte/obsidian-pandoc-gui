@@ -83,7 +83,7 @@ export interface PandocGuiSettings {
   lastImportFlavour?: string;
   lastImportFolder?: string;
 
-  /** The version whose changelog notice was dismissed, so a release is only announced once. */
+  /** The version whose changelog was opened, so a release is only announced once. Named after the old notice. */
   dismissedChangelogVersion?: string;
 
   /** How the templates table was last ordered. */

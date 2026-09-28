@@ -1,6 +1,16 @@
 # Changelog
 
 
+## 2.5.3
+
+### UI/UX enhancements and bug fixes
+
+* The new-version notice in the settings is replaced by a “Changelog” button, whose icon is animated until the changelog is opened.
+* Added a “View changelog” command.
+* The Pandoc WASM remove button moved to the “Pandoc WASM extensions” window.
+* Fixed a bug where icon buttons did not show their tooltips.
+
+
 ## 2.5.2
 
 ### UI/UX enhancements and bug fixes
