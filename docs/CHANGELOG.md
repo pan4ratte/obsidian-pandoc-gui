@@ -3,24 +3,26 @@
 
 ## 2.5.3
 
-### UI/UX enhancements and bug fixes
+### Enhancements and bug fixes
 
-* The new-version notice in the settings is replaced by a “Changelog” button, whose icon is animated until the changelog is opened.
+* The new-version notice in the settings is replaced by a permanent button on the dashboard.
 * Added a “View changelog” command.
 * The Pandoc WASM remove button moved to the “Pandoc WASM extensions” window.
-* Fixed a bug where icon buttons did not show their tooltips.
+* The “General” settings group is tidied up.
+* Fixed the name and description of the “Pandoc folder” setting (now “Pandoc path”).
+* Fixed a bug where buttons did not show their tooltips.
 
 
 ## 2.5.2
 
-### UI/UX enhancements and bug fixes
+### Enhancements and bug fixes
 
 * Fixed a bug where identical headings in embedded notes got identical identifiers, sending links and the table of contents to the wrong place.
 
 
 ## 2.5.1
 
-### UI/UX enhancements and bug fixes
+### Enhancements and bug fixes
 
 * The file rows of the template editor no longer take a file of the wrong kind.
 * Fixed a bug where an Excalidraw drawing embedded in an embedded note did not reach the document.
@@ -32,7 +34,7 @@
 
 * **One-click bug reports.** The window that reports an error or a warning after an export or an import has a new “Copy report” button. It copies everything a bug report needs to the clipboard: the template, the file, the Pandoc command, the program's output, the versions of the plugin, Obsidian, Pandoc and Typst, and the operating system. The path to the home folder is replaced with `~`.
 
-### UI/UX enhancements and bug fixes
+### Enhancements and bug fixes
 
 * The Lua filter and Markdown extension lists are reworked for a better user experience.
 * The “Advanced” and “Resulting command” sections of the template editor work better.
@@ -45,7 +47,7 @@
 
 * **Support for exporting Excalidraw drawings.** Excalidraw drawings embedded in notes (`![[Drawing.excalidraw]]`) are now exported as images. HTML and EPUB get a vector image; Word, OpenDocument, PowerPoint and Typst do too, except that a drawing with text in it goes in as a PNG, none of them reading Excalidraw's own fonts; PDF and LaTeX get a PNG. A new “Excalidraw drawing format” option in those templates lets you choose SVG. Using the feature needs the Excalidraw plugin installed.
 
-### UI/UX enhancements and bug fixes
+### Enhancements and bug fixes
 
 * Pandoc's warnings after an export or an import are shown in a window of their own rather than in the console alone.
 * Excalidraw drawings are set at the size they were drawn — the PNG used to arrive twice as large.
@@ -60,7 +62,7 @@
 * **Fitting the headings of embedded notes.** The template editor carries a new option under “Write in embedded notes”: “Fit the headings of embedded notes”. The headings inside an embedded note are rebuilt one level below the heading the note stands under: “# Chapter 1” under “# Part one” is formatted as “## Chapter 1”, and two notes under one heading stay neighbours rather than a staircase. A note with no heading above it is left unchanged.
 * **Pinning images in place in PDF and LaTeX.** The editor of those templates carries a new option, “Keep images in place”. LaTeX treats a captioned image as a floating object and moves it about on its own, leaving a gap in the text — the option pins images where they stand in the note.
 
-### UI/UX enhancements and bug fixes
+### Enhancements and bug fixes
 
 * Fixed a bug where an image embedded by its whole path (`![[Folder/folder/image.png]]`) did not reach the document.
 * Fixed a bug where the image size given in the link (`![[image.png|Description|500]]`) went into the caption instead of setting the image’s width.
@@ -77,7 +79,7 @@
 * **Table of contents depth in the export window.** Where the template chosen for the export writes a format that has a table of contents, the export window carries an option for its depth. It lets the depth be changed for a single export where that is needed, without changing the template itself.
 * **Text direction.** The template editor carries a text direction option: right to left for Word, OpenDocument, HTML and EPUB. Word and OpenDocument support it from Pandoc 3.11.0 on — update the program to use it.
 
-### UI/UX enhancements and bug fixes
+### Enhancements and bug fixes
 
 * Pandoc’s reference documents (reference.docx, reference.odt, reference.pptx) now come with the plugin rather than being assembled by Pandoc WASM.
 * Math rendering gained “Plain text (Unicode)”, the method that can be named explicitly from Pandoc 3.11.0 on.
@@ -105,7 +107,7 @@
 
 Note: PDF templates that export through LaTeX, and Beamer slides, are still unavailable under WASM — they need a typesetter that cannot be run there. Typst is basically a workaround to make PDF generation possible on mobile devices and you don't have to use it if you have a local Pandoc with those engines on your computer.
 
-### UI/UX enhancements and bug fixes
+### Enhancements and bug fixes
 
 * The dashboard opens with a “What's new” card: the version opens the plugin's changelog, and the notice can be dismissed until the next update.
 * Confirmation dialogs were reworked to follow Obsidian's own dialogs.
@@ -124,7 +126,7 @@ This update introduces full mobile support for the plugin. Now you can export to
 * **New setting, “Use Pandoc WASM on this computer.”** When disabled, the local Pandoc does the conversion — when enabled, Pandoc WASM does. All mobile devices run the WASM as the only supported option.
 * **New feature: User guide.** As the plugin grows, more features need an explanation. User guide will help with that. For example, all options that are not supported by the Pandoc WASM are listed there. The user guide opens with a command or from the plugin settings.
 
-### UI/UX enhancements and bug fixes
+### Enhancements and bug fixes
 
 * The dashboard was completely redesigned to fit new features. Note that Pandoc WASM is updated separately from the regular one, but the update itself is fully automatic for WASM specifically.
 * The device compatibility is checked before anything is downloaded. A device that cannot run Pandoc WASM will be notified.
@@ -141,7 +143,7 @@ This update introduces full mobile support for the plugin. Now you can export to
 
 ## 1.2.2
 
-### UI/UX enhancements and bug fixes
+### Enhancements and bug fixes
 
 * An export runs behind a notice that names the file, shows a progress bar, and turns green when the file is written.
 * The resulting command scrolls sideways instead of wrapping, so a line is an option and a long path no longer folds over several.
@@ -174,7 +176,7 @@ Changelog for the 1.2.0 release:
 
 ## 1.2.0
 
-### UI/UX enhancements and bug fixes
+### Enhancements and bug fixes
 
 * Fixed a bug when deleted default templates came back on restart.
 * Localized all lua-filters info in the store.
@@ -187,7 +189,7 @@ Changelog for the 1.2.0 release:
 
 ## 1.1.0
 
-### UI/UX enhancements and bug fixes
+### Enhancements and bug fixes
 
 * Fixed file dialogs on macOS. Every file/folder picker now opens attached to the Obsidian window, as a sheet. Unattached, macOS draws a free-floating panel that follows neither full screen nor the window's Space, so the dialog opened out of sight and the button that asked for it looked as though it had done nothing.
 * Fixed the output file a command names. `-o` and `--output` are now read from the assembled command line directly, so `--output=path`, `-o"path"` and a short flag written as part of a cluster all name the file they say. Where a template and a hand-written argument both give one, the later wins, which is both what Pandoc does and what the command is assembled to expect.
