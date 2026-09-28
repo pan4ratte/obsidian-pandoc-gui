@@ -1636,7 +1636,7 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
           {/* Nothing here means the export runs a bare `pandoc`, which is the system's PATH answering rather than a
               search of the plugin's own — so the row claims it was found only once the binary has actually answered. */}
           <Setting
-            name={t.PANDOC_FOLDER}
+            name={t.PANDOC_PATH}
             description={getPlatformValue(settings.pandocPath) || (pandocVersion() ? t.PANDOC_PATH_PLACEHOLDER : t.PANDOC_PATH_NOT_FOUND)}
           >
             <ExtraButton icon="folder" tooltip={t.CHOOSE_FILE} onClick={() => void choosePandocPath()} />
@@ -1806,7 +1806,7 @@ export default class extends PluginSettingTab {
               t.PANDOC_DASHBOARD,
               // The rows a phone does not have. Searching them there would answer with a tab that says nothing
               // about the installed pandoc, because there is none to say anything about.
-              ...(isMobileUi() ? [] : [t.PANDOC_PATH, t.PANDOC_FOLDER, t.WASM_ENGINE, t.SETTING_ENV_VARS]),
+              ...(isMobileUi() ? [] : [t.PANDOC_PATH, t.WASM_ENGINE, t.SETTING_ENV_VARS]),
               t.WASM_TITLE,
               t.EXT_TITLE,
               t.TYPST_TITLE,

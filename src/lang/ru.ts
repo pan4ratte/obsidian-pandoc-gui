@@ -133,9 +133,8 @@ export default {
   CHANGELOG: 'Список изменений',
   USER_GUIDE: 'Руководство пользователя',
   CHANGELOG_TITLE: 'Что нового',
-  PANDOC_FOLDER: 'Папка Pandoc',
   PANDOC_PATH: 'Путь к Pandoc',
-  PANDOC_PATH_PLACEHOLDER: 'Определено автоматически',
+  PANDOC_PATH_PLACEHOLDER: 'Был определён автоматически',
   PANDOC_PATH_NOT_FOUND: 'Не найден в переменных среды системы',
   PANDOC_PATH_RESET: 'Вернуть автоопределение',
 

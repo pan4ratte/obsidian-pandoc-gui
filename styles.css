@@ -534,8 +534,7 @@
 
 /*
  * Card holding a section's rows, matching the one the templates table draws.
- * The rows inside keep the vertical rhythm of the reset above and only take the
- * inset the card's border asks for.
+ * The rows inside take a stock group's padding and inset dividers.
  */
 .ex-settings-card {
   margin-bottom: var(--size-4-4);
@@ -545,12 +544,20 @@
 }
 
 .ex-settings-root .ex-settings-card .setting-item {
-  padding-inline: var(--size-4-4);
+  border-top: none;
+  padding: var(--setting-items-padding-y) var(--setting-items-padding-x);
 }
 
-/* The card's own border is the line above the first row. */
-.ex-settings-root .ex-settings-card > .setting-item:first-child {
-  border-top: none;
+.ex-settings-root .ex-settings-card .setting-item::before {
+  content: '';
+  position: absolute;
+  top: calc(-1 * var(--border-width));
+  inset-inline: var(--setting-items-padding-x);
+  border-top: var(--setting-items-divider-width) solid var(--background-modifier-border);
+}
+
+.ex-settings-root .ex-settings-card > .setting-item:first-child::before {
+  content: none;
 }
 
 /* A row the one above asks the question for: no label of its own, no line
@@ -558,6 +565,10 @@
 .ex-settings-root .setting-item.ex-nameless-setting {
   border-top: none;
   padding-top: 0;
+}
+
+.ex-settings-root .setting-item.ex-nameless-setting::before {
+  content: none;
 }
 
 .ex-nameless-setting > .setting-item-info {
@@ -685,6 +696,10 @@
 .ex-settings-root .setting-item.ex-export-destination-path {
   border-top: none;
   padding-top: 0;
+}
+
+.ex-settings-root .setting-item.ex-export-destination-path::before {
+  content: none;
 }
 
 .ex-export-destination-path > .setting-item-info {

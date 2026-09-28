@@ -133,7 +133,6 @@ export default {
   CHANGELOG: 'Changelog',
   USER_GUIDE: 'User guide',
   CHANGELOG_TITLE: 'What’s new',
-  PANDOC_FOLDER: 'Pandoc folder',
   PANDOC_PATH: 'Pandoc path',
   PANDOC_PATH_PLACEHOLDER: 'Was detected automatically',
   PANDOC_PATH_NOT_FOUND: 'Not found in the system environment variables',
