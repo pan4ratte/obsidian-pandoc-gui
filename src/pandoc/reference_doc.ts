@@ -30,7 +30,7 @@ export const isReferenceFormat = (format?: string): format is ReferenceFormat =>
  * match — see `docs/CONTRIBUTING.md`. It is here rather than in a file beside them so that anything reporting on the
  * bundle can read it.
  */
-export const BUNDLED_REFERENCE_VERSION = '3.11';
+export const BUNDLED_REFERENCE_VERSION = '3.12';
 
 /** Carried as base64 in a generated module — see `reference_data.ts`; a release ships no file to read. */
 const BUNDLED: Record<ReferenceFormat, string> = { docx, odt, pptx };
