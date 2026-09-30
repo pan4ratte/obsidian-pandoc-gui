@@ -30,6 +30,7 @@ import {
   hasLuaFilterArg,
   orderLuaFilters,
   removeLuaFilterArg,
+  withCalloutsFilter,
   type InstalledLuaFilter,
 } from '../../filters/lua_filters';
 import TemplateLuaFilters from './TemplateLuaFilters';
@@ -874,16 +875,18 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
     const resultingCommand = createMemo(() =>
       // Assembled as `exportNote` assembles it, filters put in their running order and all.
       orderLuaFilters(
-        [
-          pandoc.normalizePath(getPlatformValue(settings.pandocPath)),
-          '"${currentPath}"',
-          template()?.arguments,
-          template()?.customArguments,
-          template()?.userArguments,
-        ]
-          .map(part => part?.trim())
-          .filter(part => part)
-          .join(' ')
+        withCalloutsFilter(
+          [
+            pandoc.normalizePath(getPlatformValue(settings.pandocPath)),
+            '"${currentPath}"',
+            template()?.arguments,
+            template()?.customArguments,
+            template()?.userArguments,
+          ]
+            .map(part => part?.trim())
+            .filter(part => part)
+            .join(' ')
+        )
       )
     );
 

@@ -144,16 +144,40 @@ export const addLuaFilterArg = (args: string | undefined, fileName: string) => {
  */
 export const EMBEDS_FILTER = 'embeds.lua';
 
+/** Reads Obsidian's callouts into what the `alerts` extension makes of them. */
+export const CALLOUTS_FILTER = 'callouts.lua';
+
 /** A lua filter on the command line, in every spelling pandoc takes for one. */
 const LUA_FILTER_FLAG = /(?:--lua-filter|-L)[= ]("[^"]*"|[^\s"]+)/g;
 
-/** Whether a matched flag is the embeds filter, whatever folder it was found in. */
-const namesEmbeds = (value: string) => {
+/** Whether a matched flag is `name`, whatever folder it was found in. */
+const namesFilter = (value: string, name: string) => {
   const file = value.replace(/"/g, '');
-  return file === EMBEDS_FILTER || file.endsWith(`/${EMBEDS_FILTER}`) || file.endsWith(`\\${EMBEDS_FILTER}`);
+  return file === name || file.endsWith(`/${name}`) || file.endsWith(`\\${name}`);
 };
 
-export const usesEmbedsFilter = (command: string) => [...command.matchAll(LUA_FILTER_FLAG)].some(flag => namesEmbeds(flag[1]));
+const namesEmbeds = (value: string) => namesFilter(value, EMBEDS_FILTER);
+
+const usesFilter = (command: string, name: string) => [...command.matchAll(LUA_FILTER_FLAG)].some(flag => namesFilter(flag[1], name));
+
+export const usesEmbedsFilter = (command: string) => usesFilter(command, EMBEDS_FILTER);
+
+/** A reader flag switching on `alerts`. */
+const READS_ALERTS = /(?:^|\s)(?:-f|-r|--from|--read)[= ]\S*\+alerts(?![\w])/;
+
+/**
+ * `command` with the callouts filter in front of its other lua filters wherever the reader takes `alerts` — the
+ * extension alone misses most of what Obsidian writes. `orderLuaFilters` then puts the embeds filter ahead of it, so
+ * embedded notes' callouts are read too.
+ */
+export const withCalloutsFilter = (command: string) => {
+  if (!READS_ALERTS.test(command) || usesFilter(command, CALLOUTS_FILTER)) {
+    return command;
+  }
+  const flag = luaFilterArg(CALLOUTS_FILTER);
+  const first = new RegExp(LUA_FILTER_FLAG.source).exec(command);
+  return first ? `${command.slice(0, first.index)}${flag} ${command.slice(first.index)}` : `${command} ${flag}`;
+};
 
 /** `command` with the embeds filter ahead of its other lua filters, or at the end where it has none. */
 export const withEmbedsFilter = (command: string, luaDir: string) => {

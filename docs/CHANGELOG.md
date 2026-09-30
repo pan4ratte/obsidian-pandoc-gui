@@ -11,9 +11,11 @@ Note: inline DataviewJS queries and calendars stay as code. If a DataviewJS scri
 
 ### Enhancements and bug fixes
 
+* Callouts export with any type, their own title and a fold marker, not only as `> [!NOTE]`.
 * Section links in Markdown exports point to lowercase anchors, as GitHub and Hugo generate them.
 * Fixed a bug where Markdown exports turned wikilinks, embedded images and captioned images into HTML with the spaces missing.
 * Fixed a bug where the user guide showed errors when Dataview was installed.
+* Fixed a bug where, with Pandoc 3.12, callouts lost their formatting in Markdown, DocBook, AsciiDoc, RST and Org exports.
 
 
 ## 2.5.3

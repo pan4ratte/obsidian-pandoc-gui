@@ -9,7 +9,7 @@ import { PandocProgress } from '../ui/progress';
 import { describeExportFailure } from './export_error';
 import type PandocGuiPlugin from '../main';
 import pandoc from '../pandoc/pandoc';
-import { orderLuaFilters, usesEmbedsFilter, withEmbedsFilter } from '../filters/lua_filters';
+import { orderLuaFilters, usesEmbedsFilter, withCalloutsFilter, withEmbedsFilter } from '../filters/lua_filters';
 import { legacyMathFlags, renameHighlightFlags, renameMathFlags } from '../args/writer_args';
 import { outputArg } from '../args/output_arg';
 import { resolveEngine, unsupportedBy, writesTypstPdf } from '../pandoc/engine';
@@ -347,10 +347,12 @@ export async function exportNote(
     let cmdTpl =
       setting.type === 'pandoc'
         ? orderLuaFilters(
-            [pandocPath, '"${currentPath}"', setting.arguments, setting.customArguments, setting.userArguments]
-              .map(part => part?.trim())
-              .filter(Boolean)
-              .join(' ')
+            withCalloutsFilter(
+              [pandocPath, '"${currentPath}"', setting.arguments, setting.customArguments, setting.userArguments]
+                .map(part => part?.trim())
+                .filter(Boolean)
+                .join(' ')
+            )
           )
         : setting.command;
 

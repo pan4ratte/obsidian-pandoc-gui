@@ -260,7 +260,7 @@ export default {
     short_subsuperscripts: 'Short sub/superscripts',
   },
   EXTENSION_DESCRIPTIONS: {
-    alerts: 'Note, tip, important, warning and caution callouts will become titled blocks instead of quotes.',
+    alerts: 'Callouts will become titled blocks instead of quotes. A callout keeps its type and its own title.',
     mark: 'Text between == will be formatted as a highlight after export.',
     hard_line_breaks: 'Every line break inside a paragraph will be treated as the start of a new line. Without it, the lines of a paragraph run together.',
     lists_without_preceding_blankline: 'A list right below a line of text is read as a list. Without it, the list runs into the paragraph above.',

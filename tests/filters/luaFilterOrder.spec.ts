@@ -1,4 +1,4 @@
-import { EMBEDS_FILTER, luaFilterArg, orderLuaFilters, withEmbedsFilter } from '../../src/filters/lua_filters';
+import { CALLOUTS_FILTER, EMBEDS_FILTER, luaFilterArg, orderLuaFilters, withCalloutsFilter, withEmbedsFilter } from '../../src/filters/lua_filters';
 
 /*
  * Pandoc runs filters in the order they are written. The embeds filter parses the transcluded notes into the
@@ -69,5 +69,22 @@ describe('withEmbedsFilter', () => {
   test('at the end where there are none, and not twice', () => {
     expect(withEmbedsFilter('pandoc "a.md" -o "b.docx"', '/p/lua')).toBe('pandoc "a.md" -o "b.docx" --lua-filter="/p/lua/embeds.lua"');
     expect(withEmbedsFilter(`pandoc ${EMBEDS} ${FIGURES}`, '/p/lua')).toBe(`pandoc ${EMBEDS} ${FIGURES}`);
+  });
+});
+
+describe('withCalloutsFilter', () => {
+  const CALLOUTS = luaFilterArg(CALLOUTS_FILTER);
+
+  test('runs wherever the reader takes alerts, after embeds and before the rest', () => {
+    const command = `pandoc -f \${fromFormat}+alerts+mark ${FIGURES} ${EMBEDS}`;
+    expect(orderLuaFilters(withCalloutsFilter(command))).toBe(`pandoc -f \${fromFormat}+alerts+mark ${EMBEDS} ${CALLOUTS} ${FIGURES}`);
+    expect(withCalloutsFilter('pandoc --from=markdown+alerts -o "b.docx"')).toBe(`pandoc --from=markdown+alerts -o "b.docx" ${CALLOUTS}`);
+  });
+
+  test('and nowhere else, and not twice', () => {
+    expect(withCalloutsFilter(`pandoc -f markdown+mark ${FIGURES}`)).toBe(`pandoc -f markdown+mark ${FIGURES}`);
+    expect(withCalloutsFilter('pandoc -f markdown-alerts')).toBe('pandoc -f markdown-alerts');
+    expect(withCalloutsFilter('pandoc -f markdown+alertsx')).toBe('pandoc -f markdown+alertsx');
+    expect(withCalloutsFilter(`pandoc -f markdown+alerts ${CALLOUTS}`)).toBe(`pandoc -f markdown+alerts ${CALLOUTS}`);
   });
 });
