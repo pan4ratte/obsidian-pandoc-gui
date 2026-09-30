@@ -3,18 +3,17 @@
 
 ## 2.6.0
 
-### New feature: Dataview support
+### New features
 
-* **Export of Dataview queries.** `dataview` and `dataviewjs` blocks, as well as inline queries, now reach the document as the tables, lists and values they show in Obsidian rather than as code. Works in every Pandoc template, Markdown included, in embedded notes and with Pandoc WASM. The details, turning DataviewJS on among them, are in the user guide. Using the feature requires the Dataview plugin.
+* **Export of Dataview queries.** `dataview` and `dataviewjs` blocks, as well as inline queries, now reach the document as tables, lists and values. Supported in every Pandoc template, in embedded notes and when exporting through Pandoc WASM. Using it requires installing Dataview and turning on DataviewJS; see the user guide for details.
 
 Note: inline DataviewJS queries and calendars stay as code. If a DataviewJS script has not finished rendering within 10 seconds, whatever it had shown by then is exported, and the warnings say so.
 
 ### Enhancements and bug fixes
 
-* Callouts export with any type, their own title and a fold marker, not only as `> [!NOTE]`.
+* Callouts of any type are now exported, not only as `> [!NOTE]`.
 * Section links in Markdown exports point to lowercase anchors, as GitHub and Hugo generate them.
-* Fixed a bug where Markdown exports turned wikilinks, embedded images and captioned images into HTML with the spaces missing.
-* Fixed a bug where the user guide showed errors when Dataview was installed.
+* Fixed a bug where Markdown exports turned wikilinks, embedded images and captioned images into HTML.
 * Fixed a bug where, with Pandoc 3.12, callouts lost their formatting in Markdown, DocBook, AsciiDoc and RST exports.
 
 
