@@ -47,5 +47,8 @@
     "@myriaddreamin/typst.ts": "^0.7.0",
     "semver": "^7.8.5",
     "solid-js": "^1.9.14"
+  },
+  "overrides": {
+    "moment": "^2.31.0"
   }
 }
