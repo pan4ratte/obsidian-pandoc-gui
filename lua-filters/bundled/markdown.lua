@@ -97,12 +97,61 @@ local function raw(s)
   return pandoc.RawInline('markdown', s)
 end
 
-function Image(el)
-  local src = extract_media(el.src)
-  if src then
-    el.src = src
+--- Newer pandoc marks a wikilink with the class, older pandoc with the title.
+local function is_wikilink(el)
+  return el.title == 'wikilink' or el.classes:includes('wikilink')
+end
+
+--- The text of inlines whose spaces `Space` has already made raw, which `stringify` drops.
+local function text_of(inlines)
+  local out = {}
+  pandoc.walk_inline(pandoc.Span(inlines), {
+    Str = function(s) out[#out + 1] = s.text end,
+    RawInline = function(r) out[#out + 1] = r.text end,
+    Space = function() out[#out + 1] = ' ' end,
+  })
+  return table.concat(out)
+end
+
+--- Text as inlines with the raw spaces `Space` gives the rest of the document, so it is not wrapped either.
+local function unwrapped(text)
+  return pandoc.walk_inline(pandoc.Span(pandoc.Inlines(text)), { Space = function() return raw(' ') end }).content
+end
+
+--- A wikilink's target; typed in a table as `[[a\|b]]`, the reader leaves the escape on it.
+local function unescaped(target)
+  return (target:gsub('\\$', ''))
+end
+
+--- A wikilink written back as it was typed; `Table` escapes its `|` inside a table.
+local function wikilink(prefix, target, text)
+  if text == '' or text == target then
+    return raw(prefix .. '[[' .. target .. ']]')
   end
-  return el
+  return raw(prefix .. '[[' .. target .. '|' .. text .. ']]')
+end
+
+function Image(el)
+  if not is_wikilink(el) then
+    local src = extract_media(el.src)
+    if src then
+      el.src = src
+    end
+    return el
+  end
+  local target = unescaped(el.src)
+  local src = extract_media(target)
+  local alt = text_of(el.caption)
+  -- A note, or a file not found: nothing to copy, so the embed stays as written.
+  if not src then
+    return wikilink('!', target, alt)
+  end
+  -- Obsidian's `|200` or `|200x100` is a size, and a caption that is the file's own name is no caption.
+  alt = alt:gsub('|%d+x?%d*$', '')
+  if alt == target or alt:match('^%d+x?%d*$') then
+    alt = ''
+  end
+  return pandoc.Image(unwrapped(alt), src)
 end
 
 function Space()
@@ -157,7 +206,42 @@ end
 
 local function headerLink(input)
   -- github style section link
-  return "#"..input:gsub(' ', '-')
+  return "#" .. (pandoc.text.lower(input):gsub(' ', '-'))
+end
+
+function Link(el)
+  if not is_wikilink(el) then
+    return nil
+  end
+  local target = unescaped(el.target)
+  local text = text_of(el.content)
+  if target:sub(1, 1) == '#' then
+    local heading = target:sub(2)
+    return pandoc.Link(unwrapped(text == target and heading or text), headerLink(heading))
+  end
+  return wikilink('', target, text)
+end
+
+--- A lone image is a figure, which the Markdown writers without `implicit_figures` write as HTML.
+function Figure(el)
+  local body = el.content[1]
+  if #el.content == 1 and (body.t == 'Plain' or body.t == 'Para') and #body.content == 1 then
+    local only = body.content[1]
+    if only.t == 'Image' or only.t == 'RawInline' then
+      return pandoc.Para(body.content)
+    end
+  end
+end
+
+function Table(el)
+  return pandoc.walk_block(el, {
+    RawInline = function(r)
+      if r.format == 'markdown' and r.text:match('^!?%[%[.*%]%]$') then
+        r.text = r.text:gsub('|', '\\|')
+        return r
+      end
+    end,
+  })
 end
 
 

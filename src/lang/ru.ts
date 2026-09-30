@@ -15,6 +15,8 @@ export default {
   NOTICE_IMPORT_WARNINGS: (file: string) => `Импортировано «${file}», но Pandoc предупреждает.`,
   EXPORT_COMMAND_OUTPUT: (cmd: string) => `Команда: ${cmd}`,
   WARNINGS_TITLE: 'Предупреждения Pandoc',
+  DATAVIEW_FAILED: (note: string, error: string) => `Dataview: не удалось выполнить запрос в заметке «${note}», он оставлен в виде кода. ${error}`,
+  DATAVIEW_UNFINISHED: (note: string) => `Dataview: скрипт в заметке «${note}» не успел вывести результат за 10 секунд — экспортировано то, что он успел вывести.`,
 
   // ─── Export dialog ───────────────────────────────────────────────────────────
   EXPORT_DIALOG_TITLE: 'Экспорт с помощью Pandoc',
@@ -132,7 +134,6 @@ export default {
   PANDOC_MANUAL: 'Мануал Pandoc',
   CHANGELOG: 'Список изменений',
   USER_GUIDE: 'Руководство пользователя',
-  CHANGELOG_TITLE: 'Что нового',
   PANDOC_PATH: 'Путь к Pandoc',
   PANDOC_PATH_PLACEHOLDER: 'Был определён автоматически',
   PANDOC_PATH_NOT_FOUND: 'Не найден в переменных среды системы',

@@ -153,6 +153,18 @@ const namesEmbeds = (value: string) => {
   return file === EMBEDS_FILTER || file.endsWith(`/${EMBEDS_FILTER}`) || file.endsWith(`\\${EMBEDS_FILTER}`);
 };
 
+export const usesEmbedsFilter = (command: string) => [...command.matchAll(LUA_FILTER_FLAG)].some(flag => namesEmbeds(flag[1]));
+
+/** `command` with the embeds filter ahead of its other lua filters, or at the end where it has none. */
+export const withEmbedsFilter = (command: string, luaDir: string) => {
+  if (usesEmbedsFilter(command)) {
+    return command;
+  }
+  const flag = `--lua-filter="${luaDir}/${EMBEDS_FILTER}"`;
+  const first = new RegExp(LUA_FILTER_FLAG.source).exec(command);
+  return first ? `${command.slice(0, first.index)}${flag} ${command.slice(first.index)}` : `${command} ${flag}`;
+};
+
 /**
  * `command` with the embeds filter ahead of every other lua filter.
  *

@@ -9,6 +9,6 @@ Pandoc
           , Space
           , Str "description"
           ]
-          ( "#Some-complex-section" , "" )
+          ( "#some-complex-section" , "" )
       ]
   ]

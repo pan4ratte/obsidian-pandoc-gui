@@ -79,6 +79,29 @@ Besides a variable name, `${...}` takes a small set of expressions — enough to
 | `${metadata.keyword}`, `${today.iso}` | Field access; `${options["key"]}` is the same thing in brackets. |
 | `` ${ x ? `--opt="${x}"` : `` } `` | A condition. Nested template literals work inside the branches. |
 | `${x ?? "default"}`, `${x \|\| "fallback"}`, `${x && "…"}`, `${!x}` | Defaults and logic. |
-| `${fmt === "pdf" ? "…" : "…"}` | Comparison: `===`, `!==`, `==`, `!=`. |
+| `${fmt === "pdf" ? "…" : "…"}` | Comparison: `x === y`, `x !== y`, `x == y`, `x != y`. |
 
 A name that is not among the variables stays in the command as written: `${user}` prints as `${user}`, so a typo shows up in the *Resulting command* line.
+
+## 3. Dataview queries
+
+With the Dataview plugin installed, its queries reach the document the way they look in reading view — as tables, lists and values rather than as code:
+
+* **`dataview` blocks** — the tables, lists and tasks the query returns.
+* **`dataviewjs` blocks** — what the script shows: `dv.table`, `dv.list`, `dv.paragraph` and so on.
+* **Inline queries** (inline code starting with “=”, such as “= this.file.name”) — their value.
+
+A query runs for the note it is written in, so `this.file` in an embedded note means that note. Links in the results behave like ordinary wikilinks: the `strip-wikilinks.lua` filter, for one, removes them too. Dataview's own settings are followed — the DataviewJS keyword, the inline query prefix, and inline queries being switched off.
+
+This works in every Pandoc template. Where a template has “Write in embedded notes” switched off (as the Markdown templates do), only the note's own queries are run, and `![[embeds]]` stay links.
+
+### DataviewJS
+
+DataviewJS scripts are switched off by default in Dataview itself. To have them exported, turn on “Enable JavaScript queries” in Dataview's settings. While it is off, a `dataviewjs` block stays in the document as code — just as it looks in the note.
+
+The plugin waits for a script to finish rendering, but no longer than 10 seconds. A script that has not finished by then is exported as far as it got, and the warnings window says so. The same window names any query that could not run; that query is left as code.
+
+### What stays as code
+
+* Inline DataviewJS queries (inline code starting with “$=”).
+* `CALENDAR` queries: a calendar can be written neither as a table nor as a list.

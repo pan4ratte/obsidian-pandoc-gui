@@ -26,7 +26,7 @@ Word, OpenOffice, PDF, LaTeX (a whole document or a fragment to paste into an ex
 
 ### 3. Exports that respect Obsidian's syntax
 
-The plugin works around many of the problems of Pandoc itself and of other export plugins for Obsidian. Embedding `![[notes]]` and `![[notes#sections]]`, for one, works in full. Excalidraw drawings reach the document as pictures rather than as the JSON they are stored as. `==Highlights==` survive, `$$…$$` blocks are put back together, and every `$today` in the note becomes today's date. Advanced settings and tweaks switch on the rest of the syntax — callouts, emoji shortcodes, bare URLs, hard line breaks and more.
+The plugin works around many of the problems of Pandoc itself and of other export plugins for Obsidian. Embedding `![[notes]]` and `![[notes#sections]]`, for one, works in full. Excalidraw drawings reach the document as pictures rather than as the JSON they are stored as. Dataview queries are exported the way they look in the note — as tables and lists rather than as code. `==Highlights==` survive, `$$…$$` blocks are put back together, and every `$today` in the note becomes today's date. Advanced settings and tweaks switch on the rest of the syntax — callouts, emoji shortcodes, bare URLs, hard line breaks and more.
 
 ### 4. Mobile support
 
@@ -173,7 +173,7 @@ Pandoc WASM works somewhat differently from the ordinary version because of how 
 
 Pandoc WASM has limits built into how it works, and these extensions are what gets around them. The ordinary local Pandoc has no such limits, so the extensions matter above all on a mobile device. They install from the extensions icon on the Pandoc WASM card and live in the plugin folder, so a template can name them with `${pluginDir}`:
 
-* **Typst** and **fonts** — typesetting a PDF, as above.
+* **Typst** and **fonts** — typesetting a PDF, as above. It earns its place on a computer too: where the local Pandoc finds no Typst on the system, this build sets the “PDF (Typst)” template's PDF.
 * **Emoji font** — Noto Color Emoji; without it the emoji in a note never reach the PDF.
 * **Citation styles** — nine styles asked for often: APA, Chicago (both schemes), MLA, IEEE, AMA, Nature, Harvard and GOST R 7.0.5-2008. Name the one you want under “Citation style” in a template.
 * **Pandoc layout templates** — its own HTML, LaTeX, Typst and EPUB templates, from the version you have: copy one, change it, name it under “Template”.
@@ -238,9 +238,32 @@ Besides a variable name, `${...}` takes a small set of expressions — enough to
 | `${metadata.keyword}`, `${today.iso}` | Field access; `${options["key"]}` is the same thing in brackets. |
 | `` ${ x ? `--opt="${x}"` : `` } `` | A condition. Nested template literals work inside the branches. |
 | `${x ?? "default"}`, `${x \|\| "fallback"}`, `${x && "…"}`, `${!x}` | Defaults and logic. |
-| `${fmt === "pdf" ? "…" : "…"}` | Comparison: `===`, `!==`, `==`, `!=`. |
+| `${fmt === "pdf" ? "…" : "…"}` | Comparison: `x === y`, `x !== y`, `x == y`, `x != y`. |
 
 A name that is not among the variables stays in the command as written: `${user}` prints as `${user}`, so a typo shows up in the *Resulting command* line.
+
+## 3. Dataview queries
+
+With the Dataview plugin installed, its queries reach the document the way they look in reading view — as tables, lists and values rather than as code:
+
+* **`dataview` blocks** — the tables, lists and tasks the query returns.
+* **`dataviewjs` blocks** — what the script shows: `dv.table`, `dv.list`, `dv.paragraph` and so on.
+* **Inline queries** (inline code starting with “=”, such as “= this.file.name”) — their value.
+
+A query runs for the note it is written in, so `this.file` in an embedded note means that note. Links in the results behave like ordinary wikilinks: the `strip-wikilinks.lua` filter, for one, removes them too. Dataview's own settings are followed — the DataviewJS keyword, the inline query prefix, and inline queries being switched off.
+
+This works in every Pandoc template. Where a template has “Write in embedded notes” switched off (as the Markdown templates do), only the note's own queries are run, and `![[embeds]]` stay links.
+
+### DataviewJS
+
+DataviewJS scripts are switched off by default in Dataview itself. To have them exported, turn on “Enable JavaScript queries” in Dataview's settings. While it is off, a `dataviewjs` block stays in the document as code — just as it looks in the note.
+
+The plugin waits for a script to finish rendering, but no longer than 10 seconds. A script that has not finished by then is exported as far as it got, and the warnings window says so. The same window names any query that could not run; that query is left as code.
+
+### What stays as code
+
+* Inline DataviewJS queries (inline code starting with “$=”).
+* `CALENDAR` queries: a calendar can be written neither as a table nor as a list.
 
 
 # About the Author

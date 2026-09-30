@@ -30,6 +30,10 @@
   Pandoc's wasm build has no environment to read, so there the plugin writes the
   same list into `.obsidian-embeds`, in the folder pandoc runs from.
 
+  Dataview queries arrive as OBSIDIAN_DATAVIEW (`.obsidian-dataview`): the note,
+  the query's key, `markdown` or `html`, and the file holding what Dataview
+  rendered, which takes the place of the code block or inline code.
+
   ---------------------------------------------------------------------------
   What is embedded
 
@@ -145,6 +149,25 @@ local targets = mapped('OBSIDIAN_EMBEDS', '.obsidian-embeds')
 --- that can resolve what a scene names, so the drawing arrives here already
 --- drawn and all that is left is to point the image at it.
 local drawings = mapped('OBSIDIAN_DRAWINGS', '.obsidian-drawings')
+
+--- note -> query key -> { format, path }: Dataview queries the plugin had
+--- Dataview render. The note being exported is the empty string, the rest are
+--- named by the path OBSIDIAN_EMBEDS gives them.
+local queries = (function()
+  local out = {}
+  local given, escaped = list('OBSIDIAN_DATAVIEW', '.obsidian-dataview')
+  for line in given:gmatch('[^\n]+') do
+    local note, key, format, path = line:match('^(.-)\t(.-)\t(.-)\t(.+)$')
+    if key then
+      if escaped then
+        note, path = decode(note), decode(path)
+      end
+      out[note] = out[note] or {}
+      out[note][key] = { format = format, path = path }
+    end
+  end
+  return out
+end)()
 
 --- Whether `rebase_relative_paths` was switched on for this run.
 local REBASING = (function()
@@ -268,6 +291,60 @@ local function read_file(path)
   local text = file:read('a')
   file:close()
   return text
+end
+
+--- What the plugin keys a query by: pandoc turns tabs into spaces and trims
+--- inline code, so the whitespace is left out.
+local function query_key(language, text)
+  return pandoc.utils.sha1(language .. '\n' .. (text:gsub('%s', '')))
+end
+
+--- Dataview writes links as wikilinks whatever the vault uses.
+local QUERY_FORMAT = FORMAT_IN .. '+wikilinks_title_after_pipe'
+
+--- A rendered query as blocks, or nil to leave the code as it was.
+local function query_blocks(found)
+  local text = read_file(found.path)
+  if not text then
+    return nil
+  end
+  local ok, doc
+  if found.format == 'html' then
+    ok, doc = pcall(pandoc.read, text, 'html-native_divs-native_spans')
+  else
+    ok, doc = pcall(pandoc.read, text, QUERY_FORMAT, PANDOC_READER_OPTIONS)
+  end
+  if not ok then
+    return nil
+  end
+  -- A table escapes the `|` of `[[target|title]]`, and pandoc keeps the backslash on the target.
+  return pandoc.walk_block(pandoc.Div(doc.blocks), {
+    Link = function(link)
+      if link.target:sub(-1) == '\\' then
+        link.target = link.target:sub(1, -2)
+        return link
+      end
+    end,
+  }).content
+end
+
+--- `blocks` with every query the note holds replaced by what it rendered to.
+local function answered(note, blocks)
+  local rendered = queries[note]
+  if not rendered then
+    return blocks
+  end
+  return pandoc.walk_block(pandoc.Div(blocks), {
+    CodeBlock = function(block)
+      local found = rendered[query_key(block.classes[1] or '', block.text)]
+      return found and query_blocks(found) or nil
+    end,
+    Code = function(code)
+      local found = rendered[query_key('', code.text)]
+      local blocks = found and query_blocks(found)
+      return blocks and pandoc.utils.blocks_to_inlines(blocks) or nil
+    end,
+  }).content
 end
 
 --- The heading a `#fragment` names, compared the way a reader would read it.
@@ -467,7 +544,7 @@ local function blocks_of(target, seen, depth, anchor)
   -- Through `restore` on the way in: it runs as a pass of its own over what the note itself wrote, and what is
   -- written in here arrives after that pass has gone by. A drawing embedded by an embedded note would keep the
   -- target pandoc read it as — a `.md` with a frame id on the end — and be reported as a resource nothing can fetch.
-  local blocks = pandoc.walk_block(pandoc.Div(doc.blocks), restore).content
+  local blocks = pandoc.walk_block(pandoc.Div(answered(file, doc.blocks)), restore).content
   if fragment then
     blocks = section_of(blocks, fragment)
     if not blocks then
@@ -579,15 +656,31 @@ restore = {
   end,
 }
 
+-- The note's own queries first, so an embedded note's are never taken for them.
+local answering = {
+  Pandoc = function(doc)
+    doc.blocks = answered('', doc.blocks)
+    return doc
+  end,
+}
+
 -- Nothing to do at all where the plugin resolved no note embeds, drew no
--- drawings and nothing was rebased, which is the overwhelming majority of
--- exports.
+-- drawings, rendered no queries and nothing was rebased, which is the
+-- overwhelming majority of exports.
 local restoring = REBASING or next(drawings) ~= nil
 if next(targets) == nil then
-  return restoring and { restore } or {}
+  local filters = {}
+  if queries[''] then
+    filters[#filters + 1] = answering
+  end
+  if restoring then
+    filters[#filters + 1] = restore
+  end
+  return filters
 end
 
 return {
+  answering,
   restore,
   {
     Pandoc = function(doc)

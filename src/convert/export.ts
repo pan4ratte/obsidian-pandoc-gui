@@ -9,7 +9,7 @@ import { PandocProgress } from '../ui/progress';
 import { describeExportFailure } from './export_error';
 import type PandocGuiPlugin from '../main';
 import pandoc from '../pandoc/pandoc';
-import { orderLuaFilters } from '../filters/lua_filters';
+import { orderLuaFilters, usesEmbedsFilter, withEmbedsFilter } from '../filters/lua_filters';
 import { legacyMathFlags, renameHighlightFlags, renameMathFlags } from '../args/writer_args';
 import { outputArg } from '../args/output_arg';
 import { resolveEngine, unsupportedBy, writesTypstPdf } from '../pandoc/engine';
@@ -20,6 +20,7 @@ import { download } from '../system/download';
 import { basename, dirname, normalize, resolve, stem } from '../system/paths';
 import { PATH_SEPARATOR, chooseSavePath, isDesktop, isMobile, openFile, showInFolder, tempFolder, vaultRoot } from '../system/platform';
 import { type DrawingFormat, isDrawing, renderDrawing } from './excalidraw';
+import { type QueryAnswer, collectQueries, renderQueries } from './dataview';
 import { outputFormat, readsInlinedFonts, takesSvg, writesLatex } from '../pandoc/pandoc_format';
 import { drawingFormat } from '../filters/filter_args';
 import { pdfEngine } from '../args/writer_args';
@@ -75,6 +76,31 @@ const drawDrawings = async (
     drawn.set(link, path);
   }
   return drawn;
+};
+
+/** Every Dataview query the notes hold, rendered into files; a query that fails is left as code and named in `problems`. */
+const answerQueries = async (
+  app: PandocGuiPlugin['app'],
+  files: FileStore,
+  folder: string,
+  notes: Iterable<readonly [string, TFile]>
+): Promise<{ answers: QueryAnswer[]; problems: string[] }> => {
+  const answers: QueryAnswer[] = [];
+  const problems: string[] = [];
+  let index = 0;
+  for (const { note, file, key, rendered, error } of await renderQueries(app, await collectQueries(app, notes))) {
+    if (!rendered) {
+      problems.push(t.DATAVIEW_FAILED(file.basename, error ?? ''));
+      continue;
+    }
+    if (rendered.unfinished) {
+      problems.push(t.DATAVIEW_UNFINISHED(file.basename));
+    }
+    const path = `${folder}/dataview-${index++}.${rendered.format === 'html' ? 'html' : 'md'}`;
+    await files.write(path, encoder.encode(rendered.text));
+    answers.push({ note, key, format: rendered.format, path });
+  }
+  return { answers, problems };
 };
 
 export async function exportNote(
@@ -172,6 +198,8 @@ export async function exportNote(
   // markdown, so without this it would be written into the document as a note — pages of the JSON it stores its scene
   // as. It is a picture, and it is drawn as one below.
   const drawings = new Map<string, TFile>();
+  // Every embedded note by the path the embed map names it by, which is how `embeds.lua` knows whose query is whose.
+  const embeddedNotes = new Map<string, TFile>();
   const walkedForEmbeds = new Set<string>([currentFile.path]);
   const collectNoteEmbeds = (file: TFile, depth: number) => {
     if (depth > 8) {
@@ -196,6 +224,7 @@ export async function exportNote(
       }
       // Keyed by the link as written, `#section` and all — that is what the filter reads.
       noteEmbeds.set(embed.link, path);
+      embeddedNotes.set(path, target);
       if (!walkedForEmbeds.has(target.path)) {
         walkedForEmbeds.add(target.path);
         collectNoteEmbeds(target, depth + 1);
@@ -268,10 +297,11 @@ export async function exportNote(
   // Rendering a `${...}` can fail on a template the editor let through, and the notice is already up by here — so
   // everything from the environment onwards reports through the one handler rather than escaping past it.
   let cmd = '';
-  // Where the drawings are drawn: the system's own scratch folder, or the plugin's where the device has none. This
-  // run's alone, and taken away again when it is over.
-  const drawingsDir = `${(await tempFolder().catch<undefined>(() => undefined)) ?? pluginDir}/drawings-${Date.now().toString(36)}`;
+  // Where drawings and query results are written: the system's scratch folder, or the plugin's where there is none.
+  const scratchDir = `${(await tempFolder().catch<undefined>(() => undefined)) ?? pluginDir}/export-${Date.now().toString(36)}`;
   let drawnDrawings = new Map<string, string>();
+  let queryAnswers: QueryAnswer[] = [];
+  let queryProblems: string[] = [];
 
   try {
     const env = (variables.env = createEnv(getPlatformValue(globalSetting.env) ?? {}, variables));
@@ -371,13 +401,42 @@ export async function exportNote(
       // An SVG asked for by name is written as one whatever it costs; where the choice was the plugin's, a drawing
       // with words in it is drawn as a picture rather than left in fonts the document will not read — see
       // `renderDrawing`.
-      drawnDrawings = await drawDrawings(plugin.app, files, drawingsDir, drawings, format, asked === 'svg' || readsInlinedFonts(writer));
+      drawnDrawings = await drawDrawings(plugin.app, files, scratchDir, drawings, format, asked === 'svg' || readsInlinedFonts(writer));
       for (const image of drawnDrawings.values()) {
         // A wasm run has no vault to look in: everything it is to see has to be handed to it.
         embeddedFiles.add(image);
       }
       // The same map `embeds.lua` is given the notes in, and for the same reasons — see `escapeForEnv`.
       env['OBSIDIAN_DRAWINGS'] = [...drawnDrawings].map(([link, image]) => `${escapeForEnv(link)}\t${escapeForEnv(image)}\n`).join('');
+    }
+
+    // Query results go in through `embeds.lua`. A template without it gets it for this run and the note's own queries
+    // alone, handed no embeds or drawings, so those stay the links the template leaves them as.
+    const embedding = usesEmbedsFilter(cmd);
+    let answersOnly = false;
+    if (embedding || setting.type === 'pandoc') {
+      const notes: Array<readonly [string, TFile]> = [['', currentFile]];
+      if (embedding) {
+        notes.push(...embeddedNotes);
+      }
+      ({ answers: queryAnswers, problems: queryProblems } = await answerQueries(plugin.app, files, `${scratchDir}/dataview`, notes));
+      if (!embedding && queryAnswers.length > 0) {
+        cmd = withEmbedsFilter(cmd, variables.luaDir);
+        answersOnly = true;
+        env['OBSIDIAN_EMBEDS'] = '';
+        env['OBSIDIAN_DRAWINGS'] = '';
+      }
+      let queryLines = '';
+      for (const { note, key, format, path } of queryAnswers) {
+        embeddedFiles.add(path);
+        const line = `${escapeForEnv(note)}\t${key}\t${format}\t${escapeForEnv(path)}\n`;
+        if (queryLines.length + line.length > EMBED_ENV_LIMIT) {
+          console.warn('Too many Dataview queries to pass to pandoc; the rest are left as code.');
+          break;
+        }
+        queryLines += line;
+      }
+      env['OBSIDIAN_DATAVIEW'] = queryLines;
     }
 
     let warnings: string;
@@ -394,8 +453,9 @@ export async function exportNote(
         command: cmd,
         vaultDir,
         resources: [...embeddedFiles],
-        embeds: noteEmbeds,
-        drawings: drawnDrawings,
+        embeds: answersOnly ? [] : noteEmbeds,
+        drawings: answersOnly ? [] : drawnDrawings,
+        queries: queryAnswers,
         typst,
         download,
       });
@@ -431,6 +491,7 @@ export async function exportNote(
         });
       }
     }
+    warnings = [...queryProblems, warnings].filter(Boolean).join('\n\n');
 
     // Pandoc writes its warnings here and exports the file all the same, so they are reported rather than thrown.
     if (warnings) {
@@ -489,9 +550,9 @@ export async function exportNote(
     });
     onFailure?.();
   } finally {
-    // The images were pandoc's to read, and pandoc has read them.
-    if (drawnDrawings.size > 0) {
-      await files.removeDir(drawingsDir);
+    // Pandoc has read them.
+    if (drawnDrawings.size > 0 || queryAnswers.length > 0) {
+      await files.removeDir(scratchDir);
     }
   }
 }

@@ -15,6 +15,8 @@ export default {
   NOTICE_IMPORT_WARNINGS: (file: string) => `Imported “${file}”, but Pandoc had warnings.`,
   EXPORT_COMMAND_OUTPUT: (cmd: string) => `Command: ${cmd}`,
   WARNINGS_TITLE: 'Pandoc warnings',
+  DATAVIEW_FAILED: (note: string, error: string) => `Dataview: a query in “${note}” could not run and is left as code. ${error}`,
+  DATAVIEW_UNFINISHED: (note: string) => `Dataview: a script in “${note}” was still rendering after 10 seconds; what was ready by then was exported.`,
 
   // ─── Export dialog ───────────────────────────────────────────────────────────
   EXPORT_DIALOG_TITLE: 'Export with Pandoc',
@@ -132,7 +134,6 @@ export default {
   PANDOC_MANUAL: 'Pandoc manual',
   CHANGELOG: 'Changelog',
   USER_GUIDE: 'User guide',
-  CHANGELOG_TITLE: 'What’s new',
   PANDOC_PATH: 'Pandoc path',
   PANDOC_PATH_PLACEHOLDER: 'Was detected automatically',
   PANDOC_PATH_NOT_FOUND: 'Not found in the system environment variables',

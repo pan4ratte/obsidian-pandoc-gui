@@ -11,6 +11,7 @@ import { dirname, resolve } from '../system/paths';
 import type { PandocWasm, WasmFiles } from './runtime';
 import type { TypstWasm } from './typst';
 import { fetchRemote, withRemoteFilter, type Download } from './remote';
+import type { QueryAnswer } from '../convert/dataview';
 
 export interface WasmConversion {
   /** The command as `exportNote` rendered it. */
@@ -33,11 +34,14 @@ export interface WasmConversion {
   embeds?: Iterable<readonly [string, string]>;
   /** The Excalidraw drawings, as the link written against the image it was drawn into. Passed as the embeds are. */
   drawings?: Iterable<readonly [string, string]>;
+  /** The rendered Dataview queries. Passed as the embeds are; the note being exported is named by the empty string. */
+  queries?: readonly QueryAnswer[];
 }
 
-/** Where `embeds.lua` looks for the two lists when there is no environment to read them from. */
+/** Where `embeds.lua` looks for its lists when there is no environment to read them from. */
 const EMBED_LIST = '.obsidian-embeds';
 const DRAWING_LIST = '.obsidian-drawings';
+const QUERY_LIST = '.obsidian-dataview';
 
 export interface WasmConversionResult {
   /** Everything pandoc wrote, by the path on the machine it belongs at. */
@@ -117,6 +121,11 @@ export async function convertWithWasm(pandoc: PandocWasm, store: FileStore, requ
   const drawings = [...(request.drawings ?? [])];
   if (drawings.length > 0) {
     files[DRAWING_LIST] = drawings.map(([link, image]) => `${link}\t${file(image)}\n`).join('');
+  }
+
+  const queries = request.queries ?? [];
+  if (queries.length > 0) {
+    files[QUERY_LIST] = queries.map(({ note, key, format, path }) => `${note && file(note)}\t${key}\t${format}\t${file(path)}\n`).join('');
   }
 
   // What the note names by URL, fetched here because nothing inside the run can fetch anything.

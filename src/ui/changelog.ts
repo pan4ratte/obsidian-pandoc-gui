@@ -1,5 +1,5 @@
 import { Component, MarkdownRenderer, Modal } from 'obsidian';
-import { changelog, t } from '../lang/helpers';
+import { changelog } from '../lang/helpers';
 
 /** What every release changed, rendered as the note it is written as. */
 export class ChangelogModal extends Modal {
@@ -7,8 +7,7 @@ export class ChangelogModal extends Modal {
   private readonly renderComponent = new Component();
 
   onOpen(): void {
-    const { contentEl, titleEl } = this;
-    titleEl.setText(t.CHANGELOG_TITLE);
+    const { contentEl } = this;
     contentEl.addClass('ex-changelog-modal');
     this.renderComponent.load();
     void MarkdownRenderer.render(this.app, changelog(), contentEl, '', this.renderComponent);

@@ -1,4 +1,4 @@
-import { EMBEDS_FILTER, luaFilterArg, orderLuaFilters } from '../../src/filters/lua_filters';
+import { EMBEDS_FILTER, luaFilterArg, orderLuaFilters, withEmbedsFilter } from '../../src/filters/lua_filters';
 
 /*
  * Pandoc runs filters in the order they are written. The embeds filter parses the transcluded notes into the
@@ -55,4 +55,19 @@ test('the template variables around it come through untouched', () => {
   expect(orderLuaFilters(command)).toBe(
     `pandoc "\${currentPath}" --resource-path="\${currentDir}" ${EMBEDS} ${FIGURES} -o "\${outputPath}"`
   );
+});
+
+describe('withEmbedsFilter', () => {
+  const MARKDOWN = 'pandoc "a.md" --lua-filter="/p/lua/markdown.lua" -o "a.out.md"';
+
+  test('adds the filter in front of the others', () => {
+    expect(withEmbedsFilter(MARKDOWN, '/p/lua')).toBe(
+      'pandoc "a.md" --lua-filter="/p/lua/embeds.lua" --lua-filter="/p/lua/markdown.lua" -o "a.out.md"'
+    );
+  });
+
+  test('at the end where there are none, and not twice', () => {
+    expect(withEmbedsFilter('pandoc "a.md" -o "b.docx"', '/p/lua')).toBe('pandoc "a.md" -o "b.docx" --lua-filter="/p/lua/embeds.lua"');
+    expect(withEmbedsFilter(`pandoc ${EMBEDS} ${FIGURES}`, '/p/lua')).toBe(`pandoc ${EMBEDS} ${FIGURES}`);
+  });
 });
