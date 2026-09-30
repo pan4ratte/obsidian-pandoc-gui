@@ -3,7 +3,7 @@
 -- The `alerts` reader takes only `> [!NOTE]`: no title or fold marker on the
 -- marker line, and before 3.12 only in capitals. This turns the rest into the
 -- same Div, and puts the type ahead of 3.12's `alert` class, since the
--- Markdown, DocBook, AsciiDoc, RST and Org writers read the first class.
+-- Markdown, DocBook, AsciiDoc and RST writers read the first class.
 
 local ALERTS = { note = true, tip = true, important = true, warning = true, caution = true }
 
