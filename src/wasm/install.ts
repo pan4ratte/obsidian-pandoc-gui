@@ -7,7 +7,7 @@
 import { requestUrl } from 'obsidian';
 import type PandocGuiPlugin from '../main';
 import { parsePandocVersion, RELEASE_CACHE_TTL } from '../pandoc/pandoc';
-import { extractFromZip } from './zip';
+import { extractFromZip } from '../system/zip';
 import { PandocWasm } from './runtime';
 import { pandocWasmSupport } from './support';
 

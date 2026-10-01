@@ -1,6 +1,15 @@
 # Changelog
 
 
+## 2.7.0
+
+### New feature: joining Word documents
+
+* **Title pages, appendices and other Word documents in the export.** Word templates have a new group, “Joined documents”: a document put at the start of the exported note and a document put at its end. A note can name its own documents in the `docx-before` and `docx-after` properties. Joined documents are carried over with their margins, headers and footers, images, lists, footnotes and comments and look as they do in Word, or they can be given the template's styles instead. Works with Pandoc WASM too; see the user guide for details.
+
+Note: settings Word makes for the whole document, such as different headers on even and odd pages, come from the exported note.
+
+
 ## 2.6.0
 
 ### New features

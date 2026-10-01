@@ -1,5 +1,5 @@
-import { deflateRawSync } from 'zlib';
-import { extractFromZip } from '../../src/wasm/zip';
+import { deflateRawSync, inflateRawSync } from 'zlib';
+import { crc32, extractFromZip, readZip, writeZip } from '../../src/system/zip';
 
 /** An archive built by hand, so the reader is measured against the format rather than against another reader. */
 const zip = (entries: { name: string; data: Buffer; stored?: boolean }[]): ArrayBuffer => {
@@ -78,5 +78,51 @@ describe('extractFromZip', () => {
   test('says so when it is not an archive at all', async () => {
     const bytes = new TextEncoder().encode('not a zip, just some bytes'.repeat(4));
     await expect(extractFromZip(bytes.buffer, 'pandoc.wasm')).rejects.toThrow(/Not a zip/);
+  });
+});
+
+describe('readZip', () => {
+  test('reads every file, packed or stored, and leaves folders out', async () => {
+    const archive = zip([
+      { name: 'word/', data: Buffer.alloc(0), stored: true },
+      { name: 'word/document.xml', data: Buffer.from('<doc/>') },
+      { name: '[Content_Types].xml', data: Buffer.from('<types/>'), stored: true },
+    ]);
+    const files = await readZip(archive);
+    expect([...files.keys()]).toEqual(['word/document.xml', '[Content_Types].xml']);
+    expect(text(files.get('word/document.xml'))).toBe('<doc/>');
+  });
+});
+
+describe('writeZip', () => {
+  test('checksums the way the format does', () => {
+    expect(crc32(new TextEncoder().encode('123456789'))).toBe(0xcbf43926);
+  });
+
+  test('writes what readZip reads back, in the order given', async () => {
+    const big = new TextEncoder().encode('<w:p/>'.repeat(5000));
+    const archive = await writeZip([
+      ['[Content_Types].xml', new TextEncoder().encode('<types/>')],
+      ['word/media/фото.png', new Uint8Array([1, 2, 3])],
+      ['word/document.xml', big],
+    ]);
+    const files = await readZip(archive);
+    expect([...files.keys()]).toEqual(['[Content_Types].xml', 'word/media/фото.png', 'word/document.xml']);
+    expect([...files.get('word/media/фото.png')]).toEqual([1, 2, 3]);
+    expect(Buffer.from(files.get('word/document.xml')).equals(Buffer.from(big))).toBe(true);
+  });
+
+  test('deflates what gets smaller and stores what does not, with sizes and checksum in both headers', async () => {
+    const big = new TextEncoder().encode('a'.repeat(1000));
+    const archive = Buffer.from(await writeZip([['a.txt', big]]));
+    expect(archive.readUInt32LE(0)).toBe(0x04034b50);
+    expect(archive.readUInt16LE(8)).toBe(8);
+    const packed = archive.readUInt32LE(18);
+    expect(archive.readUInt32LE(22)).toBe(1000);
+    expect(archive.readUInt32LE(14)).toBe(crc32(big));
+    expect(inflateRawSync(archive.subarray(30 + 5, 30 + 5 + packed)).toString()).toBe('a'.repeat(1000));
+
+    const tiny = Buffer.from(await writeZip([['b', new Uint8Array([7])]]));
+    expect(tiny.readUInt16LE(8)).toBe(0);
   });
 });

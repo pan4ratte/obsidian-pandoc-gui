@@ -13,6 +13,7 @@ import { t } from '../../lang/helpers';
 import pandoc from '../../pandoc/pandoc';
 import { resolveEngine } from '../../pandoc/engine';
 import { bundledReferenceDoc, isReferenceFormat, referenceDocFromNative } from '../../pandoc/reference_doc';
+import { STYLE_MODES, type StyleMode } from '../../docx/styles';
 import { chooseFile, documentsFolder, isMobileUi, showInFolder, vaultRoot } from '../../system/platform';
 import { FileStore } from '../../system/file_store';
 import PandocDashboard from './PandocDashboard';
@@ -250,6 +251,7 @@ const CSS_FILES = [{ name: 'Stylesheet', extensions: ['css'] }];
 const SYNTAX_FILES = [{ name: 'Syntax definition', extensions: ['xml'] }];
 const IMAGE_FILES = [{ name: 'Image', extensions: ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'] }];
 const FONT_FILES = [{ name: 'Font', extensions: ['otf', 'ttf', 'woff', 'woff2'] }];
+const JOIN_FILES = [{ name: 'Word', extensions: ['docx', 'dotx'] }];
 
 /** What a reference document may be, by writer: the document a word processor writes, and the template it writes one from. */
 const REFERENCE_DOC_FILES: Record<string, string[]> = {
@@ -1022,6 +1024,37 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
                 </Setting>
               </Show>
             </Show>
+          </div>
+        </Show>
+
+        {/* Kept on the template rather than in the arguments: pandoc would write the paths into the document. */}
+        <Show when={format() === 'docx'}>
+          <div class="ex-card ex-template-modal-joined">
+            <Setting name={t.JOIN_DOCS} description={t.JOIN_DOCS_DESC} heading={true} />
+            <Setting name={t.JOIN_BEFORE} class="ex-template-modal-join-before">
+              <FileInput
+                value={template()?.joinBefore}
+                filters={JOIN_FILES}
+                tooltip={t.CHOOSE_FILE}
+                onChange={value => updateTemplate(v => (v.joinBefore = value.trim() || undefined))}
+              />
+            </Setting>
+            <Setting name={t.JOIN_AFTER} class="ex-template-modal-join-after">
+              <FileInput
+                value={template()?.joinAfter}
+                filters={JOIN_FILES}
+                tooltip={t.CHOOSE_FILE}
+                onChange={value => updateTemplate(v => (v.joinAfter = value.trim() || undefined))}
+              />
+            </Setting>
+            <Setting name={t.JOIN_STYLES} description={t.JOIN_STYLES_DESC} class="ex-template-modal-join-styles">
+              <DropDown
+                options={STYLE_MODES.map(mode => ({ value: mode, name: t.JOIN_STYLES_LABELS[mode] }))}
+                selected={template()?.joinStyles ?? 'own'}
+                autofocus={false}
+                onChange={value => updateTemplate(v => (v.joinStyles = value === 'own' ? undefined : (value as StyleMode)))}
+              />
+            </Setting>
           </div>
         </Show>
 

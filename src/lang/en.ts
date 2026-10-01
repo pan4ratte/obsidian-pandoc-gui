@@ -407,6 +407,21 @@ export default {
   FLATTEN_ORDERED: 'Flatten numbered lists',
   FLATTEN_ORDERED_DESC: 'Off, every list restarts at 1 and List Number sets only the font and spacing. On, List Number defines the style in full, but separate lists carry on counting.',
 
+  // ─── Joined Word documents ───────────────────────────────────────────────────
+  JOIN_DOCS: 'Joined documents',
+  JOIN_DOCS_DESC: 'Word documents put before and after the exported note, such as a title page and appendices. A note can name its own in the docx-before and docx-after properties.',
+  JOIN_BEFORE: 'Document at the start',
+  JOIN_AFTER: 'Document at the end',
+  JOIN_STYLES: 'Styles of joined documents',
+  JOIN_STYLES_DESC: 'Own: the documents look as they do in Word. Template’s: styles with the same names are taken from the reference document.',
+  JOIN_STYLES_LABELS: {
+    own: 'Own',
+    template: 'Template’s',
+  },
+  JOIN_NOT_FOUND: (name: string) => `Document to join not found: ${name}`,
+  JOIN_FAILED: (reason: string) => `The documents could not be joined: ${reason}`,
+  JOIN_NO_OUTPUT: 'Pandoc wrote no document.',
+
   // ─── Layout template and includes ────────────────────────────────────────────
   OUTPUT_TEMPLATE: 'Layout template',
   OUTPUT_TEMPLATE_DESC: (extension: string) => `A pandoc template of your own, in place of the built-in one. For the format selected that is a ${extension} file.`,

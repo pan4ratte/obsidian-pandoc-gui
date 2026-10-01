@@ -17,7 +17,8 @@ import { convertWithWasm } from '../wasm/convert';
 import { typesetTypstPdf } from './typst_pdf';
 import { FileStore } from '../system/file_store';
 import { download } from '../system/download';
-import { basename, dirname, normalize, resolve, stem } from '../system/paths';
+import { basename, dirname, extname, normalize, resolve, stem } from '../system/paths';
+import { collectJoins, joinExport } from './joined_docs';
 import { PATH_SEPARATOR, chooseSavePath, isDesktop, isMobile, openFile, showInFolder, tempFolder, vaultRoot } from '../system/platform';
 import { type DrawingFormat, isDrawing, renderDrawing } from './excalidraw';
 import { type QueryAnswer, collectQueries, renderQueries } from './dataview';
@@ -392,6 +393,13 @@ export async function exportNote(
     // Pandoc writes into a folder, it does not make one.
     await files.mkdir(dirname(actualOutputPath));
 
+    // Read up front, so a document that is not there stops the export before pandoc runs.
+    const writesDocx = (outputFormat(cmd) ?? (extname(actualOutputPath).toLowerCase() === '.docx' ? 'docx' : undefined)) === 'docx';
+    const joins =
+      setting.type === 'pandoc' && writesDocx
+        ? await collectJoins({ app: plugin.app, note: currentFile, setting, frontMatter, variables, files })
+        : undefined;
+
     // The drawings, drawn — read off the command rather than the template, so a hand-edited `-t` is answered to. The
     // writer decides what they are drawn into: everything `takesSvg` names keeps the drawing vector, everything else
     // is handed a PNG. LaTeX is the one that asks, `\includesvg` needing more of a TeX installation than this can
@@ -492,6 +500,9 @@ export async function exportNote(
           files,
         });
       }
+    }
+    if (joins) {
+      await joinExport(files, actualOutputPath, joins);
     }
     warnings = [...queryProblems, warnings].filter(Boolean).join('\n\n');
 

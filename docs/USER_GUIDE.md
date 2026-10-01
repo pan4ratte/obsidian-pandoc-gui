@@ -105,3 +105,33 @@ The plugin waits for a script to finish rendering, but no longer than 10 seconds
 
 * Inline DataviewJS queries (inline code starting with “$=”).
 * `CALENDAR` queries: a calendar can be written neither as a table nor as a list.
+
+## 4. Joining Word documents
+
+When exporting to Word, other Word documents can be joined to the export: a title page at the start and appendices at the end, for example. They are carried over whole, with their page margins, headers and footers, images, lists, footnotes and comments, and look as they do in Word.
+
+The documents are set in the template editor under “Joined documents”: “Document at the start” and “Document at the end”. A path can use variables, for example `${vaultDir}/Templates/Title page.docx`.
+
+A note can name its own documents in the `docx-before` and `docx-after` properties: a link to a file in the vault, a path, or a list of several documents. A note's property replaces the template's document on that side, and an empty property turns it off for that note:
+
+```yaml
+docx-before: "[[Title page.docx]]"
+docx-after:
+  - "[[Appendix A.docx]]"
+  - "[[Appendix B.docx]]"
+```
+
+Joining works with Pandoc WASM too, including on a phone.
+
+### Styles
+
+The “Styles of joined documents” option decides how a joined document is styled:
+
+* **Own** — the document looks as it does in Word. Styles that differ from the export's are carried over under a new name with the document's name in brackets, such as “Normal (Title page)”.
+* **Template's** — styles with the same names as in the reference document are taken from it, so the joined document is styled like the note. Direct formatting (a font or alignment set by hand) is kept.
+
+### Sections, headers and footers
+
+Each joined document becomes a section of its own, with its own margins, page size, headers and footers, and starts on a new page unless it says otherwise. One document's headers and footers do not carry over to the next one's pages, and footnote numbering starts again in each document. Page numbering runs through the whole document, so a title page counts as page one.
+
+Note: settings Word makes for the whole document rather than for a section — different headers on even and odd pages, for example — come from the exported note. Fonts embedded in a document and macros are not carried over. Documents saved as “Strict Open XML” are not supported: save them again in Word as an ordinary Word document.

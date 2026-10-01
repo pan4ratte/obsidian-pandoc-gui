@@ -4,6 +4,7 @@ import type { PropertyGridMeta } from './ui/components/PropertyGrid';
 import type { InstalledLuaFilter } from './filters/lua_filters';
 import type { TodayFormat } from './filters/filter_args';
 import type { EngineMode } from './pandoc/engine';
+import type { StyleMode } from './docx/styles';
 
 // What a template's `${...}` are filled in with. For `/User/aaa/Documents/test.pdf`:
 // `outputDir` is the folder, `outputPath` the whole path, `outputFileName` is `test`,
@@ -127,6 +128,10 @@ export interface PandocExportSetting extends CommonExportSetting {
   /** Options typed by hand, kept apart from the rows' own line. */
   userArguments?: string;
   extension: string;
+  /** Word documents joined before and after a docx export, kept off the command line: pandoc would write them into it. */
+  joinBefore?: string;
+  joinAfter?: string;
+  joinStyles?: StyleMode;
 }
 
 export interface CustomExportSetting extends CommonExportSetting {
