@@ -21,6 +21,9 @@ export default (props: {
     return `calc(var(--ex-step-slider-thumb) / 2 + ${fraction} * (100% - var(--ex-step-slider-thumb)))`;
   };
 
+  /** The first label sits flush with the slider's left edge. */
+  const labelAt = (index: number) => (index === 0 ? '0' : at(index));
+
   return (
     // How far along the track the answer stands, for the fill drawn behind the thumb.
     <div class="ex-step-slider" style={{ '--ex-step-slider-fill': at(value() - min()) }}>
@@ -36,7 +39,7 @@ export default (props: {
       <div class="ex-step-slider-ticks">
         <For each={props.labels}>
           {(label, index) => (
-            <span class="ex-step-slider-tick" classList={{ 'is-current': min() + index() === value() }} style={{ left: at(index()) }}>
+            <span class="ex-step-slider-tick" classList={{ 'is-current': min() + index() === value() }} style={{ left: labelAt(index()) }}>
               {label}
             </span>
           )}
