@@ -149,6 +149,24 @@ describe('joining documents to an export', () => {
     expect(sections).toEqual(['1700', '1440', '1000']);
   });
 
+  test('joins several documents on a side in the order given', async () => {
+    const doc = (text: string, margin: number) => docx({ body: `${para(text)}${SECT(margin)}`, styles: NORMAL('Aptos') });
+    const { document } = await join(await exported(), {
+      before: [
+        { name: 'Cover', bytes: await doc('Cover', 1100) },
+        { name: 'Title', bytes: await doc('Title', 1200) },
+      ],
+      after: [
+        { name: 'A', bytes: await doc('Appendix A', 1300) },
+        { name: 'B', bytes: await doc('Appendix B', 1400) },
+      ],
+    });
+
+    expect(texts(document)).toEqual(['Cover', 'Title', 'Exported', 'Appendix A', 'Appendix B']);
+    const sections = byTag(document, 'sectPr').map(s => val(byTag(s, 'pgMar')[0], 'left'));
+    expect(sections).toEqual(['1100', '1200', '1440', '1300', '1400']);
+  });
+
   test('closes a document ending in a table with a paragraph of its own', async () => {
     const table = await docx({ body: `<w:tbl><w:tr><w:tc>${para('cell')}</w:tc></w:tr></w:tbl>${SECT(1700)}` });
     const { document } = await join(await exported(), { before: [{ name: 'T', bytes: table }] });
@@ -196,6 +214,31 @@ describe('styles', () => {
     // A style based on the renamed one follows it.
     const bigStyle = styles.find(s => val(s, 'styleId') === val(byTag(big, 'pStyle')[0]));
     expect(val(byTag(bigStyle, 'basedOn')[0])).toBe(val(renamed, 'styleId'));
+  });
+
+  test('own: two documents of the same name keep their clashing styles apart', async () => {
+    const appendix = (font: string) => docx({ body: `${para(font)}${SECT(1700)}`, styles: NORMAL(font) });
+    const { document, xml } = await join(await exported(), {
+      after: [
+        { name: 'Appendix', bytes: await appendix('Arial') },
+        { name: 'Appendix', bytes: await appendix('Georgia') },
+      ],
+    });
+    const styles = byTag(xml('word/styles.xml'), 'style');
+    const font = (p: Element) => {
+      const id = val(byTag(p, 'pStyle')[0]);
+      return val(
+        byTag(
+          styles.find(s => val(s, 'styleId') === id),
+          'rFonts'
+        )[0],
+        'ascii'
+      );
+    };
+    const [, arial, georgia] = byTag(document, 'p');
+    expect(new Set(styles.map(s => val(byTag(s, 'name')[0]))).size).toBe(styles.length);
+    expect(font(arial)).toBe('Arial');
+    expect(font(georgia)).toBe('Georgia');
   });
 
   test('own: the document defaults the export does not share are laid under the root style', async () => {

@@ -412,6 +412,8 @@ export default {
   JOIN_DOCS_DESC: 'Word documents put before and after the exported note, such as a title page and appendices. A note can name its own in the docx-before and docx-after properties.',
   JOIN_BEFORE: 'Document at the start',
   JOIN_AFTER: 'Document at the end',
+  JOIN_ADD: 'Add document',
+  JOIN_MOVE_UP: 'Move up',
   JOIN_STYLES: 'Styles of joined documents',
   JOIN_STYLES_DESC: 'Own: the documents look as they do in Word. Template’s: styles with the same names are taken from the reference document.',
   JOIN_STYLES_LABELS: {

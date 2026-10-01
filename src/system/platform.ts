@@ -170,6 +170,19 @@ export const chooseFile = async (options: {
   return chosen.canceled ? undefined : chosen.filePaths[0];
 };
 
+/** Files chosen from the system, several at once; none where the dialog was closed or there is no dialog to open. */
+export const chooseFiles = async (options: { filters?: FileFilter[] }): Promise<string[]> => {
+  if (!isDesktop()) {
+    return [];
+  }
+  const ct = await electron();
+  const chosen = await ct.remote.dialog.showOpenDialog(await dialogWindow(), {
+    filters: options.filters,
+    properties: ['openFile', 'multiSelections'],
+  });
+  return chosen.canceled ? [] : chosen.filePaths;
+};
+
 /** Where to save a file, asked of the system with the overwrite warning it puts up itself. */
 export const chooseSavePath = async (options: { title?: string; defaultPath?: string }): Promise<string | undefined> => {
   if (!isDesktop()) {

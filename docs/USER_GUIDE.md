@@ -110,9 +110,9 @@ The plugin waits for a script to finish rendering, but no longer than 10 seconds
 
 When exporting to Word, other Word documents can be joined to the export: a title page at the start and appendices at the end, for example. They are carried over whole, with their page margins, headers and footers, images, lists, footnotes and comments, and look as they do in Word.
 
-The documents are set in the template editor under “Joined documents”: “Document at the start” and “Document at the end”. A path can use variables, for example `${vaultDir}/Templates/Title page.docx`.
+The documents are set in the template editor under “Joined documents”: press “+” in the “Document at the start” or “Document at the end” row and pick one or more documents. They are joined in the order listed, and the arrow moves a document up. A document in the vault is remembered by its path inside the vault, so the template works on every device the vault syncs to.
 
-A note can name its own documents in the `docx-before` and `docx-after` properties: a link to a file in the vault, a path, or a list of several documents. A note's property replaces the template's document on that side, and an empty property turns it off for that note:
+A note can name its own documents in the `docx-before` and `docx-after` properties: a link to a file in the vault, a path, or a list of several documents. A note's property replaces the template's documents on that side, and an empty property turns them off for that note:
 
 ```yaml
 docx-before: "[[Title page.docx]]"
@@ -120,6 +120,8 @@ docx-after:
   - "[[Appendix A.docx]]"
   - "[[Appendix B.docx]]"
 ```
+
+The documents can also be picked in the export dialog, for that export alone. The “Document at the start” and “Document at the end” lists show what will be joined. A list changed there replaces both the note's and the template's documents, and an empty list turns joining off on that side.
 
 Joining works with Pandoc WASM too, including on a phone.
 

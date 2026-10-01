@@ -43,22 +43,43 @@ export const linkTarget = (value: string): string => {
 export const propertyLinks = (value: unknown): string[] =>
   (Array.isArray(value) ? value : [value]).filter((v): v is string => typeof v === 'string' && v.trim() !== '').map(linkTarget);
 
-/** The documents each side names: the note's property where it has one, the template's otherwise. */
+/** What the note's property names on a side, or nothing where the note has no such property. */
+const noteLinks = (frontMatter: unknown, side: Side): string[] | undefined => {
+  const properties = (frontMatter ?? {}) as Record<string, unknown>;
+  const key = JOIN_PROPERTIES[side];
+  return Object.prototype.hasOwnProperty.call(properties, key) ? propertyLinks(properties[key]) : undefined;
+};
+
+/** The template's documents on a side. `flat`: a template saved before the lists held a single path. */
+export const templatePaths = (setting: Pick<PandocExportSetting, 'joinBefore' | 'joinAfter'> | undefined, side: Side): string[] =>
+  [side === 'before' ? setting?.joinBefore : setting?.joinAfter]
+    .flat()
+    .filter((path): path is string => typeof path === 'string' && path.trim() !== '')
+    .map(path => path.trim());
+
+/** The documents each side names: the export dialog's pick, then the note's property, then the template's. */
 export const namedDocuments = (
-  setting: Pick<PandocExportSetting, 'joinBefore' | 'joinAfter'>,
+  setting: Pick<PandocExportSetting, 'joinBefore' | 'joinAfter' | 'joinChosen'>,
   frontMatter: unknown,
   variables: Record<string, unknown>
 ): Record<Side, string[]> => {
-  const properties = (frontMatter ?? {}) as Record<string, unknown>;
   const named = (side: Side) => {
-    const key = JOIN_PROPERTIES[side];
-    if (Object.prototype.hasOwnProperty.call(properties, key)) {
-      return propertyLinks(properties[key]);
+    const chosen = setting.joinChosen?.[side];
+    if (chosen) {
+      return chosen.map(path => linkTarget(renderTemplate(path, variables)));
     }
-    const path = (side === 'before' ? setting.joinBefore : setting.joinAfter)?.trim();
-    return path ? [renderTemplate(path, variables)] : [];
+    return noteLinks(frontMatter, side) ?? templatePaths(setting, side).map(path => renderTemplate(path, variables));
   };
   return { before: named('before'), after: named('after') };
+};
+
+/** What each side names as written, for the export dialog to show before anything is picked. */
+export const shownDocuments = (
+  setting: Pick<PandocExportSetting, 'joinBefore' | 'joinAfter'>,
+  frontMatter: unknown
+): Record<Side, string[]> => {
+  const shown = (side: Side) => noteLinks(frontMatter, side) ?? templatePaths(setting, side);
+  return { before: shown('before'), after: shown('after') };
 };
 
 /** A path on the machine, or a link resolved the way the note's own links are. */

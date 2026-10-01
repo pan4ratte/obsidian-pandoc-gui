@@ -18,6 +18,8 @@ export default (props: {
   disabled?: boolean;
   noInfo?: boolean;
   children?: JSX.Element;
+  /** Drawn under the label and control, across the row's whole width. */
+  extra?: JSX.Element;
 }) => {
   const context: SettingContext = {
     settingEl: null,
@@ -41,6 +43,7 @@ export default (props: {
             <div class="setting-item-description">{props.description}</div>
           </div>
           <div class="setting-item-control">{props.children}</div>
+          {props.extra}
         </div>
       </Context.Provider>
     </>

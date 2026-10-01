@@ -129,9 +129,11 @@ export interface PandocExportSetting extends CommonExportSetting {
   userArguments?: string;
   extension: string;
   /** Word documents joined before and after a docx export, kept off the command line: pandoc would write them into it. */
-  joinBefore?: string;
-  joinAfter?: string;
+  joinBefore?: string[];
+  joinAfter?: string[];
   joinStyles?: StyleMode;
+  /** Picked in the export dialog for one export, over the note's and the template's; `[]` joins none. Never saved. */
+  joinChosen?: { before?: string[]; after?: string[] };
 }
 
 export interface CustomExportSetting extends CommonExportSetting {

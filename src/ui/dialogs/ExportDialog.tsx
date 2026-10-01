@@ -1,5 +1,5 @@
 import { Notice, TFile } from 'obsidian';
-import { createSignal, createRoot, onCleanup, createMemo, untrack, Show } from 'solid-js';
+import { createSignal, createRoot, onCleanup, createMemo, untrack, Show, For } from 'solid-js';
 import { insert } from 'solid-js/web';
 import type PandocGuiPlugin from '../../main';
 import { t } from '../../lang/helpers';
@@ -10,12 +10,17 @@ import { droppedBy, resolveEngine, unsupportedBy } from '../../pandoc/engine';
 import { outputFormat, supportsToc } from '../../pandoc/pandoc_format';
 import { TOC_MAX_DEPTH, TOC_NONE, setTocDepth, tocDepth } from '../../args/toc_args';
 import { chooseFile, documentsFolder, isMobile, isMobileUi, vaultRoot } from '../../system/platform';
+import { shownDocuments } from '../../convert/joined_docs';
 import FolderInput from '../components/FolderInput';
+import DocumentList from '../components/DocumentList';
 import Modal from '../components/Modal';
 import Button from '../components/Button';
 import Icon from '../components/Icon';
 import Setting, { Text, DropDown, ExtraButton, Toggle } from '../components/Setting';
 import StepSlider from '../components/StepSlider';
+
+const JOIN_SIDES = ['before', 'after'] as const;
+const JOIN_FILES = [{ name: 'Word', extensions: ['docx', 'dotx'] }];
 
 const Dialog = (props: { plugin: PandocGuiPlugin; currentFile: TFile; onClose?: () => void }) => {
   const {
@@ -60,11 +65,24 @@ const Dialog = (props: { plugin: PandocGuiPlugin; currentFile: TFile; onClose?: 
   /** None, then one heading level at a time, as the template editor's own row offers them. */
   const tocLabels = [t.TOC_NONE, ...Array.from({ length: TOC_MAX_DEPTH }, (_, i) => String(i + 1))];
 
-  /** What the export runs: the template, carrying the depth this dialog asks for where that is not its own. */
+  /** The documents joined to a Word export: shown as the note or template names them until the list is changed here. */
+  const [joinChosen, setJoinChosen] = createSignal<{ before?: string[]; after?: string[] }>({});
+  const joinShown = createMemo(() => shownDocuments(pandocSetting() ?? {}, app.metadataCache.getFileCache(currentFile)?.frontmatter));
+  const joinValue = (side: 'before' | 'after') => joinChosen()[side] ?? joinShown()[side];
+  const chooseJoin = (side: 'before' | 'after', value: string[]) => setJoinChosen(chosen => ({ ...chosen, [side]: value }));
+
+  /** What the export runs: the template, carrying what this dialog asks for where that is not its own. */
   const exportSetting = () => {
     const chosen = pandocSetting();
+    if (!chosen) {
+      return setting();
+    }
     const depth = tocOverride();
-    return chosen && depth !== undefined ? { ...chosen, customArguments: setTocDepth(chosen.customArguments, depth) } : setting();
+    return {
+      ...chosen,
+      customArguments: depth === undefined ? chosen.customArguments : setTocDepth(chosen.customArguments, depth),
+      joinChosen: joinChosen(),
+    };
   };
 
   // Where the file goes, as a path on the device. A phone has nowhere outside the vault to write to, so there it is
@@ -135,17 +153,40 @@ const Dialog = (props: { plugin: PandocGuiPlugin; currentFile: TFile; onClose?: 
   return (
     <>
       <Modal app={app} title={t.EXPORT_DIALOG_TITLE} hidden={hidden()} classList={{ 'ex-export-modal': true }} onClose={props.onClose}>
-        <Setting name={t.EXPORT_DIALOG_TEMPLATE}>
-          {/* The depth belongs to the template it was picked for, so another template starts from its own. */}
-          <DropDown
-            options={exportTypes}
-            onChange={typ => {
-              setExportType(typ);
-              setTocOverride(undefined);
-            }}
-            selected={exportType()}
-          />
-        </Setting>
+        <div class="ex-card">
+          <Setting name={t.EXPORT_DIALOG_TEMPLATE}>
+            {/* The depth belongs to the template it was picked for, so another template starts from its own. */}
+            <DropDown
+              options={exportTypes}
+              onChange={typ => {
+                setExportType(typ);
+                setTocOverride(undefined);
+                setJoinChosen({});
+              }}
+              selected={exportType()}
+            />
+          </Setting>
+
+          <Setting name={t.EXPORT_DIALOG_FILE_NAME} description={t.EXPORT_DIALOG_FILE_NAME_DESC(extension())}>
+            <Text tooltip={outputFileFullName()} value={candidateOutputFileName()} onChange={value => setCandidateOutputFileName(value)} />
+          </Setting>
+
+          <Setting name={t.EXPORT_DIALOG_LOCATION} class={isMobileUi() ? 'ex-export-modal-folder' : undefined}>
+            {/* The system's folder dialog where there is one; the vault's own folders where there is not — and where a
+                desktop is drawing a phone's UI, which the vault's own folders are the honest answer for. */}
+            <Show
+              when={isMobileUi()}
+              fallback={
+                <>
+                  <Text tooltip={candidateOutputDirectory()} value={candidateOutputDirectory()} disabled />
+                  <ExtraButton icon="folder" onClick={() => void chooseFolder()} />
+                </>
+              }
+            >
+              <FolderInput app={app} value={vaultFolder()} placeholder={t.IMPORT_DIALOG_FOLDER_PLACEHOLDER} onChange={setVaultFolder} />
+            </Show>
+          </Setting>
+        </div>
 
         <Show when={allHidden}>
           <div class="ex-export-modal-warning">
@@ -161,32 +202,28 @@ const Dialog = (props: { plugin: PandocGuiPlugin; currentFile: TFile; onClose?: 
           </div>
         </Show>
 
-        <Setting name={t.EXPORT_DIALOG_FILE_NAME} description={t.EXPORT_DIALOG_FILE_NAME_DESC(extension())}>
-          <Text tooltip={outputFileFullName()} value={candidateOutputFileName()} onChange={value => setCandidateOutputFileName(value)} />
-        </Setting>
-
-        <Setting name={t.EXPORT_DIALOG_LOCATION} class={isMobileUi() ? 'ex-export-modal-folder' : undefined}>
-          {/* The system's folder dialog where there is one; the vault's own folders where there is not — and where a
-              desktop is drawing a phone's UI, which the vault's own folders are the honest answer for. */}
-          <Show
-            when={isMobileUi()}
-            fallback={
-              <>
-                <Text tooltip={candidateOutputDirectory()} value={candidateOutputDirectory()} disabled />
-                <ExtraButton icon="folder" onClick={() => void chooseFolder()} />
-              </>
-            }
-          >
-            <FolderInput app={app} value={vaultFolder()} placeholder={t.IMPORT_DIALOG_FOLDER_PLACEHOLDER} onChange={setVaultFolder} />
-          </Show>
-        </Setting>
-
         {/* The template editor's own row, for the writers that would do something with it: it says what the template
             asks for, and answering it here changes this export alone. */}
         <Show when={supportsToc(format())}>
           <Setting name={t.TOC} description={t.TOC_DESC} class="ex-export-modal-toc">
             <StepSlider labels={tocLabels} min={TOC_NONE} value={toc()} onChange={depth => setTocOverride(depth)} />
           </Setting>
+        </Show>
+
+        <Show when={format() === 'docx'}>
+          <div class="ex-card">
+            <For each={JOIN_SIDES}>
+              {side => (
+                <DocumentList
+                  app={app}
+                  name={side === 'before' ? t.JOIN_BEFORE : t.JOIN_AFTER}
+                  value={joinValue(side)}
+                  filters={JOIN_FILES}
+                  onChange={value => chooseJoin(side, value)}
+                />
+              )}
+            </For>
+          </div>
         </Show>
 
         <Setting name={t.EXPORT_DIALOG_OVERWRITE} class="mod-toggle">

@@ -14,6 +14,8 @@ import pandoc from '../../pandoc/pandoc';
 import { resolveEngine } from '../../pandoc/engine';
 import { bundledReferenceDoc, isReferenceFormat, referenceDocFromNative } from '../../pandoc/reference_doc';
 import { STYLE_MODES, type StyleMode } from '../../docx/styles';
+import { templatePaths } from '../../convert/joined_docs';
+import DocumentList from '../components/DocumentList';
 import { chooseFile, documentsFolder, isMobileUi, showInFolder, vaultRoot } from '../../system/platform';
 import { FileStore } from '../../system/file_store';
 import PandocDashboard from './PandocDashboard';
@@ -1031,22 +1033,22 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
         <Show when={format() === 'docx'}>
           <div class="ex-card ex-template-modal-joined">
             <Setting name={t.JOIN_DOCS} description={t.JOIN_DOCS_DESC} heading={true} />
-            <Setting name={t.JOIN_BEFORE} class="ex-template-modal-join-before">
-              <FileInput
-                value={template()?.joinBefore}
-                filters={JOIN_FILES}
-                tooltip={t.CHOOSE_FILE}
-                onChange={value => updateTemplate(v => (v.joinBefore = value.trim() || undefined))}
-              />
-            </Setting>
-            <Setting name={t.JOIN_AFTER} class="ex-template-modal-join-after">
-              <FileInput
-                value={template()?.joinAfter}
-                filters={JOIN_FILES}
-                tooltip={t.CHOOSE_FILE}
-                onChange={value => updateTemplate(v => (v.joinAfter = value.trim() || undefined))}
-              />
-            </Setting>
+            <DocumentList
+              app={app}
+              name={t.JOIN_BEFORE}
+              class="ex-template-modal-join-before"
+              value={templatePaths(template(), 'before')}
+              filters={JOIN_FILES}
+              onChange={value => updateTemplate(v => (v.joinBefore = value.length > 0 ? value : undefined))}
+            />
+            <DocumentList
+              app={app}
+              name={t.JOIN_AFTER}
+              class="ex-template-modal-join-after"
+              value={templatePaths(template(), 'after')}
+              filters={JOIN_FILES}
+              onChange={value => updateTemplate(v => (v.joinAfter = value.length > 0 ? value : undefined))}
+            />
             <Setting name={t.JOIN_STYLES} description={t.JOIN_STYLES_DESC} class="ex-template-modal-join-styles">
               <DropDown
                 options={STYLE_MODES.map(mode => ({ value: mode, name: t.JOIN_STYLES_LABELS[mode] }))}

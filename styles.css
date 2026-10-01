@@ -675,6 +675,60 @@
   flex: 0 0 auto;
 }
 
+/* The added files, a line each under the row's label and add button. */
+.ex-document-list.setting-item {
+  flex-wrap: wrap;
+}
+
+.ex-document-list-items {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-1);
+  margin-top: var(--size-4-2);
+}
+
+.ex-document-list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-1);
+  padding: var(--size-4-1) var(--size-4-2);
+  border-radius: var(--radius-s);
+  background: var(--background-modifier-form-field);
+  font-size: var(--font-ui-small);
+}
+
+/* Drawn as one more file, and clicked anywhere along it. */
+.ex-document-list-add {
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: var(--cursor);
+}
+
+/* The box a clickable icon has, so the row stands as tall as a file's. */
+.ex-document-list-add > .setting-editor-extra-setting-button {
+  display: flex;
+  padding: var(--size-2-2) var(--size-2-3);
+}
+
+/* Sized to its words, where a file's name takes the rest of the row. */
+.ex-document-list-item.ex-document-list-add > span {
+  flex: 0 1 auto;
+}
+
+.ex-document-list-add:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+.ex-document-list-item > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /*
  * Export destination.
  */
@@ -1564,11 +1618,12 @@
  * box around all of them is what read as mud.
  *
  * No side padding, so the lines between the rows run the width of the card;
- * the rows carry the inset themselves. The import dialog groups its rows the
- * same way.
+ * the rows carry the inset themselves. The import and export dialogs group their
+ * rows the same way.
  */
 .ex-template-modal.ex-template-modal .ex-card:not(.ex-section),
-.ex-import-modal.ex-import-modal .ex-card:not(.ex-section) {
+.ex-import-modal.ex-import-modal .ex-card:not(.ex-section),
+.ex-export-modal.ex-export-modal .ex-card:not(.ex-section) {
   margin: 0;
   border: 1px solid var(--setting-items-border-color);
   border-radius: var(--setting-items-radius);
@@ -1578,7 +1633,8 @@
 /* A group standing in the modal rather than inside a panel keeps the spacing of
    the rows it stands among. */
 .ex-template-modal.ex-template-modal .modal-content > .ex-card:not(.ex-section),
-.ex-import-modal.ex-import-modal .modal-content > .ex-card:not(.ex-section) {
+.ex-import-modal.ex-import-modal .modal-content > .ex-card:not(.ex-section),
+.ex-export-modal.ex-export-modal .modal-content > .ex-card:not(.ex-section) {
   margin-bottom: var(--size-4-3);
 }
 
@@ -1589,8 +1645,10 @@
  * and this has to outweigh that in turn.
  */
 .ex-template-modal.ex-template-modal .ex-card.ex-card:not(.ex-section) .setting-item:not(.setting-item-heading),
-.ex-import-modal.ex-import-modal .ex-card.ex-card:not(.ex-section) .setting-item:not(.setting-item-heading) {
+.ex-import-modal.ex-import-modal .ex-card.ex-card:not(.ex-section) .setting-item:not(.setting-item-heading),
+.ex-export-modal.ex-export-modal .ex-card.ex-card:not(.ex-section) .setting-item:not(.setting-item-heading) {
   margin: 0;
+  padding: var(--setting-items-padding-y) var(--setting-items-padding-x);
   border: none;
   border-radius: 0;
   background: none;
@@ -1604,12 +1662,20 @@
  * A collapsible panel is looked through rather than divided from: the line
  * belongs to the row inside it, so a panel that is shut takes its line with it
  * and the row after it still has one of its own.
+ *
+ * Inset by the rows' padding, as in a stock group. At the row's top rather than
+ * a pixel above it: a collapsible panel clips what overhangs it.
  */
-.ex-template-modal.ex-template-modal .ex-card.ex-card:not(.ex-section) .setting-item:not(.setting-item-heading) + .setting-item,
-.ex-template-modal.ex-template-modal .ex-card.ex-card:not(.ex-section) .ex-collapsible > .setting-item:not(.setting-item-heading),
-.ex-template-modal.ex-template-modal .ex-card.ex-card:not(.ex-section) .ex-collapsible + .setting-item:not(.setting-item-heading),
-.ex-import-modal.ex-import-modal .ex-card.ex-card:not(.ex-section) .setting-item:not(.setting-item-heading) + .setting-item {
-  border-top: 1px solid var(--setting-items-border-color);
+.ex-template-modal.ex-template-modal .ex-card.ex-card:not(.ex-section) .setting-item:not(.setting-item-heading) + .setting-item::before,
+.ex-template-modal.ex-template-modal .ex-card.ex-card:not(.ex-section) .ex-collapsible > .setting-item:not(.setting-item-heading)::before,
+.ex-template-modal.ex-template-modal .ex-card.ex-card:not(.ex-section) .ex-collapsible + .setting-item:not(.setting-item-heading)::before,
+.ex-import-modal.ex-import-modal .ex-card.ex-card:not(.ex-section) .setting-item:not(.setting-item-heading) + .setting-item::before,
+.ex-export-modal.ex-export-modal .ex-card.ex-card:not(.ex-section) .setting-item:not(.setting-item-heading) + .setting-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  inset-inline: var(--setting-items-padding-x);
+  border-top: var(--setting-items-divider-width) solid var(--setting-items-border-color);
 }
 
 /* The whole heading is the button, not the chevron at its end. */
