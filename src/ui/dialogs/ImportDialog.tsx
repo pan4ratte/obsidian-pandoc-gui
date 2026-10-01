@@ -27,6 +27,7 @@ import Button from '../components/Button';
 import FileInput from '../components/FileInput';
 import VaultFileInput from '../components/VaultFileInput';
 import FolderInput from '../components/FolderInput';
+import Group from '../components/Group';
 import Setting, { DropDown, Text, Toggle } from '../components/Setting';
 
 const SOURCE_FILES = [
@@ -172,9 +173,7 @@ const Dialog = (props: { plugin: PandocGuiPlugin; onClose?: () => void }) => {
 
       {/* Only what the chosen file's reader answers to — until one is chosen there is nothing to ask about. */}
       <Show when={reader()}>
-        <div class="ex-card">
-          <Setting name={t.IMPORT_READING} description={t.IMPORT_READING_DESC} heading={true} />
-
+        <Group name={t.IMPORT_READING} description={t.IMPORT_READING_DESC}>
           <Show when={supportsTrackChanges(reader())}>
             <Setting name={t.IMPORT_TRACK_CHANGES}>
               <DropDown
@@ -223,11 +222,9 @@ const Dialog = (props: { plugin: PandocGuiPlugin; onClose?: () => void }) => {
               <Toggle checked={options.stripComments} onChange={on => setOptions('stripComments', on)} />
             </Setting>
           </Show>
-        </div>
+        </Group>
 
-        <div class="ex-card">
-          <Setting name={t.IMPORT_WRITING} description={t.IMPORT_WRITING_DESC} heading={true} />
-
+        <Group name={t.IMPORT_WRITING} description={t.IMPORT_WRITING_DESC}>
           <Show when={supportsWrap(options.flavour)}>
             <Setting name={t.WRAP}>
               <DropDown
@@ -261,7 +258,7 @@ const Dialog = (props: { plugin: PandocGuiPlugin; onClose?: () => void }) => {
               <Toggle checked={options.referenceLinks} onChange={on => setOptions('referenceLinks', on)} />
             </Setting>
           </Show>
-        </div>
+        </Group>
       </Show>
 
       <div class="modal-button-container">

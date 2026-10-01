@@ -1363,27 +1363,6 @@
 }
 
 /*
- * A group's heading is the first row of its card, and takes a row's inset.
- *
- * The template modal's headings carry a margin to set a group apart from the
- * boxes around it. Here the card is the group, and that margin only pushed the
- * name off the card's top edge and the first row off the line under it.
- */
-.ex-import-modal.ex-import-modal .ex-card > .setting-item.setting-item-heading {
-  margin: 0;
-  padding: var(--setting-items-padding-x);
-  border: none;
-  border-bottom: 1px solid var(--setting-items-border-color);
-  background: none;
-}
-
-/* A heading has no control, so its empty control block takes none of the row —
-   held open, it wrapped the name and the line under it. */
-.ex-import-modal.ex-import-modal .ex-card > .setting-item.setting-item-heading > .setting-item-control {
-  flex: 0 0 auto;
-}
-
-/*
  * A grid of checkboxes — the heading levels a table of contents reaches, and
  * the lua filters a template runs. Both are a set of things that are either on
  * or off, and both read better all at once than through a dropdown that shows
@@ -1634,7 +1613,9 @@
    the rows it stands among. */
 .ex-template-modal.ex-template-modal .modal-content > .ex-card:not(.ex-section),
 .ex-import-modal.ex-import-modal .modal-content > .ex-card:not(.ex-section),
-.ex-export-modal.ex-export-modal .modal-content > .ex-card:not(.ex-section) {
+.ex-export-modal.ex-export-modal .modal-content > .ex-card:not(.ex-section),
+.ex-template-modal.ex-template-modal .modal-content > .ex-group,
+.ex-import-modal.ex-import-modal .modal-content > .ex-group {
   margin-bottom: var(--size-4-3);
 }
 
@@ -1828,49 +1809,34 @@
 }
 
 /*
- * A group's own heading — the include files, and the page the writer is told
- * about. It names the rows under it and has no control of its own, so it is
- * never drawn as a box; it is only indented to where their labels start, so
- * the heading and what it heads read down one line rather than two.
+ * A group's heading and description stand above its box, as in a stock
+ * settings group, with that group's inset and spacing. Margins are pinned:
+ * Obsidian adds room above a heading only when it follows a row.
+ *
+ * `flow-root` keeps the heading's top margin inside the group, where it would
+ * otherwise merge with the margin of whatever stands above.
  */
-.ex-template-modal.ex-template-modal .ex-card > .setting-item.setting-item-heading:not(.ex-section-header) {
-  /* Pinned, because Obsidian adds room above a heading that follows a row and
-     not above one that follows anything else — which fell to some of these
-     groups and not others, and now that a group is only its spacing, an
-     inconsistent gap is the group itself changing size. */
-  margin-top: 16px;
-  /* The card it heads has no side padding, so the inset is the heading's own
-     to take — the same one its rows take, or the name would stand a few
-     pixels to the left of everything it names. Obsidian's default here is
-     `--size-4-4`, which is close enough to look like a mistake. */
-  padding-inline: var(--setting-items-padding-x);
-  /* Room under the words for the line to stand clear of them; pinned rather
-     than left to Obsidian, which gives a heading no floor of its own. */
-  padding-bottom: var(--size-4-4);
+.ex-template-modal.ex-template-modal .ex-group,
+.ex-import-modal.ex-import-modal .ex-group {
+  display: flow-root;
+}
+
+.ex-template-modal.ex-template-modal .ex-group > .setting-item.setting-item-heading,
+.ex-import-modal.ex-import-modal .ex-group > .setting-item.setting-item-heading {
+  margin: var(--size-4-3) 0 var(--size-4-4);
+  padding: 0 var(--size-4-4);
   border: none;
-  /* The line the group's rows are divided by, drawn once more under the name of
-     them: the heading is the top edge of the run rather than the first of it.
-     It runs the width of the card, as those do — the inset above is padding,
-     and a border stands outside it. */
-  border-bottom: 1px solid var(--setting-items-border-color);
   background: none;
 }
 
-/* Not a group's name, only a word about the command under it. */
-.ex-template-modal.ex-template-modal .ex-card > .setting-item.setting-item-heading.ex-template-modal-command-desc {
-  padding-bottom: 0;
-  border-bottom: none;
+/* No control, so its empty block takes none of the row. */
+.ex-template-modal.ex-template-modal .ex-group > .setting-item.setting-item-heading > .setting-item-control,
+.ex-import-modal.ex-import-modal .ex-group > .setting-item.setting-item-heading > .setting-item-control {
+  flex: 0 0 auto;
 }
 
-/* A heading is read in two beats — what the group is, then what it is for — and
-   the second wants a little more room than a row's description, which sits
-   under a label no larger than itself. */
-.ex-template-modal.ex-template-modal
-  .ex-card
-  > .setting-item.setting-item-heading:not(.ex-section-header)
-  > .setting-item-info
-  > .setting-item-description,
-.ex-import-modal.ex-import-modal .ex-card > .setting-item.setting-item-heading > .setting-item-info > .setting-item-description {
+.ex-template-modal.ex-template-modal .ex-group > .setting-item.setting-item-heading > .setting-item-info > .setting-item-description,
+.ex-import-modal.ex-import-modal .ex-group > .setting-item.setting-item-heading > .setting-item-info > .setting-item-description {
   margin-top: var(--size-2-2);
 }
 

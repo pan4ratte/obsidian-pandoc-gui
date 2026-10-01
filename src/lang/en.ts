@@ -246,7 +246,7 @@ export default {
 
   // ─── Markdown extensions ─────────────────────────────────────────────────────
   EXTENSIONS: 'Extensions',
-  EXTENSIONS_DESC: 'Syntax pandoc does not read unless asked.',
+  EXTENSIONS_DESC: 'Syntax Pandoc does not read unless asked.',
   EXTENSION_LABELS: {
     alerts: 'Callouts (> [!note])',
     mark: 'Highlights (==text==)',
@@ -295,7 +295,9 @@ export default {
 
   // ─── Reading the note ────────────────────────────────────────────────────────
   READING: 'Reading the note',
-  READING_DESC: 'How pandoc should read the note.',
+  READING_DESC: 'How Pandoc should read the note.',
+  DOCUMENT_FORMATTING: 'Document formatting',
+  DOCUMENT_FORMATTING_DESC: 'The language of the text, and how Pandoc should format code, formulas and citations.',
   SHIFT_HEADINGS: 'Shift heading levels',
   SHIFT_HEADINGS_DESC: 'Where the note’s headings land in the written document.',
   SHIFT_HEADINGS_NONE: 'Keep as written',
@@ -365,7 +367,7 @@ export default {
     plain: 'Plain text (Unicode)',
   },
   MATH_URL: 'Script URL',
-  MATH_URL_DESC: 'The build the page loads. Leave empty for the one pandoc names.',
+  MATH_URL_DESC: 'The build the page loads. Leave empty for the one Pandoc names.',
   MATH_URL_PLACEHOLDER: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js',
 
   // ─── PDF ─────────────────────────────────────────────────────────────────────
@@ -391,25 +393,25 @@ export default {
   REFERENCE_DOC_FAILED: (reason: string) => `The reference document could not be created: ${reason}`,
   ACTION_GENERATE: 'Generate',
   WORD_STYLES: 'Styles tweaks',
-  WORD_STYLES_DESC: 'Fixes for pandoc’s problems with assigning styles.',
+  WORD_STYLES_DESC: 'Fixes for Pandoc’s problems with assigning styles.',
   FIGURE_STYLE: 'Apply figures style to images',
-  FIGURE_STYLE_DESC: 'Gives an image with no caption a figure style, which fixes pandoc behavior.',
+  FIGURE_STYLE_DESC: 'Gives an image with no caption a figure style, which fixes Pandoc behavior.',
   FIGURE_STYLE_NAME: 'Specify figure style name',
   STYLE_NAME_DESC: 'The style with the same name should be present in the reference document.',
   TABLE_STYLE: 'Style text in table cells',
-  TABLE_STYLE_DESC: 'Stop pandoc stamping its own “Compact” style on every table cell.',
+  TABLE_STYLE_DESC: 'Stop Pandoc stamping its own “Compact” style on every table cell.',
   TABLE_STYLE_NAME: 'Specify cell style',
   TABLE_HEAD_STYLE_NAME: 'Specify header cell style',
   TABLE_HEAD_STYLE_DESC: 'Left empty, header cells take the same style as the rest.',
   TABLE_HEAD_STYLE_PLACEHOLDER: 'Same as cells',
   LIST_STYLES: 'Use Word’s list styles',
-  LIST_STYLES_DESC: 'Fixes pandoc’s behaviour by giving bulleted lists the standard List Bullet style. The reference document must define List Bullet.',
+  LIST_STYLES_DESC: 'Fixes Pandoc’s behaviour by giving bulleted lists the standard List Bullet style. The reference document must define List Bullet.',
   FLATTEN_ORDERED: 'Flatten numbered lists',
   FLATTEN_ORDERED_DESC: 'Off, every list restarts at 1 and List Number sets only the font and spacing. On, List Number defines the style in full, but separate lists carry on counting.',
 
   // ─── Joined Word documents ───────────────────────────────────────────────────
-  JOIN_DOCS: 'Joined documents',
-  JOIN_DOCS_DESC: 'Word documents put before and after the exported note, such as a title page and appendices. A note can name its own in the docx-before and docx-after properties.',
+  JOIN_DOCS: 'Joining documents',
+  JOIN_DOCS_DESC: 'The selected files will be combined with the exported note.',
   JOIN_BEFORE: 'Document at the start',
   JOIN_AFTER: 'Document at the end',
   JOIN_ADD: 'Add document',
@@ -426,11 +428,12 @@ export default {
 
   // ─── Layout template and includes ────────────────────────────────────────────
   OUTPUT_TEMPLATE: 'Layout template',
-  OUTPUT_TEMPLATE_DESC: (extension: string) => `A pandoc template of your own, in place of the built-in one. For the format selected that is a ${extension} file.`,
+  OUTPUT_TEMPLATE_DESC: (extension: string) => `A Pandoc template of your own, in place of the built-in one. For the format selected that is a ${extension} file.`,
   STYLESHEET: 'Stylesheet',
   STYLESHEET_DESC: 'A CSS file the written page links to.',
   INCLUDES: 'Include files',
   INCLUDES_DESC: 'Files copied into the document as they stand — a LaTeX preamble, a script, a footer.',
+  INCLUDES_DESC_DOCX: 'Raw XML fragments that Pandoc will insert into the text.',
   INCLUDE_IN_HEADER: 'In the header',
   INCLUDE_BEFORE_BODY: 'Before the body',
   INCLUDE_AFTER_BODY: 'After the body',
@@ -456,7 +459,7 @@ export default {
   },
   VARIABLE_DEFAULT: 'Default',
   TEXT_DIRECTION: 'Text direction',
-  TEXT_DIRECTION_DESC: 'Right to left, for Hebrew, Arabic and Persian. Word and OpenDocument honour it from pandoc 3.11 on.',
+  TEXT_DIRECTION_DESC: 'Right to left, for Hebrew, Arabic and Persian. Word and OpenDocument honour it from Pandoc 3.11 on.',
   TEXT_DIRECTION_DEFAULT: 'Default (from the language)',
   TEXT_DIRECTION_LABELS: {
     ltr: 'Left to right',
@@ -532,7 +535,7 @@ export default {
 
   // ─── Media ───────────────────────────────────────────────────────────────────
   MEDIA: 'Media',
-  MEDIA_DESC: 'The images the note carries, and what the writer makes of them.',
+  MEDIA_DESC: 'Images in the note, and what Pandoc will do with them.',
   EXTRACT_MEDIA: 'Extract images to',
   DPI: 'Pixels per inch',
 

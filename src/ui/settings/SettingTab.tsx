@@ -16,6 +16,7 @@ import { bundledReferenceDoc, isReferenceFormat, referenceDocFromNative } from '
 import { STYLE_MODES, type StyleMode } from '../../docx/styles';
 import { templatePaths } from '../../convert/joined_docs';
 import DocumentList from '../components/DocumentList';
+import Group from '../components/Group';
 import { chooseFile, documentsFolder, isMobileUi, showInFolder, vaultRoot } from '../../system/platform';
 import { FileStore } from '../../system/file_store';
 import PandocDashboard from './PandocDashboard';
@@ -254,6 +255,7 @@ const SYNTAX_FILES = [{ name: 'Syntax definition', extensions: ['xml'] }];
 const IMAGE_FILES = [{ name: 'Image', extensions: ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'] }];
 const FONT_FILES = [{ name: 'Font', extensions: ['otf', 'ttf', 'woff', 'woff2'] }];
 const JOIN_FILES = [{ name: 'Word', extensions: ['docx', 'dotx'] }];
+const WORD_XML_FILES = [{ name: 'Word XML', extensions: ['xml'] }];
 
 /** What a reference document may be, by writer: the document a word processor writes, and the template it writes one from. */
 const REFERENCE_DOC_FILES: Record<string, string[]> = {
@@ -670,11 +672,39 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
     /** The curated variables this writer was measured to read, and no others. */
     const curatedVariables = createMemo(() => CURATED_VARIABLES.filter(name => supportsVariable[name](format())));
 
+    /** Word pastes what is included straight into its XML: text or a .docx would break the document. */
+    const bodyIncludeFiles = () => (format() === 'docx' ? WORD_XML_FILES : [ANY_FILE]);
+
+    /** The ones about the page; the language has its row with the document's formatting. */
+    const pageVariables = createMemo(() => curatedVariables().filter(name => name !== 'lang'));
+
     const variableOptions = (name: CuratedVariable) =>
       withCurrent(
         [{ name: t.VARIABLE_DEFAULT, value: '' }, ...(VARIABLE_CHOICES[name] ?? []).map(value => ({ name: value, value }))],
         variable(args(), name)
       );
+
+    const variableRow = (name: CuratedVariable) => (
+      <Setting name={t.VARIABLE_LABELS[name]} class={`ex-template-modal-variable ex-template-modal-${name}`}>
+        <Show
+          when={VARIABLE_CHOICES[name]}
+          fallback={
+            <Text
+              value={variable(args(), name) ?? ''}
+              placeholder={t.VARIABLE_PLACEHOLDERS[name]}
+              onChange={value => writeArgs(a => setVariable(a, name, value.trim()))}
+            />
+          }
+        >
+          <DropDown
+            options={variableOptions(name)}
+            selected={variable(args(), name) ?? ''}
+            autofocus={false}
+            onChange={value => writeArgs(a => setVariable(a, name, value))}
+          />
+        </Show>
+      </Setting>
+    );
 
     /** Everything the rows above do not ask for, one `key=value` a line. A variable with a
         row of its own is left out here, and put back when the format loses that row. */
@@ -944,17 +974,35 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
           </Setting>
         </Show>
 
-        {/* Only for the writers that would do something with it. */}
-        <Show when={supportsToc(format())}>
-          <Setting name={t.TOC} description={t.TOC_DESC} class="ex-template-modal-toc">
-            <StepSlider
-              labels={tocLabels}
-              min={TOC_NONE}
-              value={tocDepth(template()?.customArguments)}
-              // The step is the depth; `setTocDepth` removes the flags at `TOC_NONE`.
-              onChange={depth => updateTemplate(v => (v.customArguments = setTocDepth(v.customArguments, depth)))}
-            />
-          </Setting>
+        {/* The table of contents and the numbering and lists that go with it share a card. Each row only for the
+            writers that would do something with it. */}
+        <Show when={supportsToc(format()) || numbering().length > 0}>
+          <div class="ex-card ex-template-modal-structure">
+            <Show when={supportsToc(format())}>
+              <Setting name={t.TOC} description={t.TOC_DESC} class="ex-template-modal-toc">
+                <StepSlider
+                  labels={tocLabels}
+                  min={TOC_NONE}
+                  value={tocDepth(template()?.customArguments)}
+                  // The step is the depth; `setTocDepth` removes the flags at `TOC_NONE`.
+                  onChange={depth => updateTemplate(v => (v.customArguments = setTocDepth(v.customArguments, depth)))}
+                />
+              </Setting>
+            </Show>
+
+            <Show when={numbering().length > 0}>
+              <Setting name={t.NUMBERING} description={t.NUMBERING_DESC} class="ex-template-modal-numbering">
+                <CheckGrid items={numbering()} onToggle={toggleNumbering} />
+              </Setting>
+            </Show>
+
+            {/* Only once there is numbering to offset, and only where Pandoc reaches. */}
+            <Collapsible when={supportsNumberOffset(format()) && numberSections(args())} class="ex-template-modal-offset-panel">
+              <Setting name={t.NUMBER_OFFSET} description={t.NUMBER_OFFSET_DESC} class="ex-template-modal-number-offset">
+                <Text value={numberOffset(args()) ?? ''} placeholder="0" onChange={value => writeArgs(a => setNumberOffset(a, value))} />
+              </Setting>
+            </Collapsible>
+          </div>
         </Show>
 
         {/* Adding a filter appends its `--lua-filter` flag to the extra arguments. */}
@@ -968,11 +1016,16 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
           />
         </Setting>
 
+        {/* Ticking a box writes the extension into `-f`. Every one offered is a
+            pandoc default-off, so a cleared box is the reader's own behaviour. */}
+        <Setting name={t.EXTENSIONS} description={t.EXTENSIONS_DESC} class="ex-template-modal-extensions">
+          <CheckGrid items={extensions()} onToggle={toggleExtension} single={true} />
+        </Setting>
+
         {/* Every style named here has to exist in that document. Each row runs a bundled
             filter — pandoc has no option for any of this. */}
         <Show when={supportsCustomStyle(format())}>
-          <div class="ex-card ex-template-modal-word-styles">
-            <Setting name={t.WORD_STYLES} description={t.WORD_STYLES_DESC} heading={true} />
+          <Group name={t.WORD_STYLES} description={t.WORD_STYLES_DESC} class="ex-template-modal-word-styles">
             <Setting name={t.FIGURE_STYLE} description={t.FIGURE_STYLE_DESC} class="mod-toggle">
               <Toggle
                 checked={figureStyle(args()) !== undefined}
@@ -1026,13 +1079,12 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
                 </Setting>
               </Show>
             </Show>
-          </div>
+          </Group>
         </Show>
 
         {/* Kept on the template rather than in the arguments: pandoc would write the paths into the document. */}
         <Show when={format() === 'docx'}>
-          <div class="ex-card ex-template-modal-joined">
-            <Setting name={t.JOIN_DOCS} description={t.JOIN_DOCS_DESC} heading={true} />
+          <Group name={t.JOIN_DOCS} description={t.JOIN_DOCS_DESC} class="ex-template-modal-joined">
             <DocumentList
               app={app}
               name={t.JOIN_BEFORE}
@@ -1057,34 +1109,13 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
                 onChange={value => updateTemplate(v => (v.joinStyles = value === 'own' ? undefined : (value as StyleMode)))}
               />
             </Setting>
-          </div>
+          </Group>
         </Show>
-
-        {/* Ticking a box writes the extension into `-f`. Every one offered is a
-            pandoc default-off, so a cleared box is the reader's own behaviour. */}
-        <Setting name={t.EXTENSIONS} description={t.EXTENSIONS_DESC} class="ex-template-modal-extensions">
-          <CheckGrid items={extensions()} onToggle={toggleExtension} single={true} />
-        </Setting>
 
         {/* Not gated on the format: citations and variables are asked of every writer. */}
         <Section name={t.SECTION_ADVANCED} class="ex-template-modal-advanced" open={advancedOpen()} onToggle={setAdvancedOpen}>
-          <Show when={numbering().length > 0}>
-            <Setting name={t.NUMBERING} description={t.NUMBERING_DESC} class="ex-template-modal-numbering">
-              <CheckGrid items={numbering()} onToggle={toggleNumbering} />
-            </Setting>
-          </Show>
-
-          {/* Only once there is numbering to offset, and only where pandoc reaches. */}
-          <Collapsible when={supportsNumberOffset(format()) && numberSections(args())} class="ex-template-modal-offset-panel">
-            <Setting name={t.NUMBER_OFFSET} description={t.NUMBER_OFFSET_DESC} class="ex-template-modal-number-offset">
-              <Text value={numberOffset(args()) ?? ''} placeholder="0" onChange={value => writeArgs(a => setNumberOffset(a, value))} />
-            </Setting>
-          </Collapsible>
-
           {/* Done to the note on the way in, before any writer sees it — so no format gate. */}
-          <div class="ex-card ex-template-modal-reading">
-            <Setting name={t.READING} description={t.READING_DESC} heading={true} />
-
+          <Group name={t.READING} description={t.READING_DESC} class="ex-template-modal-reading">
             {/* Demoting makes room for a title; promoting turns a lone top heading into one. */}
             <Setting name={t.SHIFT_HEADINGS} description={t.SHIFT_HEADINGS_DESC} class="ex-template-modal-shift">
               <DropDown
@@ -1153,22 +1184,35 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
                 />
               </Setting>
             </Show>
-          </div>
+          </Group>
 
-          <Show when={supportsTopLevelDivision(format())}>
-            <Setting name={t.TOP_LEVEL_DIVISION} description={t.TOP_LEVEL_DIVISION_DESC} class="ex-template-modal-division">
-              <DropDown
-                options={divisionOptions}
-                selected={topLevelDivision(args()) ?? ''}
-                autofocus={false}
-                onChange={value => writeArgs(a => setTopLevelDivision(a, value))}
-              />
-            </Setting>
-          </Show>
+          {/* What the writer produces, as against how the note was read above. */}
+          <Group name={t.DOCUMENT_FORMATTING} description={t.DOCUMENT_FORMATTING_DESC} class="ex-template-modal-formatting">
+            {/* The text's own language and direction, not the page's. Direction is metadata rather than a variable. */}
+            <Show when={curatedVariables().includes('lang')}>{variableRow('lang')}</Show>
+            <Show when={supportsTextDirection(format())}>
+              <Setting name={t.TEXT_DIRECTION} description={t.TEXT_DIRECTION_DESC} class="ex-template-modal-direction">
+                <DropDown
+                  options={directionOptions}
+                  selected={textDirection(args()) ?? ''}
+                  autofocus={false}
+                  onChange={value => writeArgs(a => setTextDirection(a, value))}
+                />
+              </Setting>
+            </Show>
 
-          {/* Colours and language definition share a card: both need a writer that highlights. */}
-          <Show when={supportsHighlighting(format())}>
-            <div class="ex-card ex-template-modal-highlight">
+            <Show when={supportsTopLevelDivision(format())}>
+              <Setting name={t.TOP_LEVEL_DIVISION} description={t.TOP_LEVEL_DIVISION_DESC} class="ex-template-modal-division">
+                <DropDown
+                  options={divisionOptions}
+                  selected={topLevelDivision(args()) ?? ''}
+                  autofocus={false}
+                  onChange={value => writeArgs(a => setTopLevelDivision(a, value))}
+                />
+              </Setting>
+            </Show>
+
+            <Show when={supportsHighlighting(format())}>
               <Setting name={t.HIGHLIGHT} description={t.HIGHLIGHT_DESC} class="ex-template-modal-highlight-style">
                 <DropDown
                   options={highlightOptions()}
@@ -1185,12 +1229,10 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
                   onChange={value => writeArgs(a => setSyntaxDefinition(a, value.trim()))}
                 />
               </Setting>
-            </div>
-          </Show>
+            </Show>
 
-          {/* Method and the build it loads share a card; `--mathml` fetches nothing. */}
-          <Show when={supportsMathMethod(format())}>
-            <div class="ex-card ex-template-modal-math">
+            {/* `--mathml` fetches nothing, so it asks for no URL. */}
+            <Show when={supportsMathMethod(format())}>
               <Setting name={t.MATH} description={t.MATH_DESC} class="ex-template-modal-math-method">
                 <DropDown
                   options={mathOptions}
@@ -1208,23 +1250,21 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
                   />
                 </Setting>
               </Collapsible>
-            </div>
-          </Show>
+            </Show>
 
-          {/* No engine to choose between where none can be run. */}
-          <Show when={isPdfOutput(format()) && engine() === 'native'}>
-            <Setting name={t.PDF_ENGINE} description={t.PDF_ENGINE_DESC} class="ex-template-modal-pdf-engine">
-              <DropDown
-                options={engineOptions()}
-                selected={pdfEngine(args()) ?? ''}
-                autofocus={false}
-                onChange={value => writeArgs(a => setPdfEngine(a, value))}
-              />
-            </Setting>
-          </Show>
+            {/* No engine to choose between where none can be run. */}
+            <Show when={isPdfOutput(format()) && engine() === 'native'}>
+              <Setting name={t.PDF_ENGINE} description={t.PDF_ENGINE_DESC} class="ex-template-modal-pdf-engine">
+                <DropDown
+                  options={engineOptions()}
+                  selected={pdfEngine(args()) ?? ''}
+                  autofocus={false}
+                  onChange={value => writeArgs(a => setPdfEngine(a, value))}
+                />
+              </Setting>
+            </Show>
 
-          {/* Citeproc reads the document rather than writing it, so no format gate. */}
-          <div class="ex-card ex-template-modal-citations">
+            {/* Citeproc reads the document rather than writing it, so no format gate. */}
             <Setting name={t.CITATIONS} description={t.CITATIONS_DESC} class="ex-template-modal-citations-toggle">
               <Toggle checked={citeproc(args())} onChange={checked => writeArgs(a => setCiteproc(a, checked))} />
             </Setting>
@@ -1246,47 +1286,13 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
                 />
               </Setting>
             </Collapsible>
-          </div>
+          </Group>
 
-          {/* The page as template variables, each row shown only where the writer reads it. Direction stands with
-              them though it is metadata: it is one more thing the page is set up with. */}
-          <Show when={curatedVariables().length > 0 || supportsTextDirection(format())}>
-            <div class="ex-card ex-template-modal-page-setup">
-              <Setting name={t.PAGE_SETUP} description={t.PAGE_SETUP_DESC} heading={true} />
-              <For each={curatedVariables()}>
-                {name => (
-                  <Setting name={t.VARIABLE_LABELS[name]} class={`ex-template-modal-variable ex-template-modal-${name}`}>
-                    <Show
-                      when={VARIABLE_CHOICES[name]}
-                      fallback={
-                        <Text
-                          value={variable(args(), name) ?? ''}
-                          placeholder={t.VARIABLE_PLACEHOLDERS[name]}
-                          onChange={value => writeArgs(a => setVariable(a, name, value.trim()))}
-                        />
-                      }
-                    >
-                      <DropDown
-                        options={variableOptions(name)}
-                        selected={variable(args(), name) ?? ''}
-                        autofocus={false}
-                        onChange={value => writeArgs(a => setVariable(a, name, value))}
-                      />
-                    </Show>
-                  </Setting>
-                )}
-              </For>
-              <Show when={supportsTextDirection(format())}>
-                <Setting name={t.TEXT_DIRECTION} description={t.TEXT_DIRECTION_DESC} class="ex-template-modal-direction">
-                  <DropDown
-                    options={directionOptions}
-                    selected={textDirection(args()) ?? ''}
-                    autofocus={false}
-                    onChange={value => writeArgs(a => setTextDirection(a, value))}
-                  />
-                </Setting>
-              </Show>
-            </div>
+          {/* The page as template variables, each row shown only where the writer reads it. */}
+          <Show when={pageVariables().length > 0}>
+            <Group name={t.PAGE_SETUP} description={t.PAGE_SETUP_DESC} class="ex-template-modal-page-setup">
+              <For each={pageVariables()}>{variableRow}</For>
+            </Group>
           </Show>
 
           <Show when={supportsCss(format())}>
@@ -1300,10 +1306,14 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
             </Setting>
           </Show>
 
-          {/* Three files around one document. Writers with no header lose that row. */}
+          {/* Three files around one document. Writers with no header lose that row. Word takes them as raw XML,
+              which is easy to mistake for the documents the join group adds. */}
           <Show when={supportsIncludes(format())}>
-            <div class="ex-card ex-template-modal-includes">
-              <Setting name={t.INCLUDES} description={t.INCLUDES_DESC} heading={true} />
+            <Group
+              name={t.INCLUDES}
+              description={format() === 'docx' ? t.INCLUDES_DESC_DOCX : t.INCLUDES_DESC}
+              class="ex-template-modal-includes"
+            >
               <Show when={supportsHeaderInclude(format())}>
                 <Setting name={t.INCLUDE_IN_HEADER}>
                   <FileInput
@@ -1317,7 +1327,7 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
               <Setting name={t.INCLUDE_BEFORE_BODY}>
                 <FileInput
                   value={includeBeforeBody(args())}
-                  filters={[ANY_FILE]}
+                  filters={bodyIncludeFiles()}
                   tooltip={t.CHOOSE_FILE}
                   onChange={value => writeArgs(a => setIncludeBeforeBody(a, value.trim()))}
                 />
@@ -1325,19 +1335,17 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
               <Setting name={t.INCLUDE_AFTER_BODY}>
                 <FileInput
                   value={includeAfterBody(args())}
-                  filters={[ANY_FILE]}
+                  filters={bodyIncludeFiles()}
                   tooltip={t.CHOOSE_FILE}
                   onChange={value => writeArgs(a => setIncludeAfterBody(a, value.trim()))}
                 />
               </Setting>
-            </div>
+            </Group>
           </Show>
 
           {/* How the file itself is laid out, for writers producing text a person reads. */}
           <Show when={supportsWrap(format())}>
-            <div class="ex-card ex-template-modal-source">
-              <Setting name={t.WRITTEN_SOURCE} description={t.WRITTEN_SOURCE_DESC} heading={true} />
-
+            <Group name={t.WRITTEN_SOURCE} description={t.WRITTEN_SOURCE_DESC} class="ex-template-modal-source">
               <Setting name={t.WRAP} class="ex-template-modal-wrap">
                 <DropDown
                   options={wrapOptions()}
@@ -1370,7 +1378,7 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
                   <Toggle checked={referenceLinks(args())} onChange={checked => writeArgs(a => setReferenceLinks(a, checked))} />
                 </Setting>
               </Show>
-            </div>
+            </Group>
           </Show>
 
           {/* The bytes rather than the layout, each on its own gate. */}
@@ -1404,8 +1412,7 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
           </Show>
 
           <Show when={isSlideOutput(format())}>
-            <div class="ex-card ex-template-modal-slides">
-              <Setting name={t.SLIDES} description={t.SLIDES_DESC} heading={true} />
+            <Group name={t.SLIDES} description={t.SLIDES_DESC} class="ex-template-modal-slides">
               <Setting name={t.INCREMENTAL} class="ex-template-modal-incremental">
                 <Toggle checked={incremental(args())} onChange={checked => writeArgs(a => setIncremental(a, checked))} />
               </Setting>
@@ -1417,12 +1424,11 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
                   onChange={value => writeArgs(a => setSlideLevel(a, value))}
                 />
               </Setting>
-            </div>
+            </Group>
           </Show>
 
           <Show when={isEpubOutput(format())}>
-            <div class="ex-card ex-template-modal-epub">
-              <Setting name={t.EPUB} description={t.EPUB_DESC} heading={true} />
+            <Group name={t.EPUB} description={t.EPUB_DESC} class="ex-template-modal-epub">
               <Setting name={t.EPUB_COVER_IMAGE}>
                 <FileInput
                   value={epubCoverImage(args())}
@@ -1449,7 +1455,7 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
                   onChange={value => writeArgs(a => setEpubSubdirectory(a, value))}
                 />
               </Setting>
-            </div>
+            </Group>
           </Show>
 
           {/* Outside the EPUB card: chunked HTML splits on the same option. */}
@@ -1465,9 +1471,7 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
           </Show>
 
           <Show when={supportsHtmlOptions(format())}>
-            <div class="ex-card ex-template-modal-page">
-              <Setting name={t.HTML_PAGE} description={t.HTML_PAGE_DESC} heading={true} />
-
+            <Group name={t.HTML_PAGE} description={t.HTML_PAGE_DESC} class="ex-template-modal-page">
               {/* The shipped HTML template already asks for this, so only a difference is written. */}
               <Show when={supportsEmbedResources(format())}>
                 <Setting name={t.EMBED_RESOURCES} class="ex-template-modal-embed">
@@ -1494,12 +1498,11 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
               <Setting name={t.ID_PREFIX} class="ex-template-modal-id-prefix">
                 <Text value={idPrefix(args()) ?? ''} onChange={value => writeArgs(a => setIdPrefix(a, value.trim()))} />
               </Setting>
-            </div>
+            </Group>
           </Show>
 
           {/* Extraction is asked of every writer; the resolution only where sizes are written. */}
-          <div class="ex-card ex-template-modal-media">
-            <Setting name={t.MEDIA} description={t.MEDIA_DESC} heading={true} />
+          <Group name={t.MEDIA} description={t.MEDIA_DESC} class="ex-template-modal-media">
             <Setting name={t.EXTRACT_MEDIA} class="ex-template-modal-extract-media">
               <FileInput
                 value={extractMedia(template()?.arguments, args())}
@@ -1513,7 +1516,7 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
                 <Text value={dpi(args()) ?? ''} placeholder="96" onChange={value => writeArgs(a => setDpi(a, value))} />
               </Setting>
             </Show>
-          </div>
+          </Group>
 
           {/* Everything else. Title, author and date come from the note's frontmatter, so they
               get no field. `visible` is the panel: an unrendered textarea has no height. */}
@@ -1534,8 +1537,7 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
             can reach, written last so it has the final word. */}
         <Section name={t.COMMAND_RESULT} class="ex-template-modal-command-section" open={commandOpen()} onToggle={setCommandOpen}>
           {/* The command and the one field that adds to it share a card. */}
-          <div class="ex-card ex-template-modal-command-card">
-            <Setting description={t.COMMAND_RESULT_DESC} heading={true} class="ex-template-modal-command-desc" />
+          <Group description={t.COMMAND_RESULT_DESC} class="ex-template-modal-command-card">
             <Setting class="ex-template-modal-resulting-command ex-template-modal-nameless">
               {/* Copy sits over the field, not the heading: it copies what is on screen. */}
               <div class="ex-template-modal-command-preview">
@@ -1559,7 +1561,7 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
                 onChange={value => updateTemplate(v => (v.userArguments = value.trim() || undefined))}
               />
             </Setting>
-          </div>
+          </Group>
         </Section>
       </>
     );
@@ -1863,6 +1865,7 @@ export default class extends PluginSettingTab {
               t.EXTENSIONS,
               t.TOC,
               t.READING,
+              t.DOCUMENT_FORMATTING,
               t.SHIFT_HEADINGS,
               t.TAB_STOP,
               t.STRIP_COMMENTS,
