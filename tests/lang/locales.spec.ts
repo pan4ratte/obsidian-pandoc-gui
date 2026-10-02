@@ -13,7 +13,7 @@ const read = (locale: string) =>
 
 /** What a line holds, ignoring the value: an indented key, a comment, or nothing — a blank line trims to nothing. */
 const shape = (line: string) => {
-  const key = /^(\s*)([A-Za-z0-9_]+):/.exec(line);
+  const key = /^(\s*)'?([A-Za-z0-9_-]+)'?:/.exec(line);
   return key ? `${key[1].length}:${key[2]}` : line.trim().replace(/^\/\/.*/, '//');
 };
 

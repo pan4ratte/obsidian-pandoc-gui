@@ -5,6 +5,7 @@ import type { InstalledLuaFilter } from './filters/lua_filters';
 import type { TodayFormat } from './filters/filter_args';
 import type { EngineMode } from './pandoc/engine';
 import type { StyleMode } from './docx/styles';
+import type { DocumentMetadata } from './convert/document_metadata';
 
 // What a template's `${...}` are filled in with. For `/User/aaa/Documents/test.pdf`:
 // `outputDir` is the folder, `outputPath` the whole path, `outputFileName` is `test`,
@@ -28,6 +29,8 @@ export interface Variables extends Record<string, unknown> {
   env?: Record<string, string>;
   /** Today's date, written out in the language Obsidian is set to. */
   today: Record<TodayFormat, string>;
+  /** The template's document fields, written out for this export. */
+  metadataFile?: string;
 }
 
 /**
@@ -134,6 +137,8 @@ export interface PandocExportSetting extends CommonExportSetting {
   joinStyles?: StyleMode;
   /** Picked in the export dialog for one export, over the note's and the template's; `[]` joins none. Never saved. */
   joinChosen?: { before?: string[]; after?: string[] };
+  /** Title, properties and the like, which the note's own properties override. Kept off the command line: it is prose. */
+  documentMetadata?: DocumentMetadata;
 }
 
 export interface CustomExportSetting extends CommonExportSetting {

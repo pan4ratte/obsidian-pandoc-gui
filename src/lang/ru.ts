@@ -417,14 +417,38 @@ export default {
   JOIN_ADD: 'Добавить документ',
   JOIN_MOVE_UP: 'Переместить выше',
   JOIN_STYLES: 'Стили присоединённых документов',
-  JOIN_STYLES_DESC: 'Свои — документы выглядят так же, как в Word. Из шаблона — стили с теми же названиями берутся из референсного документа.',
+  JOIN_STYLES_DESC: 'Могут быть сохранены или взяты из референсного документа.',
   JOIN_STYLES_LABELS: {
-    own: 'Свои',
-    template: 'Из шаблона',
+    own: 'Сохранить исходные стили',
+    template: 'Использовать стили из шаблона',
   },
   JOIN_NOT_FOUND: (name: string) => `Не найден документ для присоединения: ${name}`,
   JOIN_FAILED: (reason: string) => `Не удалось присоединить документы: ${reason}`,
   JOIN_NO_OUTPUT: 'Pandoc не записал документ.',
+
+  // ─── Document metadata ───────────────────────────────────────────────────────
+  DOCUMENT_METADATA: 'Метаданные документа',
+  DOCUMENT_FIELD_LABELS: {
+    'title': 'Заголовок',
+    'subtitle': 'Подзаголовок',
+    'author': 'Автор',
+    'date': 'Дата',
+    'abstract': 'Аннотация',
+    'abstract-title': 'Заголовок аннотации',
+    'keywords': 'Ключевые слова',
+    'subject': 'Тема',
+    'description': 'Описание',
+    'category': 'Категория',
+    'toc-title': 'Заголовок оглавления',
+  },
+  DOCUMENT_FIELD_DESCS: {
+    'author': 'Введите имя и нажмите Enter, чтобы добавить автора в список.',
+    'keywords': 'Введите ключевое слово и нажмите Enter, чтобы добавить в список.',
+    'toc-title': 'Если пусто, Pandoc подставит заголовок на языке документа.',
+  },
+  DOCUMENT_FIELD_PLACEHOLDERS: {
+    'date': 'например, ${today.long}',
+  },
 
   // ─── Layout template and includes ────────────────────────────────────────────
   OUTPUT_TEMPLATE: 'Шаблон вёрстки',

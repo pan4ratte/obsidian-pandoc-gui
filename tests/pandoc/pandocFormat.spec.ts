@@ -7,6 +7,7 @@ import {
   outputFormat,
   runsInFormat,
   supportsCss,
+  supportsDocumentField,
   supportsDpi,
   supportsEmbedResources,
   supportsHeaderInclude,
@@ -30,6 +31,7 @@ import {
   templateExtension,
 } from '../../src/pandoc/pandoc_format';
 import { CURATED_VARIABLES } from '../../src/args/writer_args';
+import { DOCUMENT_FIELDS } from '../../src/convert/document_metadata';
 
 /*
  * What a template writes decides which rows the editor shows, so reading the
@@ -413,5 +415,27 @@ describe('SVG support', () => {
 
   test('says nothing for a template that names no writer', () => {
     expect(takesSvg(undefined)).toBe(false);
+  });
+});
+
+describe('which document fields a writer is offered', () => {
+  test('Word writes every one of them', () => {
+    for (const field of DOCUMENT_FIELDS) {
+      expect(supportsDocumentField(field, 'docx')).toBe(true);
+    }
+  });
+
+  test('so do the writers that copy all metadata out', () => {
+    expect(supportsDocumentField('category', 'markdown')).toBe(true);
+    expect(supportsDocumentField('toc-title', 'commonmark_x')).toBe(true);
+  });
+
+  test('the rest only where the output was found to carry them', () => {
+    expect(supportsDocumentField('subject', 'pdf')).toBe(true);
+    expect(supportsDocumentField('description', 'latex')).toBe(false);
+    expect(supportsDocumentField('category', 'html')).toBe(false);
+    expect(supportsDocumentField('keywords', 'epub3')).toBe(false);
+    expect(supportsDocumentField('title', 'bbcode')).toBe(false);
+    expect(supportsDocumentField('title', undefined)).toBe(false);
   });
 });

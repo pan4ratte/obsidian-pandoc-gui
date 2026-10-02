@@ -417,14 +417,38 @@ export default {
   JOIN_ADD: 'Add document',
   JOIN_MOVE_UP: 'Move up',
   JOIN_STYLES: 'Styles of joined documents',
-  JOIN_STYLES_DESC: 'Own: the documents look as they do in Word. Template’s: styles with the same names are taken from the reference document.',
+  JOIN_STYLES_DESC: 'Can be kept or taken from the reference document.',
   JOIN_STYLES_LABELS: {
-    own: 'Own',
-    template: 'Template’s',
+    own: 'Keep original styles',
+    template: 'Use template styles',
   },
   JOIN_NOT_FOUND: (name: string) => `Document to join not found: ${name}`,
   JOIN_FAILED: (reason: string) => `The documents could not be joined: ${reason}`,
   JOIN_NO_OUTPUT: 'Pandoc wrote no document.',
+
+  // ─── Document metadata ───────────────────────────────────────────────────────
+  DOCUMENT_METADATA: 'Document metadata',
+  DOCUMENT_FIELD_LABELS: {
+    'title': 'Title',
+    'subtitle': 'Subtitle',
+    'author': 'Author',
+    'date': 'Date',
+    'abstract': 'Abstract',
+    'abstract-title': 'Abstract title',
+    'keywords': 'Keywords',
+    'subject': 'Subject',
+    'description': 'Description',
+    'category': 'Category',
+    'toc-title': 'Table of contents title',
+  },
+  DOCUMENT_FIELD_DESCS: {
+    'author': 'Type a name and press Enter to add the author to the list.',
+    'keywords': 'Type a keyword and press Enter to add it to the list.',
+    'toc-title': "If empty, Pandoc uses a title in the document's language.",
+  },
+  DOCUMENT_FIELD_PLACEHOLDERS: {
+    'date': 'e.g. ${today.long}',
+  },
 
   // ─── Layout template and includes ────────────────────────────────────────────
   OUTPUT_TEMPLATE: 'Layout template',

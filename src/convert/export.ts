@@ -25,6 +25,7 @@ import { type QueryAnswer, collectQueries, renderQueries } from './dataview';
 import { outputFormat, readsInlinedFonts, takesSvg, writesLatex } from '../pandoc/pandoc_format';
 import { drawingFormat } from '../filters/filter_args';
 import { pdfEngine } from '../args/writer_args';
+import { hasDocumentMetadata, metadataFileArg, metadataFileContents } from './document_metadata';
 
 const encoder = new TextEncoder();
 
@@ -303,6 +304,7 @@ export async function exportNote(
   let drawnDrawings = new Map<string, string>();
   let queryAnswers: QueryAnswer[] = [];
   let queryProblems: string[] = [];
+  let wroteMetadata = false;
 
   try {
     const env = (variables.env = createEnv(getPlatformValue(globalSetting.env) ?? {}, variables));
@@ -349,7 +351,7 @@ export async function exportNote(
       setting.type === 'pandoc'
         ? orderLuaFilters(
             withCalloutsFilter(
-              [pandocPath, '"${currentPath}"', setting.arguments, setting.customArguments, setting.userArguments]
+              [pandocPath, '"${currentPath}"', setting.arguments, metadataFileArg(setting), setting.customArguments, setting.userArguments]
                 .map(part => part?.trim())
                 .filter(Boolean)
                 .join(' ')
@@ -381,6 +383,13 @@ export async function exportNote(
       if (engine !== 'wasm') {
         cmdTpl = pandoc.takesMathMethod(installed) ? renameMathFlags(cmdTpl) : legacyMathFlags(cmdTpl);
       }
+    }
+
+    if (setting.type === 'pandoc' && hasDocumentMetadata(setting)) {
+      const path = `${scratchDir}/metadata.json`;
+      await files.write(path, encoder.encode(metadataFileContents(setting.documentMetadata, value => renderTemplate(value, variables))));
+      wroteMetadata = true;
+      variables.metadataFile = Platform.isWin ? path.replaceAll('\\', '/') : path;
     }
 
     cmd = renderTemplate(cmdTpl, variables);
@@ -564,7 +573,7 @@ export async function exportNote(
     onFailure?.();
   } finally {
     // Pandoc has read them.
-    if (drawnDrawings.size > 0 || queryAnswers.length > 0) {
+    if (drawnDrawings.size > 0 || queryAnswers.length > 0 || wroteMetadata) {
       await files.removeDir(scratchDir);
     }
   }

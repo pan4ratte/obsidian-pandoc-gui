@@ -1,4 +1,5 @@
 import type { CuratedVariable } from '../args/writer_args';
+import { DOCUMENT_FIELDS, type DocumentField } from '../convert/document_metadata';
 
 /* What a template writes, and what that writer can be asked to do. */
 
@@ -302,6 +303,49 @@ export const supportsVariable: Record<CuratedVariable, (writer?: string) => bool
     'muse',
   ]),
 };
+
+/* The document fields, and who writes them. */
+const BYLINE: readonly DocumentField[] = ['title', 'author', 'date'];
+const WITH_SUBTITLE: readonly DocumentField[] = ['title', 'subtitle', 'author', 'date'];
+const HTML_FIELDS: readonly DocumentField[] = [...WITH_SUBTITLE, 'abstract', 'abstract-title', 'keywords', 'description', 'toc-title'];
+const LATEX_FIELDS: readonly DocumentField[] = [...WITH_SUBTITLE, 'abstract', 'keywords', 'subject', 'toc-title'];
+const SLIDE_FIELDS: readonly DocumentField[] = [...WITH_SUBTITLE, 'keywords'];
+const EPUB_FIELDS: readonly DocumentField[] = [...WITH_SUBTITLE, 'abstract', 'abstract-title', 'subject', 'description', 'toc-title'];
+const ASCIIDOC_FIELDS: readonly DocumentField[] = [...BYLINE, 'abstract', 'keywords'];
+const JATS_FIELDS: readonly DocumentField[] = ['title', 'subtitle', 'author', 'abstract'];
+
+/** Writers that copy every metadata field into what they write. */
+const WRITES_ALL_FIELDS = new Set(['markdown', 'markdown_mmd', 'gfm', 'commonmark_x', 'json', 'native', 'xml']);
+
+/**
+ * Measured against pandoc 3.12 by writing every field through `--metadata-file` and searching the output. Word's and
+ * PowerPoint's custom properties are left out of the count: every field lands there.
+ */
+const DOCUMENT_FIELD_WRITERS: Record<string, readonly DocumentField[]> = {
+  ...Object.fromEntries(HTML_WRITERS.map(w => [w, HTML_FIELDS])),
+  ...Object.fromEntries(LATEX_WRITERS.map(w => [w, LATEX_FIELDS])),
+  ...Object.fromEntries(EPUB_WRITERS.map(w => [w, EPUB_FIELDS])),
+  ...Object.fromEntries(['dzslides', 's5', 'slideous', 'slidy'].map(w => [w, SLIDE_FIELDS])),
+  ...Object.fromEntries(['asciidoc', 'asciidoc_legacy', 'asciidoctor'].map(w => [w, ASCIIDOC_FIELDS])),
+  ...Object.fromEntries(['jats', 'jats_archiving', 'jats_articleauthoring', 'jats_publishing'].map(w => [w, JATS_FIELDS])),
+  ...Object.fromEntries(['djot', 'docbook4', 'fb2', 'man', 'plain', 'rtf', 't2t', 'tei', 'texinfo'].map(w => [w, BYLINE])),
+  ...Object.fromEntries(['ansi', 'docbook', 'docbook5', 'muse'].map(w => [w, WITH_SUBTITLE])),
+  revealjs: [...SLIDE_FIELDS, 'toc-title'],
+  context: [...WITH_SUBTITLE, 'abstract', 'keywords'],
+  typst: [...WITH_SUBTITLE, 'abstract', 'abstract-title', 'keywords'],
+  rst: [...WITH_SUBTITLE, 'abstract'],
+  docx: DOCUMENT_FIELDS,
+  odt: [...WITH_SUBTITLE, 'abstract', 'keywords', 'subject', 'description', 'toc-title'],
+  opendocument: [...WITH_SUBTITLE, 'abstract', 'toc-title'],
+  pptx: [...WITH_SUBTITLE, 'keywords', 'subject', 'description', 'category', 'toc-title'],
+  ms: [...BYLINE, 'abstract'],
+  org: [...BYLINE, 'abstract'],
+  opml: ['title', 'author'],
+  vimdoc: ['title', 'author', 'abstract'],
+};
+
+export const supportsDocumentField = (field: DocumentField, writer?: string): boolean =>
+  !!writer && (WRITES_ALL_FIELDS.has(writer) || !!DOCUMENT_FIELD_WRITERS[writer]?.includes(field));
 
 /**
  * `--ascii`: "Currently supported only for XML and HTML formats (which use entities instead of UTF-8 when this option

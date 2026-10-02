@@ -1743,6 +1743,28 @@
 }
 
 /*
+ * A row's control is end-aligned, which puts an empty pill field's caret a character to the right of where typing
+ * starts. The padding is trimmed so a pill, taller than a line of text, fits without the field growing.
+ */
+.ex-template-modal.ex-template-modal .multi-select-container {
+  text-align: start;
+  padding-block: 2px;
+  align-items: center;
+}
+
+/* The metadata fields beside their labels share one width, however long the label. */
+.ex-template-modal.ex-template-modal .ex-template-modal-metadata .setting-item.ex-inline-setting > .setting-item-control {
+  flex: 0 0 50%;
+}
+
+/* An abstract or a description, sized to its lines like the list above. */
+.ex-template-modal.ex-template-modal .ex-template-modal-prose {
+  width: 100%;
+  resize: none;
+  overflow-y: hidden;
+}
+
+/*
  * The command as it will be run, one option a line. Monospace, so the flags line
  * up down the left; scrolled rather than wrapped, so the count of lines is the
  * count of options and a long path cannot push the rest of the command down the

@@ -1,13 +1,21 @@
 # Changelog
 
 
-## 2.7.0
+## 3.0.0
 
-### New feature: joining Word documents
+### New features
 
 * **Title pages, appendices and other Word documents in the export.** Word templates have a new group, “Joining documents”: documents put at the start of the exported note and documents put at its end. A note can name its own documents in the `docx-before` and `docx-after` properties, and the export dialog can pick them for a single export. Joined documents are carried over with their margins, headers and footers, images, lists, footnotes and comments and look as they do in Word, or they can be given the template's styles instead. Works with Pandoc WASM too; see the user guide for details.
+* **Document metadata in templates.** Templates have a new group, “Document metadata”: title, subtitle, author, date, abstract and its title, keywords, subject, description, category and table of contents title. The values apply to every note, but a note's own properties of the same name win. A template shows only the fields its format writes into the document.
 
 Note: settings Word makes for the whole document, such as different headers on even and odd pages, come from the exported note.
+
+### Enhancements and bug fixes
+
+* The template editor is reworked: settings groups look like Obsidian's own, and the table of contents, numbering and lists share one card.
+* Language, text direction, code highlighting, math, PDF engine and citations are gathered into a “Document formatting” group.
+* Settings groups in the import dialog look the same as in the template editor.
+* The table of contents slider's labels line up with its edges.
 
 
 ## 2.6.0

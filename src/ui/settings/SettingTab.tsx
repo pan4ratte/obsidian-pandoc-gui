@@ -15,8 +15,18 @@ import { resolveEngine } from '../../pandoc/engine';
 import { bundledReferenceDoc, isReferenceFormat, referenceDocFromNative } from '../../pandoc/reference_doc';
 import { STYLE_MODES, type StyleMode } from '../../docx/styles';
 import { templatePaths } from '../../convert/joined_docs';
+import {
+  DOCUMENT_FIELDS,
+  MULTILINE_FIELDS,
+  isListField,
+  metadataFileArg,
+  setDocumentField,
+  type DocumentField,
+  type DocumentMetadata,
+} from '../../convert/document_metadata';
 import DocumentList from '../components/DocumentList';
 import Group from '../components/Group';
+import PillInput from '../components/PillInput';
 import { chooseFile, documentsFolder, isMobileUi, showInFolder, vaultRoot } from '../../system/platform';
 import { FileStore } from '../../system/file_store';
 import PandocDashboard from './PandocDashboard';
@@ -192,6 +202,7 @@ import {
   outputFormat,
   supportsAscii,
   supportsCss,
+  supportsDocumentField,
   supportsDpi,
   supportsEmbedResources,
   supportsEol,
@@ -904,6 +915,52 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
       }
     };
 
+    /** Short answers, kept beside their label. */
+    const INLINE_DOCUMENT_FIELDS: readonly DocumentField[] = ['date', 'abstract-title', 'subject', 'category'];
+
+    /** The table of contents' own title only once there is a table of contents. */
+    const documentFields = createMemo(() =>
+      DOCUMENT_FIELDS.filter(field => supportsDocumentField(field, format()) && (field !== 'toc-title' || tocDepth(args()) > TOC_NONE))
+    );
+
+    const documentFieldRow = (field: DocumentField) => {
+      const metadata = () => template()?.documentMetadata;
+      const update = (write: (fields?: DocumentMetadata) => DocumentMetadata | undefined) =>
+        updateTemplate(v => (v.documentMetadata = write(v.documentMetadata)));
+      const descriptions: Partial<Record<DocumentField, string>> = t.DOCUMENT_FIELD_DESCS;
+      const placeholders: Partial<Record<DocumentField, string>> = t.DOCUMENT_FIELD_PLACEHOLDERS;
+
+      let control: JSX.Element;
+      if (isListField(field)) {
+        // `flat` also takes a list typed as one line before the pills came in.
+        control = (
+          <PillInput
+            value={[metadata()?.[field] ?? []].flat()}
+            allowDuplicates={field === 'author'}
+            onChange={items => update(fields => setDocumentField(fields, field, items))}
+          />
+        );
+      } else {
+        const value = () => metadata()?.[field] ?? '';
+        const write = (text: string) => update(fields => setDocumentField(fields, field, text));
+        control = MULTILINE_FIELDS.includes(field) ? (
+          <TextArea class="ex-template-modal-prose" autoSize={true} visible={true} spellcheck={true} value={value()} onChange={write} />
+        ) : (
+          <Text value={value()} placeholder={placeholders[field]} spellcheck={true} onChange={write} />
+        );
+      }
+
+      return (
+        <Setting
+          name={t.DOCUMENT_FIELD_LABELS[field]}
+          description={descriptions[field]}
+          class={`ex-template-modal-field-${field}${INLINE_DOCUMENT_FIELDS.includes(field) ? ' ex-inline-setting' : ''}`}
+        >
+          {control}
+        </Setting>
+      );
+    };
+
     /** The line pandoc is given, assembled as `exportNote` assembles it. The `${...}` are
         left standing: they are filled in at export from a note that does not exist yet. */
     const resultingCommand = createMemo(() =>
@@ -914,6 +971,7 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
             pandoc.normalizePath(getPlatformValue(settings.pandocPath)),
             '"${currentPath}"',
             template()?.arguments,
+            metadataFileArg(template()),
             template()?.customArguments,
             template()?.userArguments,
           ]
@@ -1109,6 +1167,13 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
                 onChange={value => updateTemplate(v => (v.joinStyles = value === 'own' ? undefined : (value as StyleMode)))}
               />
             </Setting>
+          </Group>
+        </Show>
+
+        {/* Kept on the template rather than in the arguments, and written out as a metadata file at export. */}
+        <Show when={documentFields().length > 0}>
+          <Group name={t.DOCUMENT_METADATA} class="ex-template-modal-metadata">
+            <For each={documentFields()}>{documentFieldRow}</For>
           </Group>
         </Show>
 
@@ -1518,8 +1583,7 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
             </Show>
           </Group>
 
-          {/* Everything else. Title, author and date come from the note's frontmatter, so they
-              get no field. `visible` is the panel: an unrendered textarea has no height. */}
+          {/* Everything else. `visible` is the panel: an unrendered textarea has no height. */}
           <Setting name={t.OTHER_VARIABLES} description={t.OTHER_VARIABLES_DESC} class="ex-template-modal-variables">
             <TextArea
               class="ex-template-modal-pairs"
