@@ -2654,14 +2654,28 @@
 /* Prose at the size the rest of the settings are read at, rather than the
    note's own — this is a panel of the plugin, not a note. Set on the page as
    well as on its paragraphs, so everything the renderer leaves at the base size
-   is read at it too. Headings keep the sizes the renderer gives them, which is
-   what makes them headings.
+   is read at it too.
    The class is written twice: a theme's stylesheet loads after a plugin's, and
    a rule of the same weight in one would otherwise be the one that lands. */
 .ex-user-guide-modal.ex-user-guide-modal,
 .ex-user-guide-modal.ex-user-guide-modal p,
 .ex-user-guide-modal.ex-user-guide-modal li {
   font-size: var(--font-ui-small);
+}
+
+/* Each level a step above the one below it and above the prose, whatever sizes the theme gives headings. */
+.ex-user-guide-modal.ex-user-guide-modal h2 {
+  margin-top: var(--size-4-8);
+  font-size: calc(var(--font-ui-small) * 1.5);
+}
+
+.ex-user-guide-modal.ex-user-guide-modal h3 {
+  margin-top: var(--size-4-6);
+  font-size: calc(var(--font-ui-small) * 1.25);
+}
+
+.ex-user-guide-modal.ex-user-guide-modal h4 {
+  font-size: calc(var(--font-ui-small) * 1.1);
 }
 
 /* The changelog is read the same way the guide is, and out of the same kind of
