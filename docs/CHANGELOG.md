@@ -12,6 +12,7 @@
 
 * The template editor's interface is reworked to be clearer and easier to use: settings are regrouped and their look is tidied up.
 * The import dialog's interface is reworked.
+* The user guide is rewritten.
 
 
 ## 2.6.0
@@ -189,18 +190,6 @@ This update introduces full mobile support for the plugin. Now you can export to
 * A hand-written `--syntax-highlighting` is no longer read as the syntax definition file.
 * A template can be duplicated from its row in the templates table.
 * Row actions fade in on the row under the pointer, each in its own colour.
-
----
-
-Changelog for the 1.2.0 release:
-
-> * Fixed a bug when deleted default templates came back on restart.
-> * Localized all lua-filters info in the store.
-> * New, cleaner layout for lua-filters in the store.
-> * Reordered some options in the template modal for better UX, plus tweaked UI.
-> * Tooltips use Obsidian's own element style now.
-> * Updated the environment variables editor UI.
-> * Wording corrections in both locales.
 
 
 ## 1.2.0
