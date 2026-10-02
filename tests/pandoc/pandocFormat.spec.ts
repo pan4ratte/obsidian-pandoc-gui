@@ -6,7 +6,6 @@ import {
   isSlideOutput,
   outputFormat,
   runsInFormat,
-  supportsCss,
   supportsDocumentField,
   supportsDpi,
   supportsEmbedResources,
@@ -166,16 +165,6 @@ describe('which rows a writer is offered', () => {
     }
     for (const writer of ['latex', 'html', 'epub3', 'rtf', undefined]) {
       expect(supportsReferenceDoc(writer)).toBe(false);
-    }
-  });
-
-  test('a stylesheet, in HTML — slide shows included — and EPUB', () => {
-    for (const writer of ['html', 'html4', 'html5', 'chunkedhtml', 'epub', 'epub3', 'revealjs', 's5']) {
-      expect(supportsCss(writer)).toBe(true);
-    }
-    // These have no stylesheet to link, whatever else they can be told.
-    for (const writer of ['latex', 'pdf', 'docx', 'odt', 'typst', undefined]) {
-      expect(supportsCss(writer)).toBe(false);
     }
   });
 

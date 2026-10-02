@@ -199,22 +199,6 @@ const EOL_UNSUPPORTED = new Set(['docx', 'odt', 'opendocument', 'pptx', 'epub', 
 
 export const supportsEol = (writer?: string): boolean => !!writer && !EOL_UNSUPPORTED.has(writer);
 
-/** `--css`: "only affects HTML (including HTML slide shows) and EPUB output". */
-export const supportsCss = supportedBy([
-  'html',
-  'html4',
-  'html5',
-  'chunkedhtml',
-  'revealjs',
-  'slidy',
-  'slideous',
-  'dzslides',
-  's5',
-  'epub',
-  'epub2',
-  'epub3',
-]);
-
 /*
  * The include files, which the manual gives no list for: what happens to them is up to each writer's template, so the
  * two sets below were measured against pandoc 3.10 the way `--toc` was — the same document written with each option

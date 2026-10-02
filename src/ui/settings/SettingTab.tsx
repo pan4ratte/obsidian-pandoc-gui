@@ -201,7 +201,6 @@ import {
   isSlideOutput,
   outputFormat,
   supportsAscii,
-  supportsCss,
   supportsDocumentField,
   supportsDpi,
   supportsEmbedResources,
