@@ -1144,9 +1144,10 @@
   background: var(--setting-items-background);
 }
 
-/* Just the words: the border stays, unseen, so the text keeps its place in line with the boxes. */
+/* Just the words, starting where a group's heading does; the border stays, unseen, to keep the row's height. */
 .ex-template-modal.ex-template-modal .ex-template-modal-advanced > .setting-item.ex-section-header,
 .ex-template-modal.ex-template-modal .ex-template-modal-command-section > .setting-item.ex-section-header {
+  padding-inline-start: calc(var(--size-4-4) - 1px);
   border-color: transparent;
   background: transparent;
 }
@@ -1564,12 +1565,6 @@
   background: none;
 }
 
-/* A field whose question is asked by the heading over it, so it carries no
-   label of its own. The space above it belongs to the card it sits in. */
-.ex-template-modal.ex-template-modal .ex-template-modal-nameless > .setting-item-info {
-  display: none;
-}
-
 /*
  * The advanced panel: a heading that folds, and under it a run of rows no
  * different from the ones above it. What it opens is not held in anything —
@@ -1588,6 +1583,11 @@
  */
 .ex-template-modal.ex-template-modal .ex-section > .ex-collapsible > *:not(.ex-collapsible) {
   margin-top: var(--size-4-3);
+}
+
+/* A group's own heading already stands off the section's. */
+.ex-template-modal.ex-template-modal .ex-section > .ex-collapsible > .ex-group:first-child {
+  margin-top: 0;
 }
 
 /*
@@ -1861,7 +1861,6 @@
 .ex-import-modal.ex-import-modal .ex-group > .setting-item.setting-item-heading > .setting-item-info > .setting-item-description {
   margin-top: var(--size-2-2);
 }
-
 /*
  * Lua filter store.
  *

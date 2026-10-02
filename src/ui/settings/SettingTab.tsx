@@ -717,6 +717,29 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
       </Setting>
     );
 
+    // In the EPUB card or the HTML page card, whichever the format shows.
+    const stylesheetRow = () => (
+      <Setting name={t.STYLESHEET} description={t.STYLESHEET_DESC} class="ex-template-modal-css">
+        <FileInput
+          value={css(args())}
+          filters={CSS_FILES}
+          tooltip={t.CHOOSE_FILE}
+          onChange={value => writeArgs(a => setCss(a, value.trim()))}
+        />
+      </Setting>
+    );
+
+    const splitLevelRow = () => (
+      <Setting name={t.SPLIT_LEVEL} description={t.SPLIT_LEVEL_DESC} class="ex-template-modal-split-level">
+        <DropDown
+          options={splitLevelOptions()}
+          selected={splitLevel(args()) ?? ''}
+          autofocus={false}
+          onChange={value => writeArgs(a => setSplitLevel(a, value))}
+        />
+      </Setting>
+    );
+
     /** Everything the rows above do not ask for, one `key=value` a line. A variable with a
         row of its own is left out here, and put back when the format loses that row. */
     const otherVariables = createMemo(() =>
@@ -1063,22 +1086,25 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
           </div>
         </Show>
 
-        {/* Adding a filter appends its `--lua-filter` flag to the extra arguments. */}
-        <Setting name={t.LUA_FILTERS} class="ex-template-modal-filters">
-          <TemplateLuaFilters
-            installed={settings.installedLuaFilters ?? []}
-            format={format()}
-            args={template()?.customArguments}
-            onAdd={fileName => setLuaFilterOnCurrentTemplate(fileName, true)}
-            onRemove={fileName => setLuaFilterOnCurrentTemplate(fileName, false)}
-          />
-        </Setting>
+        {/* What pandoc is given beyond the writer: filters to run and the reader's extensions. */}
+        <div class="ex-card ex-template-modal-processing">
+          {/* Adding a filter appends its `--lua-filter` flag to the extra arguments. */}
+          <Setting name={t.LUA_FILTERS} class="ex-template-modal-filters">
+            <TemplateLuaFilters
+              installed={settings.installedLuaFilters ?? []}
+              format={format()}
+              args={template()?.customArguments}
+              onAdd={fileName => setLuaFilterOnCurrentTemplate(fileName, true)}
+              onRemove={fileName => setLuaFilterOnCurrentTemplate(fileName, false)}
+            />
+          </Setting>
 
-        {/* Ticking a box writes the extension into `-f`. Every one offered is a
-            pandoc default-off, so a cleared box is the reader's own behaviour. */}
-        <Setting name={t.EXTENSIONS} description={t.EXTENSIONS_DESC} class="ex-template-modal-extensions">
-          <CheckGrid items={extensions()} onToggle={toggleExtension} single={true} />
-        </Setting>
+          {/* Ticking a box writes the extension into `-f`. Every one offered is a
+              pandoc default-off, so a cleared box is the reader's own behaviour. */}
+          <Setting name={t.EXTENSIONS} description={t.EXTENSIONS_DESC} class="ex-template-modal-extensions">
+            <CheckGrid items={extensions()} onToggle={toggleExtension} single={true} />
+          </Setting>
+        </div>
 
         {/* Every style named here has to exist in that document. Each row runs a bundled
             filter — pandoc has no option for any of this. */}
@@ -1329,6 +1355,17 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
               </Setting>
             </Show>
 
+            <Show when={supportsReferenceLocation(format())}>
+              <Setting name={t.REFERENCE_LOCATION} description={t.REFERENCE_LOCATION_DESC} class="ex-template-modal-reference-location">
+                <DropDown
+                  options={referenceLocationOptions()}
+                  selected={referenceLocation(args()) ?? ''}
+                  autofocus={false}
+                  onChange={value => writeArgs(a => setReferenceLocation(a, value))}
+                />
+              </Setting>
+            </Show>
+
             {/* Citeproc reads the document rather than writing it, so no format gate. */}
             <Setting name={t.CITATIONS} description={t.CITATIONS_DESC} class="ex-template-modal-citations-toggle">
               <Toggle checked={citeproc(args())} onChange={checked => writeArgs(a => setCiteproc(a, checked))} />
@@ -1351,6 +1388,18 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
                 />
               </Setting>
             </Collapsible>
+
+            {/* Every variable no row above claims. `visible` is the panel: an unrendered textarea has no height. */}
+            <Setting name={t.OTHER_VARIABLES} description={t.OTHER_VARIABLES_DESC} class="ex-template-modal-variables">
+              <TextArea
+                class="ex-template-modal-pairs"
+                autoSize={true}
+                visible={advancedOpen()}
+                value={otherVariables()}
+                placeholder="fontfamily=libertinus"
+                onChange={text => writeArgs(a => setVariables(a, pairsFromText(text), curatedVariables()))}
+              />
+            </Setting>
           </Group>
 
           {/* The page as template variables, each row shown only where the writer reads it. */}
@@ -1358,17 +1407,6 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
             <Group name={t.PAGE_SETUP} description={t.PAGE_SETUP_DESC} class="ex-template-modal-page-setup">
               <For each={pageVariables()}>{variableRow}</For>
             </Group>
-          </Show>
-
-          <Show when={supportsCss(format())}>
-            <Setting name={t.STYLESHEET} description={t.STYLESHEET_DESC} class="ex-template-modal-css">
-              <FileInput
-                value={css(args())}
-                filters={CSS_FILES}
-                tooltip={t.CHOOSE_FILE}
-                onChange={value => writeArgs(a => setCss(a, value.trim()))}
-              />
-            </Setting>
           </Show>
 
           {/* Three files around one document. Writers with no header lose that row. Word takes them as raw XML,
@@ -1408,24 +1446,26 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
             </Group>
           </Show>
 
-          {/* How the file itself is laid out, for writers producing text a person reads. */}
-          <Show when={supportsWrap(format())}>
+          {/* How the file itself is written: its layout and its bytes, each row on its own gate. */}
+          <Show when={supportsWrap(format()) || supportsEol(format()) || supportsAscii(format())}>
             <Group name={t.WRITTEN_SOURCE} description={t.WRITTEN_SOURCE_DESC} class="ex-template-modal-source">
-              <Setting name={t.WRAP} class="ex-template-modal-wrap">
-                <DropDown
-                  options={wrapOptions()}
-                  selected={wrap(args()) ?? ''}
-                  autofocus={false}
-                  onChange={value => writeArgs(a => setWrap(a, value))}
-                />
-              </Setting>
-
-              {/* A column to wrap at is only a question while something wraps. */}
-              <Collapsible when={wrap(args()) !== 'none'} class="ex-template-modal-columns-panel">
-                <Setting name={t.COLUMNS} class="ex-template-modal-columns">
-                  <Text value={columns(args()) ?? ''} placeholder="72" onChange={value => writeArgs(a => setColumns(a, value))} />
+              <Show when={supportsWrap(format())}>
+                <Setting name={t.WRAP} class="ex-template-modal-wrap">
+                  <DropDown
+                    options={wrapOptions()}
+                    selected={wrap(args()) ?? ''}
+                    autofocus={false}
+                    onChange={value => writeArgs(a => setWrap(a, value))}
+                  />
                 </Setting>
-              </Collapsible>
+
+                {/* A column to wrap at is only a question while something wraps. */}
+                <Collapsible when={wrap(args()) !== 'none'} class="ex-template-modal-columns-panel">
+                  <Setting name={t.COLUMNS} class="ex-template-modal-columns">
+                    <Text value={columns(args()) ?? ''} placeholder="72" onChange={value => writeArgs(a => setColumns(a, value))} />
+                  </Setting>
+                </Collapsible>
+              </Show>
 
               <Show when={supportsMarkdownHeadings(format())}>
                 <Setting name={t.MARKDOWN_HEADINGS} class="ex-template-modal-headings">
@@ -1443,37 +1483,24 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
                   <Toggle checked={referenceLinks(args())} onChange={checked => writeArgs(a => setReferenceLinks(a, checked))} />
                 </Setting>
               </Show>
+
+              <Show when={supportsEol(format())}>
+                <Setting name={t.LINE_ENDINGS} class="ex-template-modal-eol">
+                  <DropDown
+                    options={eolOptions()}
+                    selected={eol(args()) ?? ''}
+                    autofocus={false}
+                    onChange={value => writeArgs(a => setEol(a, value))}
+                  />
+                </Setting>
+              </Show>
+
+              <Show when={supportsAscii(format())}>
+                <Setting name={t.ASCII_ONLY} description={t.ASCII_ONLY_DESC} class="ex-template-modal-ascii">
+                  <Toggle checked={ascii(args())} onChange={checked => writeArgs(a => setAscii(a, checked))} />
+                </Setting>
+              </Show>
             </Group>
-          </Show>
-
-          {/* The bytes rather than the layout, each on its own gate. */}
-          <Show when={supportsEol(format())}>
-            <Setting name={t.LINE_ENDINGS} class="ex-template-modal-eol">
-              <DropDown
-                options={eolOptions()}
-                selected={eol(args()) ?? ''}
-                autofocus={false}
-                onChange={value => writeArgs(a => setEol(a, value))}
-              />
-            </Setting>
-          </Show>
-
-          <Show when={supportsAscii(format())}>
-            <Setting name={t.ASCII_ONLY} description={t.ASCII_ONLY_DESC} class="ex-template-modal-ascii">
-              <Toggle checked={ascii(args())} onChange={checked => writeArgs(a => setAscii(a, checked))} />
-            </Setting>
-          </Show>
-
-          {/* Its own row: an EPUB collects footnotes but writes no source anybody reads. */}
-          <Show when={supportsReferenceLocation(format())}>
-            <Setting name={t.REFERENCE_LOCATION} description={t.REFERENCE_LOCATION_DESC} class="ex-template-modal-reference-location">
-              <DropDown
-                options={referenceLocationOptions()}
-                selected={referenceLocation(args()) ?? ''}
-                autofocus={false}
-                onChange={value => writeArgs(a => setReferenceLocation(a, value))}
-              />
-            </Setting>
           </Show>
 
           <Show when={isSlideOutput(format())}>
@@ -1510,6 +1537,7 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
                   onChange={value => writeArgs(a => setEpubEmbedFont(a, value.trim()))}
                 />
               </Setting>
+              {stylesheetRow()}
               <Setting name={t.EPUB_TITLE_PAGE}>
                 <Toggle checked={epubTitlePage(args())} onChange={checked => writeArgs(a => setEpubTitlePage(a, checked))} />
               </Setting>
@@ -1520,23 +1548,14 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
                   onChange={value => writeArgs(a => setEpubSubdirectory(a, value))}
                 />
               </Setting>
+              {splitLevelRow()}
             </Group>
-          </Show>
-
-          {/* Outside the EPUB card: chunked HTML splits on the same option. */}
-          <Show when={supportsSplitLevel(format())}>
-            <Setting name={t.SPLIT_LEVEL} description={t.SPLIT_LEVEL_DESC} class="ex-template-modal-split-level">
-              <DropDown
-                options={splitLevelOptions()}
-                selected={splitLevel(args()) ?? ''}
-                autofocus={false}
-                onChange={value => writeArgs(a => setSplitLevel(a, value))}
-              />
-            </Setting>
           </Show>
 
           <Show when={supportsHtmlOptions(format())}>
             <Group name={t.HTML_PAGE} description={t.HTML_PAGE_DESC} class="ex-template-modal-page">
+              {stylesheetRow()}
+
               {/* The shipped HTML template already asks for this, so only a difference is written. */}
               <Show when={supportsEmbedResources(format())}>
                 <Setting name={t.EMBED_RESOURCES} class="ex-template-modal-embed">
@@ -1563,6 +1582,9 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
               <Setting name={t.ID_PREFIX} class="ex-template-modal-id-prefix">
                 <Text value={idPrefix(args()) ?? ''} onChange={value => writeArgs(a => setIdPrefix(a, value.trim()))} />
               </Setting>
+
+              {/* Chunked HTML splits on the same option as an EPUB. */}
+              <Show when={supportsSplitLevel(format())}>{splitLevelRow()}</Show>
             </Group>
           </Show>
 
@@ -1582,18 +1604,6 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
               </Setting>
             </Show>
           </Group>
-
-          {/* Everything else. `visible` is the panel: an unrendered textarea has no height. */}
-          <Setting name={t.OTHER_VARIABLES} description={t.OTHER_VARIABLES_DESC} class="ex-template-modal-variables">
-            <TextArea
-              class="ex-template-modal-pairs"
-              autoSize={true}
-              visible={advancedOpen()}
-              value={otherVariables()}
-              placeholder="fontfamily=libertinus"
-              onChange={text => writeArgs(a => setVariables(a, pairsFromText(text), curatedVariables()))}
-            />
-          </Setting>
         </Section>
 
         {/* The command is shown, not typed into: an edit here could not be told apart from
@@ -1601,8 +1611,8 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
             can reach, written last so it has the final word. */}
         <Section name={t.COMMAND_RESULT} class="ex-template-modal-command-section" open={commandOpen()} onToggle={setCommandOpen}>
           {/* The command and the one field that adds to it share a card. */}
-          <Group description={t.COMMAND_RESULT_DESC} class="ex-template-modal-command-card">
-            <Setting class="ex-template-modal-resulting-command ex-template-modal-nameless">
+          <Group class="ex-template-modal-command-card">
+            <Setting name={t.COMMAND_LINE} class="ex-template-modal-resulting-command">
               {/* Copy sits over the field, not the heading: it copies what is on screen. */}
               <div class="ex-template-modal-command-preview">
                 <TextArea

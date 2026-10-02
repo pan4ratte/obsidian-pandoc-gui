@@ -139,37 +139,40 @@ const Dialog = (props: { plugin: PandocGuiPlugin; onClose?: () => void }) => {
 
   return (
     <Modal app={app} title={t.IMPORT_DIALOG_TITLE} hidden={hidden()} classList={{ 'ex-import-modal': true }} onClose={props.onClose}>
-      <Setting name={t.IMPORT_DIALOG_FLAVOUR} description={t.IMPORT_DIALOG_FLAVOUR_DESC}>
-        <DropDown
-          options={flavourOptions}
-          selected={options.flavour}
-          onChange={flavour => setOptions('flavour', flavour as MarkdownFlavour)}
-        />
-      </Setting>
-
-      <PathSetting name={t.IMPORT_DIALOG_SOURCE} description={sourceDescription()}>
-        {/* A file from anywhere on a desktop; on a phone, one that is already in the vault — there is no other
-            document it could reach. */}
-        <Show
-          when={isMobileUi()}
-          fallback={<FileInput value={source()} filters={SOURCE_FILES} tooltip={t.CHOOSE_FILE} onChange={setSource} />}
-        >
-          <VaultFileInput
-            app={app}
-            value={vaultFile()}
-            extensions={IMPORT_EXTENSIONS}
-            placeholder={t.IMPORT_DIALOG_SOURCE_NONE}
-            onChange={path => setSource(path ? `${vaultRoot(app.vault.adapter)}/${path}` : '')}
+      {/* What is imported, into what, and where: one card. */}
+      <div class="ex-card">
+        <Setting name={t.IMPORT_DIALOG_FLAVOUR} description={t.IMPORT_DIALOG_FLAVOUR_DESC}>
+          <DropDown
+            options={flavourOptions}
+            selected={options.flavour}
+            onChange={flavour => setOptions('flavour', flavour as MarkdownFlavour)}
           />
-        </Show>
-      </PathSetting>
+        </Setting>
 
-      <PathSetting
-        name={t.IMPORT_DIALOG_FOLDER}
-        description={noteName() ? t.IMPORT_DIALOG_FOLDER_DESC(noteName()) : t.IMPORT_DIALOG_FOLDER_NONE}
-      >
-        <FolderInput app={app} value={folder()} placeholder={t.IMPORT_DIALOG_FOLDER_PLACEHOLDER} onChange={setFolder} />
-      </PathSetting>
+        <PathSetting name={t.IMPORT_DIALOG_SOURCE} description={sourceDescription()}>
+          {/* A file from anywhere on a desktop; on a phone, one that is already in the vault — there is no other
+              document it could reach. */}
+          <Show
+            when={isMobileUi()}
+            fallback={<FileInput value={source()} filters={SOURCE_FILES} tooltip={t.CHOOSE_FILE} onChange={setSource} />}
+          >
+            <VaultFileInput
+              app={app}
+              value={vaultFile()}
+              extensions={IMPORT_EXTENSIONS}
+              placeholder={t.IMPORT_DIALOG_SOURCE_NONE}
+              onChange={path => setSource(path ? `${vaultRoot(app.vault.adapter)}/${path}` : '')}
+            />
+          </Show>
+        </PathSetting>
+
+        <PathSetting
+          name={t.IMPORT_DIALOG_FOLDER}
+          description={noteName() ? t.IMPORT_DIALOG_FOLDER_DESC(noteName()) : t.IMPORT_DIALOG_FOLDER_NONE}
+        >
+          <FolderInput app={app} value={folder()} placeholder={t.IMPORT_DIALOG_FOLDER_PLACEHOLDER} onChange={setFolder} />
+        </PathSetting>
+      </div>
 
       {/* Only what the chosen file's reader answers to — until one is chosen there is nothing to ask about. */}
       <Show when={reader()}>

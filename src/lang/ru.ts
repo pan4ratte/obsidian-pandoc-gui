@@ -239,7 +239,7 @@ export default {
 
   // ─── Resulting command ───────────────────────────────────────────────────────
   COMMAND_RESULT: 'Итоговая команда',
-  COMMAND_RESULT_DESC: 'Команда, которая будет передана в Pandoc:',
+  COMMAND_LINE: 'Команда, которая будет передана в Pandoc',
   COMMAND_COPY: 'Скопировать команду',
   COMMAND_COPIED: 'Команда скопирована.',
   USER_ARGS: 'Дополнительные команды',
@@ -297,7 +297,7 @@ export default {
   READING: 'Чтение заметки',
   READING_DESC: 'Настройте, как Pandoc должен обработать заметку.',
   DOCUMENT_FORMATTING: 'Оформление документа',
-  DOCUMENT_FORMATTING_DESC: 'Язык текста и то, как Pandoc оформит код, формулы и цитаты.',
+  DOCUMENT_FORMATTING_DESC: 'Язык текста и то, как Pandoc оформит код, формулы, сноски и цитаты.',
   SHIFT_HEADINGS: 'Сдвигать уровни заголовков',
   SHIFT_HEADINGS_DESC: 'Где окажутся заголовки заметки в готовом документе.',
   SHIFT_HEADINGS_NONE: 'Оставить как есть',

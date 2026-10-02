@@ -239,7 +239,7 @@ export default {
 
   // ─── Resulting command ───────────────────────────────────────────────────────
   COMMAND_RESULT: 'Resulting command',
-  COMMAND_RESULT_DESC: 'The command that will be handed to Pandoc:',
+  COMMAND_LINE: 'The command that will be handed to Pandoc',
   COMMAND_COPY: 'Copy command',
   COMMAND_COPIED: 'Command copied.',
   USER_ARGS: 'Extra commands',
@@ -297,7 +297,7 @@ export default {
   READING: 'Reading the note',
   READING_DESC: 'How Pandoc should read the note.',
   DOCUMENT_FORMATTING: 'Document formatting',
-  DOCUMENT_FORMATTING_DESC: 'The language of the text, and how Pandoc should format code, formulas and citations.',
+  DOCUMENT_FORMATTING_DESC: 'The language of the text, and how Pandoc should format code, formulas, footnotes and citations.',
   SHIFT_HEADINGS: 'Shift heading levels',
   SHIFT_HEADINGS_DESC: 'Where the note’s headings land in the written document.',
   SHIFT_HEADINGS_NONE: 'Keep as written',

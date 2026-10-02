@@ -3,19 +3,15 @@
 
 ## 3.0.0
 
-### New features
+### Major update: Joining Word documents and metadata in templates
 
-* **Title pages, appendices and other Word documents in the export.** Word templates have a new group, “Joining documents”: documents put at the start of the exported note and documents put at its end. A note can name its own documents in the `docx-before` and `docx-after` properties, and the export dialog can pick them for a single export. Joined documents are carried over with their margins, headers and footers, images, lists, footnotes and comments and look as they do in Word, or they can be given the template's styles instead. Works with Pandoc WASM too; see the user guide for details.
-* **Document metadata in templates.** Templates have a new group, “Document metadata”: title, subtitle, author, date, abstract and its title, keywords, subject, description, category and table of contents title. The values apply to every note, but a note's own properties of the same name win. A template shows only the fields its format writes into the document.
-
-Note: settings Word makes for the whole document, such as different headers on even and odd pages, come from the exported note.
+* **Joining Word documents on export.** Word (.docx) templates have a new group of options, “Joining documents”, where you can pick ready-made Word documents to be joined to the start or the end of the document once the note is exported. A note can name documents of its own in the `docx-before` and `docx-after` properties, and they can also be picked in the export dialog. Joined documents can be left as they are or given the styles of the reference document. Joining works with regular Pandoc and with Pandoc WASM: see the user guide for details.
+* **Document metadata in templates.** Templates have a new group, “Document metadata”, where you can fill in the title, subtitle, author, date, abstract and its title, keywords, subject, description, category and table of contents title. Metadata given in the note's properties takes priority.
 
 ### Enhancements and bug fixes
 
-* The template editor is reworked: settings groups look like Obsidian's own, and the table of contents, numbering and lists share one card.
-* Language, text direction, code highlighting, math, PDF engine and citations are gathered into a “Document formatting” group.
-* Settings groups in the import dialog look the same as in the template editor.
-* The table of contents slider's labels line up with its edges.
+* The template editor's interface is reworked to be clearer and easier to use: settings are regrouped and their look is tidied up.
+* The import dialog's interface is reworked.
 
 
 ## 2.6.0
