@@ -27,11 +27,11 @@ describe.skipIf(!pandocInstalled)('markdown.lua, given wikilinks', () => {
   const dir = mkdtempSync(join(tmpdir(), 'pandoc-gui-markdown-'));
   afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
-  const exported = async (note: string): Promise<string> => {
+  const exported = async (note: string, args = '-t commonmark_x-attributes'): Promise<string> => {
     copyFileSync(image, join(dir, 'pic.png'));
     writeFileSync(join(dir, 'note.md'), note);
     await run(
-      `pandoc -f markdown+wikilinks_title_after_pipe --resource-path="${dir}" -L "${filter}" -s -o "${join(dir, 'out.md')}" -t commonmark_x-attributes "${join(dir, 'note.md')}"`
+      `pandoc -f markdown+wikilinks_title_after_pipe --resource-path="${dir}" -L "${filter}" -s -o "${join(dir, 'out.md')}" ${args} "${join(dir, 'note.md')}"`
     );
     return readFileSync(join(dir, 'out.md'), 'utf-8').replaceAll('\r\n', '\n');
   };
@@ -50,5 +50,26 @@ describe.skipIf(!pandocInstalled)('markdown.lua, given wikilinks', () => {
   test('writes images as Markdown images and leaves note embeds as they were', async () => {
     const out = await exported('![[pic.png]]\n\n![[Other note]]\n\nInline ![[pic.png|A pic|200]] here.\n');
     expect(out).toMatch(/^!\[\]\(out-media\/\w+\.png\)\n\n!\[\[Other note\]\]\n\nInline !\[A pic\]\(out-media\/\w+\.png\) here\.\n$/);
+  });
+
+  // https://github.com/pan4ratte/obsidian-pandoc-gui/issues/11
+  test('lists a heading holding a wikilink in the table of contents as the one link', async () => {
+    const out = await exported(
+      '# [[Story Bible/Character|Character]]\n\nSee [[Notes/a|A note]].\n\n## [[Notes/b|Two words]] here\n',
+      '--toc -t commonmark_x-attributes+wikilinks_title_after_pipe'
+    );
+    expect(out).toBe(
+      [
+        '- [Character](#character)',
+        '  - [Two words here](#two-words-here)',
+        '',
+        '# [[Story Bible/Character|Character]]',
+        '',
+        'See [[Notes/a|A note]].',
+        '',
+        '## [[Notes/b|Two words]] here',
+        '',
+      ].join('\n')
+    );
   });
 });

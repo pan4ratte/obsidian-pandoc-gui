@@ -179,6 +179,34 @@ export const withCalloutsFilter = (command: string) => {
   return first ? `${command.slice(0, first.index)}${flag} ${command.slice(first.index)}` : `${command} ${flag}`;
 };
 
+/** The filters that write a note back out as Markdown, and the writers they write it with that can write wikilinks. */
+const MARKDOWN_FILTERS = ['markdown.lua', 'markdown+hugo.lua'];
+const WIKILINK_WRITERS = new Set(['markdown', 'commonmark', 'commonmark_x', 'gfm']);
+
+/** A writer flag, split where an extension can be added to it. */
+const WRITER_FLAG = /((?:^|\s)(?:-t|--to)[= ]"?)([\w.+-]+)/g;
+
+/**
+ * `command` with its Markdown writer writing wikilinks, which `markdown.lua` hands it a heading's to write: written
+ * as raw text, the table of contents wrapped one in a second link.
+ */
+export const withWikilinkWriter = (command: string) => {
+  if (!MARKDOWN_FILTERS.some(name => usesFilter(command, name))) {
+    return command;
+  }
+  const flags = [...command.matchAll(WRITER_FLAG)];
+  const last = flags[flags.length - 1];
+  if (!last) {
+    return command;
+  }
+  const writer = last[2];
+  if (!WIKILINK_WRITERS.has(writer.toLowerCase().split(/[+-]/)[0]) || /[+-]wikilinks_title_/.test(writer)) {
+    return command;
+  }
+  const end = (last.index ?? 0) + last[1].length + writer.length;
+  return `${command.slice(0, end)}+wikilinks_title_after_pipe${command.slice(end)}`;
+};
+
 /** `command` with the embeds filter ahead of its other lua filters, or at the end where it has none. */
 export const withEmbedsFilter = (command: string, luaDir: string) => {
   if (usesEmbedsFilter(command)) {

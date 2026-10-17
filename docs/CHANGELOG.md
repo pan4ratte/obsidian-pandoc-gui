@@ -1,6 +1,15 @@
 # Changelog
 
 
+## 3.0.1
+
+### Enhancements and bug fixes
+
+* Lifted the limit on how many embedded notes and Dataview queries an export can take.
+* In Markdown exports, wikilinks in headings are no longer wrapped in a second link in the table of contents.
+* Embedded Obsidian Bases and Canvases no longer break PDF export: they are left out, and the warnings window names them.
+
+
 ## 3.0.0
 
 ### Major update: Joining Word documents and metadata in templates

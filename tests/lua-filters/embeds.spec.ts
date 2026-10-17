@@ -8,10 +8,11 @@
  */
 
 import { exec as execCallback, execSync } from 'child_process';
-import { existsSync } from 'fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 import { promisify } from 'util';
-import { escapeForEnv } from '../../src/convert/export';
+import { escapeForEnv, listText } from '../../src/convert/export';
 
 const run = promisify(execCallback);
 
@@ -74,6 +75,59 @@ describe.skipIf(!pandocInstalled)('the filter, given that map', () => {
       image: native.includes('Image'),
       around: native.includes('"before"') && native.includes('"after"'),
     }).toEqual({ embedded: true, image: false, around: true });
+  }, 60_000);
+});
+
+/*
+ * The map in a file the environment names: one variable on Windows holds no more than 32,767 characters, and a vault
+ * of a few hundred embeds ran past the limit kept under that, every embed after it left as a link:
+ * https://github.com/pan4ratte/obsidian-pandoc-gui/issues/11
+ */
+describe.skipIf(!pandocInstalled)('the map, in a file', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'pandoc-gui-списки-'));
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+
+  test('is read whole, however long, from a folder named in anything', async () => {
+    const filler = Array.from({ length: 2000 }, (_, i) => [`Filler ${i} — заметка`, join(dir, `Filler ${i}.md`)]);
+    const list = join(dir, 'obsidian_embeds.txt');
+    writeFileSync(list, listText([...filler, [LINK, embedded]]));
+    expect(readFileSync(list, 'utf-8').length).toBeGreaterThan(100_000);
+    const { stdout } = await run(
+      `pandoc -L "${filter}" -t native -f markdown+wikilinks_title_after_pipe "${join(markdowns, 'embeds-host.md')}" -o -`,
+      { env: { ...process.env, OBSIDIAN_EMBEDS_FILE: escapeForEnv(list) } }
+    );
+    expect({ embedded: stdout.includes('"speaks."'), image: stdout.includes('Image') }).toEqual({ embedded: true, image: false });
+  }, 60_000);
+});
+
+/*
+ * Bases and Canvases, which only Obsidian can draw. Read as images, they stopped a PDF and were dropped from Word
+ * without a word: https://github.com/pan4ratte/obsidian-pandoc-gui/issues/11
+ */
+describe.skipIf(!pandocInstalled)('a Base or a Canvas', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'pandoc-gui-bases-'));
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+
+  const convert = async (to: string): Promise<string> => {
+    const note = join(dir, 'note.md');
+    writeFileSync(note, 'Before.\n\n![[Overview.base]]\n\nInline ![[Map.canvas]] and ![[Overview.base#Table]].\n\n![[pic.png]]\n');
+    const { stdout } = await run(`pandoc -L "${filter}" -t ${to} -f markdown+wikilinks_title_after_pipe "${note}" -o -`);
+    return stdout;
+  };
+
+  test('is left out of the document, an image beside it kept', async () => {
+    const native = await convert('native');
+    expect({
+      left: native.includes('.base') || native.includes('.canvas'),
+      // The paragraph that held nothing else goes with it.
+      paragraphs: native.split('Para').length - 1,
+      image: native.includes('pic.png'),
+    }).toEqual({ left: false, paragraphs: 2, image: true });
+  }, 60_000);
+
+  test('but kept in Markdown, where Obsidian still reads it', async () => {
+    const markdown = await convert('commonmark_x');
+    expect(['Overview.base', 'Map.canvas', 'Overview.base#Table'].every(name => markdown.includes(name))).toBe(true);
   }, 60_000);
 });
 

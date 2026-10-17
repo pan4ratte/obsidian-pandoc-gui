@@ -37,10 +37,7 @@ const callouts = (blocks: Node[]): { classes: string[]; title: string; body: str
     const [[, classes], content] = block.c as [Attr, Node[]];
     const [heading, first, ...rest] = content;
     const [, [para]] = heading.c as [Attr, Node[]];
-    return [
-      { classes, title: stringify(para.c as Node[]), body: first ? stringify(first.c as Node[]) : '' },
-      ...callouts(rest),
-    ];
+    return [{ classes, title: stringify(para.c as Node[]), body: first ? stringify(first.c as Node[]) : '' }, ...callouts(rest)];
   });
 
 describe.skipIf(!pandocInstalled)('callouts', () => {

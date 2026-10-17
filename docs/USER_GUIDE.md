@@ -73,6 +73,8 @@ The options of the “Reading the note” group under “Advanced” handle the 
 
 With “Write in embedded notes” on, `![[note]]` is replaced with the note's text, and `![[note#heading]]` with the section it names. Embeds inside embedded notes are written in too. “Fit the headings of embedded notes” moves their headings one level below the heading the embed stands under. The Markdown templates have the option off, and embeds stay links.
 
+Obsidian Bases and Canvases are not exported: in every format but Markdown their embeds are left out, and the warnings window names them.
+
 ### 3.2. Other options
 
 * “Insert today’s date instead of $today on export” — every `$today` in the note and its properties becomes today's date in the chosen format.

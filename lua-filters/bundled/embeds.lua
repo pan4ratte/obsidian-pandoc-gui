@@ -18,21 +18,22 @@
   ---------------------------------------------------------------------------
   How the map arrives
 
-  In the environment, as OBSIDIAN_EMBEDS: one embed a line, the link exactly as
-  it is written in the note, a tab, then the absolute path of the file it
-  resolves to. Notes only; images resolve through pandoc's resource path as
-  they always have.
+  In a file named in the environment as OBSIDIAN_EMBEDS_FILE: one embed a
+  line, the link exactly as it is written in the note, a tab, then the absolute
+  path of the file it resolves to. Notes only; images resolve through pandoc's
+  resource path as they always have.
 
-  The environment rather than the command line because a link is whatever
-  someone typed — quotes, backslashes, semicolons, a `$` — and a command line
-  is the wrong place to find that out.
+  Not the command line, because a link is whatever someone typed — quotes,
+  backslashes, semicolons, a `$` — and a command line is the wrong place to
+  find that out. Not the environment itself either: one variable there holds no
+  more than 32,767 characters on Windows, a few hundred embeds.
 
   Pandoc's wasm build has no environment to read, so there the plugin writes the
   same list into `.obsidian-embeds`, in the folder pandoc runs from.
 
-  Dataview queries arrive as OBSIDIAN_DATAVIEW (`.obsidian-dataview`): the note,
-  the query's key, `markdown` or `html`, and the file holding what Dataview
-  rendered, which takes the place of the code block or inline code.
+  Dataview queries arrive as OBSIDIAN_DATAVIEW_FILE (`.obsidian-dataview`): the
+  note, the query's key, `markdown` or `html`, and the file holding what
+  Dataview rendered, which takes the place of the code block or inline code.
 
   ---------------------------------------------------------------------------
   What is embedded
@@ -99,16 +100,39 @@ local function decode(text)
   end))
 end
 
---- A list as the plugin passed it, and whether it came percent-escaped.
+--- A note's text, read through pandoc where pandoc can read it.
 ---
---- In the environment, or in a file in the folder pandoc runs from where there
---- is no environment to pass it in. The environment carries plain ASCII and
---- nothing else: Windows hands a program its environment in the machine's own
---- code page, and a note named in anything that code page cannot write arrived
---- here as a row of `?`, matched nothing, and was left in the document as the
---- broken image pandoc had read it to be. The file is written and read as bytes,
---- so it needs none of that and is left as it stands.
+--- `io.open` goes through the C runtime, which on Windows takes a path in the
+--- machine's own code page: a vault whose notes are named in anything but ASCII
+--- — Cyrillic, Greek, an accented word — hands it a name it cannot find, and the
+--- embed is left in the document as the broken image it was read as. Pandoc
+--- reads a path as the text it is, on every platform, so the file is asked of it
+--- first; `io.open` stays underneath for whatever pandoc will not fetch.
+local function read_file(path)
+  local ok, _, fetched = pcall(pandoc.mediabag.fetch, path)
+  if ok and fetched then
+    return fetched
+  end
+  local file = io.open(path, 'r')
+  if not file then
+    return nil
+  end
+  local text = file:read('a')
+  file:close()
+  return text
+end
+
+--- A list as the plugin passed it, and whether it came percent-escaped: in the
+--- file `<variable>_FILE` names, in the variable itself, or, for the wasm build,
+--- which has no environment, in a file in the folder pandoc runs from. The
+--- environment carries ASCII alone, Windows handing it over in the machine's own
+--- code page, which turns a Cyrillic name into a row of `?`; the wasm file is
+--- written and read as bytes, so it is left as it stands.
 local function list(variable, filename)
+  local named = os.getenv(variable .. '_FILE')
+  if named and named ~= '' then
+    return read_file(decode(named)) or '', true
+  end
   local given = os.getenv(variable)
   if given and given ~= '' then
     return given, true
@@ -270,28 +294,6 @@ local function reader_spec()
 end
 
 local FORMAT_IN = reader_spec()
-
---- A note's text, read through pandoc where pandoc can read it.
----
---- `io.open` goes through the C runtime, which on Windows takes a path in the
---- machine's own code page: a vault whose notes are named in anything but ASCII
---- — Cyrillic, Greek, an accented word — hands it a name it cannot find, and the
---- embed is left in the document as the broken image it was read as. Pandoc
---- reads a path as the text it is, on every platform, so the file is asked of it
---- first; `io.open` stays underneath for whatever pandoc will not fetch.
-local function read_file(path)
-  local ok, _, fetched = pcall(pandoc.mediabag.fetch, path)
-  if ok and fetched then
-    return fetched
-  end
-  local file = io.open(path, 'r')
-  if not file then
-    return nil
-  end
-  local text = file:read('a')
-  file:close()
-  return text
-end
 
 --- What the plugin keys a query by: pandoc turns tabs into spaces and trims
 --- inline code, so the whitespace is left out.
@@ -517,6 +519,43 @@ local function embed_target(block)
   return nil
 end
 
+--- Whether a target is a Base or a Canvas, which only Obsidian can draw: read
+--- as an image, the embed stopped a PDF and was dropped from Word unannounced.
+local function unexported(target)
+  local path = decode(target):gsub('#.*$', ''):lower()
+  return path:match('%.base$') ~= nil or path:match('%.canvas$') ~= nil
+end
+
+--- Markdown keeps the embed as it was written, which Obsidian can still read.
+local KEEPS_UNEXPORTED = FORMAT:match('^markdown') ~= nil or FORMAT:match('^commonmark') ~= nil or FORMAT == 'gfm'
+
+--- A block without its Base and Canvas embeds, and gone with them where they
+--- were all it held.
+local function without_unexported(block)
+  local kept = block.content:filter(function(inline)
+    return not (inline.t == 'Image' and unexported(inline.src))
+  end)
+  if #kept == #block.content then
+    return nil
+  end
+  if #kept == 0 then
+    return {}
+  end
+  block.content = kept
+  return block
+end
+
+--- Bases and Canvases taken out, the plugin reporting what was.
+local leave_out = {
+  Para = without_unexported,
+  Plain = without_unexported,
+  Figure = function(figure)
+    if #figure.content == 0 then
+      return {}
+    end
+  end,
+}
+
 local restore
 local expand
 
@@ -545,6 +584,9 @@ local function blocks_of(target, seen, depth, anchor)
   -- written in here arrives after that pass has gone by. A drawing embedded by an embedded note would keep the
   -- target pandoc read it as — a `.md` with a frame id on the end — and be reported as a resource nothing can fetch.
   local blocks = pandoc.walk_block(pandoc.Div(answered(file, doc.blocks)), restore).content
+  if not KEEPS_UNEXPORTED then
+    blocks = pandoc.walk_block(pandoc.Div(blocks), leave_out).content
+  end
   if fragment then
     blocks = section_of(blocks, fragment)
     if not blocks then
@@ -664,12 +706,15 @@ local answering = {
   end,
 }
 
--- Nothing to do at all where the plugin resolved no note embeds, drew no
--- drawings, rendered no queries and nothing was rebased, which is the
--- overwhelming majority of exports.
+-- Little to do where the plugin resolved no note embeds, drew no drawings,
+-- rendered no queries and nothing was rebased, which is the overwhelming
+-- majority of exports.
 local restoring = REBASING or next(drawings) ~= nil
 if next(targets) == nil then
   local filters = {}
+  if not KEEPS_UNEXPORTED then
+    filters[#filters + 1] = leave_out
+  end
   if queries[''] then
     filters[#filters + 1] = answering
   end
@@ -680,6 +725,7 @@ if next(targets) == nil then
 end
 
 return {
+  KEEPS_UNEXPORTED and {} or leave_out,
   answering,
   restore,
   {

@@ -9,7 +9,7 @@ import { PandocProgress } from '../ui/progress';
 import { describeExportFailure } from './export_error';
 import type PandocGuiPlugin from '../main';
 import pandoc from '../pandoc/pandoc';
-import { orderLuaFilters, usesEmbedsFilter, withCalloutsFilter, withEmbedsFilter } from '../filters/lua_filters';
+import { orderLuaFilters, usesEmbedsFilter, withCalloutsFilter, withEmbedsFilter, withWikilinkWriter } from '../filters/lua_filters';
 import { legacyMathFlags, renameHighlightFlags, renameMathFlags } from '../args/writer_args';
 import { outputArg } from '../args/output_arg';
 import { resolveEngine, unsupportedBy, writesTypstPdf } from '../pandoc/engine';
@@ -45,6 +45,16 @@ export const escapeForEnv = (text: string): string =>
   text.replace(/[^\x20-\x24\x26-\x7e]/g, character =>
     [...encoder.encode(character)].map(byte => `%${byte.toString(16).toUpperCase().padStart(2, '0')}`).join('')
   );
+
+/** What only Obsidian can draw: a Base, a Canvas. */
+const UNEXPORTED_EXTENSIONS = new Set(['base', 'canvas']);
+
+/** The writers `embeds.lua` leaves those embeds to as written — see `KEEPS_UNEXPORTED` there. */
+const keepsUnexported = (writer?: string) => !!writer && /^(?:markdown|commonmark|gfm$)/.test(writer);
+
+/** A list as `embeds.lua` reads it: one entry to a line, its fields tab-separated and escaped. */
+export const listText = (rows: Iterable<readonly string[]>): string =>
+  [...rows].map(row => `${row.map(escapeForEnv).join('\t')}\n`).join('');
 
 /**
  * Every drawing the note reaches, drawn — as the link the note wrote against the image file standing in for it.
@@ -200,6 +210,8 @@ export async function exportNote(
   // markdown, so without this it would be written into the document as a note — pages of the JSON it stores its scene
   // as. It is a picture, and it is drawn as one below.
   const drawings = new Map<string, TFile>();
+  // Every Base and Canvas the note reaches, which `embeds.lua` leaves out of everything but Markdown.
+  const unexportedEmbeds = new Set<string>();
   // Every embedded note by the path the embed map names it by, which is how `embeds.lua` knows whose query is whose.
   const embeddedNotes = new Map<string, TFile>();
   const walkedForEmbeds = new Set<string>([currentFile.path]);
@@ -221,6 +233,9 @@ export async function exportNote(
       const path = adapter.getFullPath(target.path);
       embeddedFiles.add(path);
       embedFolders.add(dirname(path));
+      if (UNEXPORTED_EXTENSIONS.has(target.extension)) {
+        unexportedEmbeds.add(target.name);
+      }
       if (target.extension !== 'md') {
         continue;
       }
@@ -299,29 +314,17 @@ export async function exportNote(
   // Rendering a `${...}` can fail on a template the editor let through, and the notice is already up by here — so
   // everything from the environment onwards reports through the one handler rather than escaping past it.
   let cmd = '';
-  // Where drawings and query results are written: the system's scratch folder, or the plugin's where there is none.
+  // Where drawings, query results and the lists for `embeds.lua` are written: the system's scratch folder, or the
+  // plugin's where there is none.
   const scratchDir = `${(await tempFolder().catch<undefined>(() => undefined)) ?? pluginDir}/export-${Date.now().toString(36)}`;
   let drawnDrawings = new Map<string, string>();
   let queryAnswers: QueryAnswer[] = [];
   let queryProblems: string[] = [];
   let wroteMetadata = false;
+  let wroteLists = false;
 
   try {
     const env = (variables.env = createEnv(getPlatformValue(globalSetting.env) ?? {}, variables));
-
-    // The embed map goes to `embeds.lua` in the environment, not on the command line: a link is whatever someone
-    // typed. Escaped on the way in, and read back escaped by the filter — see `escapeForEnv`.
-    const EMBED_ENV_LIMIT = 30000;
-    let embedLines = '';
-    for (const [link, file] of noteEmbeds) {
-      const line = `${escapeForEnv(link)}\t${escapeForEnv(file)}\n`;
-      if (embedLines.length + line.length > EMBED_ENV_LIMIT) {
-        console.warn(`Too many embedded notes to pass to pandoc; ${link} and any after it are left as they are.`);
-        break;
-      }
-      embedLines += line;
-    }
-    env['OBSIDIAN_EMBEDS'] = embedLines;
 
     let pandocPath = pandoc.normalizePath(getPlatformValue(globalSetting.pandocPath));
 
@@ -350,11 +353,20 @@ export async function exportNote(
     let cmdTpl =
       setting.type === 'pandoc'
         ? orderLuaFilters(
-            withCalloutsFilter(
-              [pandocPath, '"${currentPath}"', setting.arguments, metadataFileArg(setting), setting.customArguments, setting.userArguments]
-                .map(part => part?.trim())
-                .filter(Boolean)
-                .join(' ')
+            withWikilinkWriter(
+              withCalloutsFilter(
+                [
+                  pandocPath,
+                  '"${currentPath}"',
+                  setting.arguments,
+                  metadataFileArg(setting),
+                  setting.customArguments,
+                  setting.userArguments,
+                ]
+                  .map(part => part?.trim())
+                  .filter(Boolean)
+                  .join(' ')
+              )
             )
           )
         : setting.command;
@@ -425,8 +437,6 @@ export async function exportNote(
         // A wasm run has no vault to look in: everything it is to see has to be handed to it.
         embeddedFiles.add(image);
       }
-      // The same map `embeds.lua` is given the notes in, and for the same reasons — see `escapeForEnv`.
-      env['OBSIDIAN_DRAWINGS'] = [...drawnDrawings].map(([link, image]) => `${escapeForEnv(link)}\t${escapeForEnv(image)}\n`).join('');
     }
 
     // Query results go in through `embeds.lua`. A template without it gets it for this run and the note's own queries
@@ -442,20 +452,28 @@ export async function exportNote(
       if (!embedding && queryAnswers.length > 0) {
         cmd = withEmbedsFilter(cmd, variables.luaDir);
         answersOnly = true;
-        env['OBSIDIAN_EMBEDS'] = '';
-        env['OBSIDIAN_DRAWINGS'] = '';
       }
-      let queryLines = '';
-      for (const { note, key, format, path } of queryAnswers) {
+      for (const { path } of queryAnswers) {
         embeddedFiles.add(path);
-        const line = `${escapeForEnv(note)}\t${key}\t${format}\t${escapeForEnv(path)}\n`;
-        if (queryLines.length + line.length > EMBED_ENV_LIMIT) {
-          console.warn('Too many Dataview queries to pass to pandoc; the rest are left as code.');
-          break;
-        }
-        queryLines += line;
       }
-      env['OBSIDIAN_DATAVIEW'] = queryLines;
+    }
+
+    // The lists go to `embeds.lua` as files named in the environment: a link is whatever someone typed, which is no
+    // business of a command line, and Windows holds no more than 32,767 characters in one variable.
+    if (engine !== 'wasm') {
+      const lists: Array<[string, Array<readonly string[]>]> = [
+        ['OBSIDIAN_EMBEDS', answersOnly ? [] : [...noteEmbeds]],
+        ['OBSIDIAN_DRAWINGS', answersOnly ? [] : [...drawnDrawings]],
+        ['OBSIDIAN_DATAVIEW', queryAnswers.map(({ note, key, format, path }) => [note, key, format, path])],
+      ];
+      for (const [name, rows] of lists) {
+        if (rows.length > 0) {
+          const path = `${scratchDir}/${name.toLowerCase()}.txt`;
+          await files.write(path, encoder.encode(listText(rows)));
+          wroteLists = true;
+          env[`${name}_FILE`] = escapeForEnv(path);
+        }
+      }
     }
 
     let warnings: string;
@@ -513,7 +531,11 @@ export async function exportNote(
     if (joins) {
       await joinExport(files, actualOutputPath, joins);
     }
-    warnings = [...queryProblems, warnings].filter(Boolean).join('\n\n');
+    const leftOut =
+      unexportedEmbeds.size > 0 && usesEmbedsFilter(cmd) && !keepsUnexported(outputFormat(cmd))
+        ? t.UNEXPORTED_EMBEDS([...unexportedEmbeds].join(', '))
+        : '';
+    warnings = [...queryProblems, leftOut, warnings].filter(Boolean).join('\n\n');
 
     // Pandoc writes its warnings here and exports the file all the same, so they are reported rather than thrown.
     if (warnings) {
@@ -573,7 +595,7 @@ export async function exportNote(
     onFailure?.();
   } finally {
     // Pandoc has read them.
-    if (drawnDrawings.size > 0 || queryAnswers.length > 0 || wroteMetadata) {
+    if (drawnDrawings.size > 0 || queryAnswers.length > 0 || wroteMetadata || wroteLists) {
       await files.removeDir(scratchDir);
     }
   }

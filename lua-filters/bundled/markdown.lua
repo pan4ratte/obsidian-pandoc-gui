@@ -102,6 +102,16 @@ local function is_wikilink(el)
   return el.title == 'wikilink' or el.classes:includes('wikilink')
 end
 
+--- Whether the writer writes a wikilink back itself, which `Header` needs.
+local WRITES_WIKILINKS = (function()
+  for _, extension in ipairs(PANDOC_WRITER_OPTIONS and PANDOC_WRITER_OPTIONS.extensions or {}) do
+    if tostring(extension):match('^wikilinks_title_') then
+      return true
+    end
+  end
+  return false
+end)()
+
 --- The text of inlines whose spaces `Space` has already made raw, which `stringify` drops.
 local function text_of(inlines)
   local out = {}
@@ -220,6 +230,31 @@ function Link(el)
     return pandoc.Link(unwrapped(text == target and heading or text), headerLink(heading))
   end
   return wikilink('', target, text)
+end
+
+--- A heading's wikilinks handed back to the writer: the table of contents
+--- unwraps a link, but wrapped the raw text of one in a second link.
+function Header(el)
+  if not WRITES_WIKILINKS then
+    return nil
+  end
+  el.content = el.content:walk({
+    RawInline = function(r)
+      if r.format ~= 'markdown' then
+        return nil
+      end
+      local target, text = r.text:match('^%[%[([^|%]]+)|?(.-)%]%]$')
+      if not target then
+        return nil
+      end
+      -- Older pandoc marks a wikilink with the title, newer with the class.
+      if PANDOC_VERSION >= {3, 6, 3} then
+        return pandoc.Link(pandoc.Inlines(text ~= '' and text or target), target, '', pandoc.Attr('', {'wikilink'}))
+      end
+      return pandoc.Link(pandoc.Inlines(text ~= '' and text or target), target, 'wikilink')
+    end,
+  })
+  return el
 end
 
 --- A lone image is a figure, which the Markdown writers without `implicit_figures` write as HTML.

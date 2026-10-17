@@ -1,5 +1,11 @@
 traverse = 'topdown'
 
+--- Display math without the newlines just inside `$$`, which pandoc 3.12 trims
+--- and older pandoc kept: one document, whichever version reads it.
+local function trimmed(text)
+  return (text:gsub('^%s+', ''):gsub('%s+$', ''))
+end
+
 math_block_text = nil
 function process(el)
 
@@ -8,7 +14,7 @@ function process(el)
      if math_block_text == nil then            -- start
        math_block_text = ''
      else                                      -- end
-       local math_block = pandoc.Math('DisplayMath', '\n' .. math_block_text .. '\n')
+       local math_block = pandoc.Math('DisplayMath', trimmed(math_block_text))
        math_block_text = nil
        return math_block
      end
@@ -29,7 +35,14 @@ function process(el)
   return el
 end
 
-function RawInline(el) 
+function Math(el)
+  if el.mathtype == 'DisplayMath' then
+    el.text = trimmed(el.text)
+    return el
+  end
+end
+
+function RawInline(el)
   return process(el)
 end
 

@@ -16,6 +16,7 @@ export default {
   EXPORT_COMMAND_OUTPUT: (cmd: string) => `Команда: ${cmd}`,
   WARNINGS_TITLE: 'Предупреждения Pandoc',
   DATAVIEW_FAILED: (note: string, error: string) => `Dataview: не удалось выполнить запрос в заметке «${note}», он оставлен в виде кода. ${error}`,
+  UNEXPORTED_EMBEDS: (files: string) => `Базы и холсты Obsidian не экспортируются, эти вставки пропущены: ${files}.`,
   DATAVIEW_UNFINISHED: (note: string) => `Dataview: скрипт в заметке «${note}» не успел вывести результат за 10 секунд — экспортировано то, что он успел вывести.`,
 
   // ─── Export dialog ───────────────────────────────────────────────────────────

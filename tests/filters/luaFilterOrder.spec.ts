@@ -1,4 +1,12 @@
-import { CALLOUTS_FILTER, EMBEDS_FILTER, luaFilterArg, orderLuaFilters, withCalloutsFilter, withEmbedsFilter } from '../../src/filters/lua_filters';
+import {
+  CALLOUTS_FILTER,
+  EMBEDS_FILTER,
+  luaFilterArg,
+  orderLuaFilters,
+  withCalloutsFilter,
+  withEmbedsFilter,
+  withWikilinkWriter,
+} from '../../src/filters/lua_filters';
 
 /*
  * Pandoc runs filters in the order they are written. The embeds filter parses the transcluded notes into the
@@ -86,5 +94,33 @@ describe('withCalloutsFilter', () => {
     expect(withCalloutsFilter('pandoc -f markdown-alerts')).toBe('pandoc -f markdown-alerts');
     expect(withCalloutsFilter('pandoc -f markdown+alertsx')).toBe('pandoc -f markdown+alertsx');
     expect(withCalloutsFilter(`pandoc -f markdown+alerts ${CALLOUTS}`)).toBe(`pandoc -f markdown+alerts ${CALLOUTS}`);
+  });
+});
+
+/* `markdown.lua` hands a heading's wikilinks to the writer, which the table of contents then unwraps. */
+describe('withWikilinkWriter', () => {
+  const MARKDOWN_FILTER = luaFilterArg('markdown.lua');
+
+  test('switches the extension on for a Markdown writer the filter writes for', () => {
+    expect(withWikilinkWriter(`pandoc ${MARKDOWN_FILTER} -s -o "out.md" -t commonmark_x-attributes`)).toBe(
+      `pandoc ${MARKDOWN_FILTER} -s -o "out.md" -t commonmark_x-attributes+wikilinks_title_after_pipe`
+    );
+    expect(withWikilinkWriter(`pandoc -L "\${luaDir}/markdown+hugo.lua" --to=gfm -o "out.md"`)).toBe(
+      `pandoc -L "\${luaDir}/markdown+hugo.lua" --to=gfm+wikilinks_title_after_pipe -o "out.md"`
+    );
+  });
+
+  test('and only the writer pandoc takes, the last one given', () => {
+    expect(withWikilinkWriter(`pandoc ${MARKDOWN_FILTER} -t html -t gfm`)).toBe(
+      `pandoc ${MARKDOWN_FILTER} -t html -t gfm+wikilinks_title_after_pipe`
+    );
+  });
+
+  test('leaves alone a writer that cannot write wikilinks, one already told about them, and a command without the filter', () => {
+    expect(withWikilinkWriter(`pandoc ${MARKDOWN_FILTER} -t typst`)).toBe(`pandoc ${MARKDOWN_FILTER} -t typst`);
+    expect(withWikilinkWriter(`pandoc ${MARKDOWN_FILTER} -t gfm-wikilinks_title_after_pipe`)).toBe(
+      `pandoc ${MARKDOWN_FILTER} -t gfm-wikilinks_title_after_pipe`
+    );
+    expect(withWikilinkWriter('pandoc -t gfm -o "out.md"')).toBe('pandoc -t gfm -o "out.md"');
   });
 });

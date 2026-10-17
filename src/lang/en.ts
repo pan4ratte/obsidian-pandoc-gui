@@ -16,6 +16,7 @@ export default {
   EXPORT_COMMAND_OUTPUT: (cmd: string) => `Command: ${cmd}`,
   WARNINGS_TITLE: 'Pandoc warnings',
   DATAVIEW_FAILED: (note: string, error: string) => `Dataview: a query in “${note}” could not run and is left as code. ${error}`,
+  UNEXPORTED_EMBEDS: (files: string) => `Obsidian Bases and Canvases cannot be exported, so these embeds were left out: ${files}.`,
   DATAVIEW_UNFINISHED: (note: string) => `Dataview: a script in “${note}” was still rendering after 10 seconds; what was ready by then was exported.`,
 
   // ─── Export dialog ───────────────────────────────────────────────────────────
