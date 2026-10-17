@@ -22,7 +22,7 @@ A flexible template editor lets you set up how notes are exported without using 
 
 ### 2. Dozens of export formats
 
-Word, OpenOffice, PDF, LaTeX (a whole document or a fragment to paste into an existing project), HTML, EPUB, Beamer and reveal.js slides, PowerPoint, Markdown in CommonMark, GFM or Hugo flavours, Typst, TextBundle, RTF, MediaWiki, reStructuredText, Textile, OPML, plain text and a BibTeX bibliography of everything a note cites.
+Word, OpenOffice (flat .fodt included), PDF, LaTeX (a whole document or a fragment to paste into an existing project), HTML, EPUB, Beamer and reveal.js slides, PowerPoint, Markdown in CommonMark, GFM or Hugo flavours, Typst, TextBundle, RTF, MediaWiki, reStructuredText, Textile, OPML, plain text and a BibTeX bibliography of everything a note cites.
 
 ### 3. Exports that respect Obsidian's syntax
 
@@ -179,6 +179,10 @@ In the “Document metadata” group you can fill in the title, subtitle, author
 * Values are read as Markdown, and `${...}` in them is filled in at export: `${today.long}` in the “Date” field gives today's date, for example.
 * Authors and keywords are added one at a time: type a value first, then press Enter to add it to the list.
 
+### 1.3. Citations
+
+The “Citations” option in the “Document formatting” group replaces `[@citekey]` with finished citations and adds a bibliography from the file in the “References” field, formatted by the style in the “Citation style” field. Typst templates also have “Hanging indent” and “Entry spacing” fields there: left empty, they follow the citation style, and your own values are written in Typst units, such as `1.5em`. These fields work with Pandoc 3.12.1 and later.
+
 ## 2. `${...}` variables
 
 Variables are filled in at export in everything a template writes: the command, the “Extra commands” and the “Document metadata” fields.
@@ -261,6 +265,8 @@ Inline DataviewJS queries (inline code starting with “$=”) and `CALENDAR` qu
 
 On export, Word, OpenOffice and PowerPoint documents take their styles from the reference document named in the “Reference document” field. The “Generate reference document” button makes one with Pandoc's own tooling. The document is made in the export folder and named in the template.
 
+The “Flat OpenOffice (.fodt)” template saves an OpenOffice document as a single XML file rather than an archive, which is handy to keep in Git. Its reference document is an ordinary .odt.
+
 ### 4.2. Styles tweaks
 
 The “Styles tweaks” group fixes how Pandoc assigns styles in Word and OpenOffice:
@@ -317,7 +323,7 @@ When an export fails, the error window gives a hint and a “Copy report” butt
 
 ### 6.2. Import
 
-The “Import a file and convert it to a note” command turns a document of any format Pandoc reads into a note: Word, OpenOffice, EPUB, HTML, LaTeX and more.
+The “Import a file and convert it to a note” command turns a document of any format Pandoc reads into a note: Word, OpenOffice (.fodt included), EPUB, HTML, LaTeX and more.
 
 ## 7. Environment variables
 

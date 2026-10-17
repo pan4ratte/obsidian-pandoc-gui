@@ -473,6 +473,8 @@ export default {
     geometry: 'Page geometry',
     linkcolor: 'Link colour',
     lang: 'Language',
+    'csl-hanging-indent': 'Hanging indent',
+    'csl-entry-spacing': 'Entry spacing',
   },
   VARIABLE_PLACEHOLDERS: {
     papersize: 'Default',
@@ -481,7 +483,13 @@ export default {
     geometry: 'e.g. margin=1in',
     linkcolor: 'e.g. blue',
     lang: 'e.g. en-GB',
+    'csl-hanging-indent': 'e.g. 1.5em',
+    'csl-entry-spacing': 'e.g. 0.5em',
   },
+  VARIABLE_DESCRIPTIONS: {
+    'csl-hanging-indent': "Indent of a bibliography entry's lines after the first. Empty follows the citation style, 0em turns it off. Pandoc 3.12.1 and later.",
+    'csl-entry-spacing': 'Space between bibliography entries. Empty follows the citation style. Pandoc 3.12.1 and later.',
+  } as Partial<Record<string, string>>,
   VARIABLE_DEFAULT: 'Default',
   TEXT_DIRECTION: 'Text direction',
   TEXT_DIRECTION_DESC: 'Right to left, for Hebrew, Arabic and Persian. Word and OpenDocument honour it from Pandoc 3.11 on.',

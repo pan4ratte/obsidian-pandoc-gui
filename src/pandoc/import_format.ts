@@ -39,6 +39,7 @@ export const writerFor = (flavour: MarkdownFlavour): string => WRITERS[flavour] 
 const READERS: Record<string, string> = {
   docx: 'docx',
   odt: 'odt',
+  fodt: 'fodt',
   epub: 'epub',
   rtf: 'rtf',
   html: 'html',
@@ -93,8 +94,8 @@ const MEDIA_LESS = new Set(['biblatex', 'bibtex', 'csljson', 'ris', 'csv', 'tsv'
 /** `--extract-media`: "Extract images and other media contained in or linked from the source document". */
 export const supportsExtractMedia = (reader?: string): boolean => !!reader && !MEDIA_LESS.has(reader);
 
-/** The formats that are not text at all, so nothing in them was ever indented with a tab. */
-const BINARY_READERS = new Set(['docx', 'odt', 'epub', 'rtf']);
+/** The formats a word processor writes rather than anyone types, so nothing in them was ever indented with a tab. */
+const BINARY_READERS = new Set(['docx', 'odt', 'fodt', 'epub', 'rtf']);
 
 /** `--tab-stop`, which only means anything where the source is typed. */
 export const supportsTabStop = (reader?: string): boolean => !!reader && !BINARY_READERS.has(reader);

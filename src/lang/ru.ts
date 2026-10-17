@@ -473,6 +473,8 @@ export default {
     geometry: 'Геометрия страницы',
     linkcolor: 'Цвет ссылок',
     lang: 'Язык',
+    'csl-hanging-indent': 'Висячий отступ',
+    'csl-entry-spacing': 'Интервал между записями',
   },
   VARIABLE_PLACEHOLDERS: {
     papersize: 'По умолчанию',
@@ -481,7 +483,13 @@ export default {
     geometry: 'например, margin=1in',
     linkcolor: 'например, blue',
     lang: 'например, ru-RU',
+    'csl-hanging-indent': 'например, 1.5em',
+    'csl-entry-spacing': 'например, 0.5em',
   },
+  VARIABLE_DESCRIPTIONS: {
+    'csl-hanging-indent': 'Отступ строк записи в списке литературы, кроме первой. Если пусто — как в стиле цитирования, 0em — без отступа. Pandoc 3.12.1 и новее.',
+    'csl-entry-spacing': 'Расстояние между записями в списке литературы. Если пусто — как в стиле цитирования. Pandoc 3.12.1 и новее.',
+  } as Partial<Record<string, string>>,
   VARIABLE_DEFAULT: 'По умолчанию',
   TEXT_DIRECTION: 'Направление письма',
   TEXT_DIRECTION_DESC: 'Справа налево — для иврита, арабского и фарси. Word и OpenDocument слушаются этого начиная с Pandoc 3.11.',

@@ -130,6 +130,14 @@ export default {
     customArguments: OBSIDIAN_SYNTAX,
     extension: '.odt',
   },
+  'Flat OpenOffice (.fodt)': {
+    name: 'Flat OpenOffice',
+    type: 'pandoc',
+    // The same document as `.odt`, as one XML file rather than a zip — for version control and plain-text tools.
+    arguments: `-f \${fromFormat} ${IMAGES} ${MATH_BLOCK} -o "\${outputPath}" -t fodt`,
+    customArguments: OBSIDIAN_SYNTAX,
+    extension: '.fodt',
+  },
   'RTF': {
     name: 'RTF',
     type: 'pandoc',

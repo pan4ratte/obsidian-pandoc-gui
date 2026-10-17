@@ -536,9 +536,21 @@ export const setMetadataValue = METADATA.set;
 export const setMetadata = METADATA.setAll;
 
 /** The variables the modal asks for by name, each with a row of its own. */
-export const CURATED_VARIABLES = ['papersize', 'fontsize', 'mainfont', 'geometry', 'linkcolor', 'lang'] as const;
+export const CURATED_VARIABLES = [
+  'papersize',
+  'fontsize',
+  'mainfont',
+  'geometry',
+  'linkcolor',
+  'lang',
+  'csl-hanging-indent',
+  'csl-entry-spacing',
+] as const;
 
 export type CuratedVariable = (typeof CURATED_VARIABLES)[number];
+
+/** The ones about the bibliography, whose rows stand with the citations and only while those are on. */
+export const CITATION_VARIABLES: readonly CuratedVariable[] = ['csl-hanging-indent', 'csl-entry-spacing'];
 
 /* -- Text direction ------------------------------------------------------- */
 

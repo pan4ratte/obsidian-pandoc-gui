@@ -110,6 +110,7 @@ export const supportsHighlighting = supportedBy([
   's5',
   'docx',
   'odt',
+  'fodt',
   'opendocument',
   'ms',
   'typst',
@@ -140,14 +141,14 @@ export const supportsMathMethod = supportedBy([
 /** Whether pandoc will be handing the document to a PDF engine. */
 export const isPdfOutput = (writer?: string): boolean => writer === 'pdf';
 
-/** `--reference-doc`: "a style reference in producing a docx or ODT file", and pptx. */
-export const supportsReferenceDoc = supportedBy(['docx', 'odt', 'pptx']);
+/** `--reference-doc`: "a style reference in producing a docx or ODT file", and pptx. Flat ODT takes a zipped one. */
+export const supportsReferenceDoc = supportedBy(['docx', 'odt', 'fodt', 'pptx']);
 
 /**
  * The writers that read a `custom-style` Div and set the named style on what is inside it — the two word processors,
  * and not pptx, whose writer has no such thing.
  */
-export const supportsCustomStyle = supportedBy(['docx', 'odt']);
+export const supportsCustomStyle = supportedBy(['docx', 'odt', 'fodt']);
 
 /**
  * `--template`, the counterpart of the reference document: the writers that lay their output out with a template of
@@ -238,6 +239,7 @@ const HEADER_UNSUPPORTED = new Set([
   'docbook5',
   'docx',
   'dokuwiki',
+  'fodt',
   'jira',
   'mediawiki',
   't2t',
@@ -259,7 +261,7 @@ const LATEX_WRITERS = ['latex', 'beamer', 'pdf'] as const;
  * `dir`: the writers that do something with a direction. The two word processors read it from the metadata, which
  * pandoc 3.11 taught them; the HTML and EPUB templates put it on the `html` element, as they always have.
  */
-export const supportsTextDirection = supportedBy(['docx', 'odt', 'opendocument', ...HTML_WRITERS, ...EPUB_WRITERS]);
+export const supportsTextDirection = supportedBy(['docx', 'odt', 'fodt', 'opendocument', ...HTML_WRITERS, ...EPUB_WRITERS]);
 
 export const supportsVariable: Record<CuratedVariable, (writer?: string) => boolean> = {
   papersize: supportedBy(['latex', 'pdf', 'context', 'ms', 'typst', ...EPUB_WRITERS]),
@@ -281,11 +283,15 @@ export const supportsVariable: Record<CuratedVariable, (writer?: string) => bool
     's5',
     'docx',
     'odt',
+    'fodt',
     'docbook',
     'docbook5',
     'tei',
     'muse',
   ]),
+  // Pandoc 3.12.1's typst template sets them on the bibliography, over what the CSL style asks for.
+  'csl-hanging-indent': supportedBy(['typst']),
+  'csl-entry-spacing': supportedBy(['typst']),
 };
 
 /* The document fields, and who writes them. */
@@ -297,6 +303,7 @@ const SLIDE_FIELDS: readonly DocumentField[] = [...WITH_SUBTITLE, 'keywords'];
 const EPUB_FIELDS: readonly DocumentField[] = [...WITH_SUBTITLE, 'abstract', 'abstract-title', 'subject', 'description', 'toc-title'];
 const ASCIIDOC_FIELDS: readonly DocumentField[] = [...BYLINE, 'abstract', 'keywords'];
 const JATS_FIELDS: readonly DocumentField[] = ['title', 'subtitle', 'author', 'abstract'];
+const ODT_FIELDS: readonly DocumentField[] = [...WITH_SUBTITLE, 'abstract', 'keywords', 'subject', 'description', 'toc-title'];
 
 /** Writers that copy every metadata field into what they write. */
 const WRITES_ALL_FIELDS = new Set(['markdown', 'markdown_mmd', 'gfm', 'commonmark_x', 'json', 'native', 'xml']);
@@ -319,7 +326,8 @@ const DOCUMENT_FIELD_WRITERS: Record<string, readonly DocumentField[]> = {
   typst: [...WITH_SUBTITLE, 'abstract', 'abstract-title', 'keywords'],
   rst: [...WITH_SUBTITLE, 'abstract'],
   docx: DOCUMENT_FIELDS,
-  odt: [...WITH_SUBTITLE, 'abstract', 'keywords', 'subject', 'description', 'toc-title'],
+  odt: ODT_FIELDS,
+  fodt: ODT_FIELDS,
   opendocument: [...WITH_SUBTITLE, 'abstract', 'toc-title'],
   pptx: [...WITH_SUBTITLE, 'keywords', 'subject', 'description', 'category', 'toc-title'],
   ms: [...BYLINE, 'abstract'],
@@ -387,6 +395,7 @@ const WRAP_UNSUPPORTED = new Set([
   'epub2',
   'epub3',
   'fb2',
+  'fodt',
   'icml',
   'ipynb',
   'jira',
@@ -476,7 +485,6 @@ export const supportsHtmlOptions = supportedBy(HTML_PAGE_WRITERS);
 /** `--embed-resources`: "only works with HTML output formats", chunked aside. */
 export const supportsEmbedResources = supportedBy(HTML_PAGE_WRITERS.filter(w => w !== 'chunkedhtml'));
 
-/** `--dpi`: the writers that have to put a real size on an image in pixels. */
 /**
  * The writers whose files can carry an SVG, measured against pandoc 3.11 by writing one into each and looking at what
  * came out. Word and OpenDocument take it and keep it vector, PowerPoint likewise, HTML and EPUB have always taken it,
@@ -487,7 +495,7 @@ export const supportsEmbedResources = supportedBy(HTML_PAGE_WRITERS.filter(w => 
  * the interesting one — it writes `\includesvg`, which works or does not depending on what the reader has installed
  * alongside their TeX, so it is left off the list and offered as a choice instead.
  */
-export const takesSvg = supportedBy(['docx', 'odt', 'opendocument', 'pptx', 'typst', ...HTML_WRITERS, ...EPUB_WRITERS]);
+export const takesSvg = supportedBy(['docx', 'odt', 'fodt', 'opendocument', 'pptx', 'typst', ...HTML_WRITERS, ...EPUB_WRITERS]);
 
 /**
  * The writers whose documents are opened by a browser engine, and so the only ones that read the fonts an SVG carries
@@ -496,7 +504,21 @@ export const takesSvg = supportedBy(['docx', 'odt', 'opendocument', 'pptx', 'typ
  */
 export const readsInlinedFonts = supportedBy([...HTML_WRITERS, ...EPUB_WRITERS]);
 
-export const supportsDpi = supportedBy(['latex', 'beamer', 'pdf', 'context', 'typst', 'docx', 'odt', 'icml', 'ms', 'rtf', 'texinfo']);
+/** `--dpi`: the writers that have to put a real size on an image in pixels. */
+export const supportsDpi = supportedBy([
+  'latex',
+  'beamer',
+  'pdf',
+  'context',
+  'typst',
+  'docx',
+  'odt',
+  'fodt',
+  'icml',
+  'ms',
+  'rtf',
+  'texinfo',
+]);
 
 /* The families a filter can be written for. */
 export const FORMAT_FAMILIES = ['latex', 'docx', 'odt', 'html', 'slides', 'markdown', 'typst'] as const;
@@ -507,7 +529,7 @@ const FAMILY_MEMBERS: Record<FormatFamily, readonly string[]> = {
   // `pdf` is here because pandoc's PDF goes through LaTeX unless told otherwise.
   latex: ['latex', 'beamer', 'pdf'],
   docx: ['docx'],
-  odt: ['odt', 'opendocument'],
+  odt: ['odt', 'fodt', 'opendocument'],
   // EPUB is HTML in a wrapper, and a filter writing HTML works in both.
   html: ['html', 'html4', 'html5', 'chunkedhtml', 'epub', 'epub2', 'epub3'],
   slides: SLIDE_WRITERS,

@@ -159,8 +159,8 @@ describe('which rows a writer is offered', () => {
     expect(isPdfOutput(undefined)).toBe(false);
   });
 
-  test('a reference document, for the three formats that take styles from one', () => {
-    for (const writer of ['docx', 'odt', 'pptx']) {
+  test('a reference document, for the three formats that take styles from one, and flat ODT', () => {
+    for (const writer of ['docx', 'odt', 'fodt', 'pptx']) {
       expect(supportsReferenceDoc(writer)).toBe(true);
     }
     for (const writer of ['latex', 'html', 'epub3', 'rtf', undefined]) {
@@ -183,7 +183,7 @@ describe('which rows a writer is offered', () => {
       expect(supportsHeaderInclude(writer)).toBe(true);
     }
     // A body to wrap, but nowhere a header file could go.
-    for (const writer of ['docx', 'docbook5', 'mediawiki', 'textile', 'tei']) {
+    for (const writer of ['docx', 'fodt', 'docbook5', 'mediawiki', 'textile', 'tei']) {
       expect(supportsIncludes(writer)).toBe(true);
       expect(supportsHeaderInclude(writer)).toBe(false);
     }
@@ -194,7 +194,7 @@ describe('which rows a writer is offered', () => {
       expect(supportsWrap(writer)).toBe(true);
     }
     // EPUB writes XHTML but lays it out itself; the rest are not text at all.
-    for (const writer of ['epub3', 'docx', 'odt', 'pptx', 'rtf', 'json', undefined]) {
+    for (const writer of ['epub3', 'docx', 'odt', 'fodt', 'pptx', 'rtf', 'json', undefined]) {
       expect(supportsWrap(writer)).toBe(false);
     }
   });
@@ -253,7 +253,7 @@ describe('which rows a writer is offered', () => {
   });
 
   test('a resolution, where the writer has to put a real size on an image', () => {
-    for (const writer of ['latex', 'pdf', 'docx', 'odt', 'context', 'typst', 'ms', 'rtf', 'icml']) {
+    for (const writer of ['latex', 'pdf', 'docx', 'odt', 'fodt', 'context', 'typst', 'ms', 'rtf', 'icml']) {
       expect(supportsDpi(writer)).toBe(true);
     }
     // These keep the pixels they were given.
@@ -289,6 +289,12 @@ describe('which rows a writer is offered', () => {
       expect(supportsVariable.lang(writer)).toBe(true);
     }
     expect(supportsVariable.lang('ms')).toBe(false);
+
+    // The bibliography's, which only pandoc's typst template reads.
+    expect(supportsVariable['csl-hanging-indent']('typst')).toBe(true);
+    expect(supportsVariable['csl-entry-spacing']('typst')).toBe(true);
+    expect(supportsVariable['csl-hanging-indent']('latex')).toBe(false);
+    expect(supportsVariable['csl-entry-spacing']('docx')).toBe(false);
   });
 });
 
@@ -311,6 +317,7 @@ describe('which filters a writer can use', () => {
     expect(runsInFormat(['latex'], 'latex')).toBe(true);
     expect(runsInFormat(['latex'], 'docx')).toBe(false);
     expect(runsInFormat(['docx', 'odt'], 'odt')).toBe(true);
+    expect(runsInFormat(['docx', 'odt'], 'fodt')).toBe(true);
     expect(runsInFormat(['html'], 'epub3')).toBe(true);
     expect(runsInFormat(['slides'], 'revealjs')).toBe(true);
     expect(runsInFormat(['slides'], 'html')).toBe(false);

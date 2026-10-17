@@ -30,6 +30,10 @@ describe('the reader a file names', () => {
     expect(readerFor('paper.latex')).toBe('latex');
   });
 
+  test('flat ODT has a reader of its own', () => {
+    expect(readerFor('Thesis.fodt')).toBe('fodt');
+  });
+
   test('a format pandoc writes but cannot read is not offered', () => {
     expect(readerFor('slides.pptx')).toBeUndefined();
     expect(readerFor('notes.pdf')).toBeUndefined();
@@ -87,6 +91,7 @@ describe('what a reader can be asked', () => {
     expect(supportsTabStop('markdown')).toBe(true);
     expect(supportsTabStop('latex')).toBe(true);
     expect(supportsTabStop('docx')).toBe(false);
+    expect(supportsTabStop('fodt')).toBe(false);
     expect(supportsTabStop('epub')).toBe(false);
   });
 

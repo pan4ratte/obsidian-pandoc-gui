@@ -17,6 +17,7 @@ import {
   isReferenceFormat,
   REFERENCE_FORMATS,
   referenceDocFromNative,
+  referenceFormatFor,
 } from '../../src/pandoc/reference_doc';
 
 // Electron is not there to be asked for the system's temporary folder outside Obsidian; node knows the same answer.
@@ -33,6 +34,12 @@ describe('the formats that take one', () => {
   test('and nothing else answers to the name', () => {
     expect(['docx', 'odt', 'pptx'].every(isReferenceFormat)).toBe(true);
     expect(['latex', 'html', '', undefined].some(isReferenceFormat)).toBe(false);
+  });
+
+  test('flat ODT reads the zipped one', () => {
+    expect(referenceFormatFor('fodt')).toBe('odt');
+    expect(referenceFormatFor('docx')).toBe('docx');
+    expect(referenceFormatFor('html')).toBeUndefined();
   });
 });
 

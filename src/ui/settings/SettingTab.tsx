@@ -12,7 +12,7 @@ import { t } from '../../lang/helpers';
 
 import pandoc from '../../pandoc/pandoc';
 import { resolveEngine } from '../../pandoc/engine';
-import { bundledReferenceDoc, isReferenceFormat, referenceDocFromNative } from '../../pandoc/reference_doc';
+import { bundledReferenceDoc, referenceDocFromNative, referenceFormatFor } from '../../pandoc/reference_doc';
 import { STYLE_MODES, type StyleMode } from '../../docx/styles';
 import { templatePaths } from '../../convert/joined_docs';
 import {
@@ -83,6 +83,7 @@ import {
 } from '../../filters/filter_args';
 import { PANDOC_EXTENSIONS, enabledExtensions, setExtensions } from '../../pandoc/pandoc_extensions';
 import {
+  CITATION_VARIABLES,
   CURATED_VARIABLES,
   EMAIL_OBFUSCATIONS,
   EOL_MODES,
@@ -679,14 +680,21 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
       withCurrent([{ name: t.PDF_ENGINE_DEFAULT, value: '' }, ...PDF_ENGINES.map(e => ({ name: e, value: e }))], pdfEngine(args()))
     );
 
-    /** The curated variables this writer was measured to read, and no others. */
-    const curatedVariables = createMemo(() => CURATED_VARIABLES.filter(name => supportsVariable[name](format())));
+    /**
+     * The curated variables this writer was measured to read, and no others. The bibliography's go back to the other
+     * variables while citations are off, since their rows go with them.
+     */
+    const curatedVariables = createMemo(() =>
+      CURATED_VARIABLES.filter(name => supportsVariable[name](format()) && (citeproc(args()) || !CITATION_VARIABLES.includes(name)))
+    );
 
     /** Word pastes what is included straight into its XML: text or a .docx would break the document. */
     const bodyIncludeFiles = () => (format() === 'docx' ? WORD_XML_FILES : [ANY_FILE]);
 
     /** The ones about the page; the language has its row with the document's formatting. */
-    const pageVariables = createMemo(() => curatedVariables().filter(name => name !== 'lang'));
+    const pageVariables = createMemo(() => curatedVariables().filter(name => name !== 'lang' && !CITATION_VARIABLES.includes(name)));
+
+    const citationVariables = createMemo(() => curatedVariables().filter(name => CITATION_VARIABLES.includes(name)));
 
     const variableOptions = (name: CuratedVariable) =>
       withCurrent(
@@ -695,7 +703,11 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
       );
 
     const variableRow = (name: CuratedVariable) => (
-      <Setting name={t.VARIABLE_LABELS[name]} class={`ex-template-modal-variable ex-template-modal-${name}`}>
+      <Setting
+        name={t.VARIABLE_LABELS[name]}
+        description={t.VARIABLE_DESCRIPTIONS[name]}
+        class={`ex-template-modal-variable ex-template-modal-${name}`}
+      >
         <Show
           when={VARIABLE_CHOICES[name]}
           fallback={
@@ -836,10 +848,10 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
       )
     );
 
-    /** The document a docx, odt or pptx export takes its styles from. */
-    const referenceDocFiles = createMemo(() => [
-      { name: t.REFERENCE_DOC, extensions: REFERENCE_DOC_FILES[format()] ?? REFERENCE_DOC_FILES.docx },
-    ]);
+    /** The kind of document a docx, odt or pptx export takes its styles from — an odt for flat ODT as well. */
+    const referenceFormat = createMemo(() => referenceFormatFor(format()));
+
+    const referenceDocFiles = createMemo(() => [{ name: t.REFERENCE_DOC, extensions: REFERENCE_DOC_FILES[referenceFormat() ?? 'docx'] }]);
 
     /**
      * The list styles come and go with the document that defines them. They hand the bullets over to List Bullet, and
@@ -887,10 +899,10 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
      * the template is edited, and the styles someone changes in it are the styles they will see on either.
      */
     const generateReferenceDoc = async (): Promise<void> => {
-      const writer = format();
+      const writer = referenceFormat();
       // A button of this size has nothing to show for being busy, so a second press is turned away rather than drawn
       // against: two runs at once would race each other to the same file.
-      if (!isReferenceFormat(writer) || makingReference()) {
+      if (!writer || makingReference()) {
         return;
       }
       const { path, named } = referenceDocPath(writer);
@@ -1013,7 +1025,7 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
     return (
       <>
         {/* A word processor is laid out by a reference document, everything else by a
-            template — the same question two ways, so exactly one row stands here. */}
+            template — the same question two ways, so one row stands here. Flat ODT takes both. */}
         <Show when={supportsReferenceDoc(format())}>
           {/* Naming a document and making one share a card: the second is where the first comes from. */}
           <div class="ex-card ex-template-modal-reference">
@@ -1028,7 +1040,10 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
 
             {/* Nobody has a reference document until pandoc has written one, and only pandoc can. The row is the
                 environment variables' row: a question, and the one small button that answers it. */}
-            <Setting name={t.REFERENCE_DOC_GENERATE(`.${format()}`)} class="ex-template-modal-generate-reference-doc ex-inline-setting">
+            <Setting
+              name={t.REFERENCE_DOC_GENERATE(`.${referenceFormat()}`)}
+              class="ex-template-modal-generate-reference-doc ex-inline-setting"
+            >
               <ExtraButton
                 icon="file-plus-2"
                 tooltip={makingReference() ? t.REFERENCE_DOC_GENERATING : t.ACTION_GENERATE}
@@ -1386,6 +1401,7 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
                   onChange={value => writeArgs(a => setCsl(a, value.trim()))}
                 />
               </Setting>
+              <For each={citationVariables()}>{variableRow}</For>
             </Collapsible>
 
             {/* Every variable no row above claims. `visible` is the panel: an unrendered textarea has no height. */}

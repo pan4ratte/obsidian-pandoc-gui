@@ -3,11 +3,17 @@
 
 ## 3.0.1
 
+### New features
+
+* **Export to flat OpenOffice (.fodt).** A new template, “Flat OpenOffice (.fodt)”, saves an OpenOffice document as a single XML file rather than an archive. Such files can be imported too. Requires Pandoc 3.12.1 or later.
+* **Bibliography formatting in Typst.** In Typst templates, the “Citations” option has new “Hanging indent” and “Entry spacing” fields. Requires Pandoc 3.12.1 or later.
+
 ### Enhancements and bug fixes
 
 * Lifted the limit on how many embedded notes and Dataview queries an export can take.
 * In Markdown exports, wikilinks in headings are no longer wrapped in a second link in the table of contents.
 * Embedded Obsidian Bases and Canvases no longer break PDF export: they are left out, and the warnings window names them.
+* The bundled reference documents are updated to Pandoc 3.12.1.
 
 
 ## 3.0.0
