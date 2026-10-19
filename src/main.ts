@@ -2,8 +2,7 @@ import { App, Menu, Plugin, PluginManifest, TFile, Notice, debounce } from 'obsi
 import { PandocGuiSettings, ExportSetting, DEFAULT_SETTINGS, DEFAULT_ENV, restoreTemplates } from './settings';
 import { ExportSettingTab, ExportDialog, ImportDialog, UserGuideModal, ChangelogModal } from './ui';
 import { exportNote } from './convert/export';
-import { getPlatformValue, PlatformKey, clone } from './system/utils';
-import { isAbsolute } from './system/paths';
+import { getPlatformValue, setPlatformValue, PlatformKey, clone } from './system/utils';
 import { mobilePath } from './system/platform';
 import { t } from './lang/helpers';
 import resources, { BUNDLED_LUA_FILES } from './resources';
@@ -160,17 +159,21 @@ export default class PandocGuiPlugin extends Plugin {
     if (settings.lastExportType && settings.items.every(o => o.name !== settings.lastExportType)) {
       delete settings.lastExportType;
     }
-    // Folders an iPhone saved while its full paths were relative, which no longer match the vault root.
+    // Folders a phone saved before its full paths went through `mobilePath`, which no longer match the vault root.
+    let migrated = false;
     for (const key of ['lastExportDirectory', 'customDefaultExportDirectory'] as const) {
-      const folder = settings[key]?.ios;
-      if (folder && !isAbsolute(folder)) {
-        settings[key] = { ...settings[key], ios: mobilePath(folder) };
+      for (const platform of ['ios', 'android'] as const) {
+        const folder = settings[key]?.[platform];
+        if (folder && folder !== mobilePath(folder)) {
+          settings[key] = setPlatformValue(settings[key], mobilePath(folder), platform);
+          migrated = true;
+        }
       }
     }
     this.settings = settings;
     // A vault that has never written the list needs it on disk now: without it the next release cannot tell a
     // template the user deleted from one it has just added.
-    if (!saved?.seededTemplates) {
+    if (!saved?.seededTemplates || migrated) {
       await this.saveSettings();
     }
   }

@@ -35,14 +35,16 @@ describe('full paths on a phone', () => {
     expect(fullPath(android, 'a/b.md')).toBe('/storage/emulated/0/Documents/Vault/a/b.md');
   });
 
-  test('a desktop path is left to the desktop adapter', () => {
+  test('a desktop path is spelled the way the vault root is', () => {
     const desktop = desktopAdapter('C:\\Vault');
     expect(vaultRoot(desktop)).toBe('C:/Vault');
-    expect(fullPath(desktop, 'a.md')).toBe('C:\\Vault\\a.md');
+    expect(fullPath(desktop, 'a.md')).toBe('C:/Vault/a.md');
+    expect(fullPath(desktop, '/')).toBe('C:/Vault');
   });
 
-  test('a folder saved in the old relative form is read as the absolute one', () => {
+  test('a folder saved in the old form is read as the one the vault root now matches', () => {
     expect(mobilePath('Ipad_Testing//')).toBe('/Ipad_Testing');
     expect(mobilePath('Ipad_Testing/Exports')).toBe('/Ipad_Testing/Exports');
+    expect(mobilePath('/storage/emulated/0/Vault//')).toBe('/storage/emulated/0/Vault');
   });
 });

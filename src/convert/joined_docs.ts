@@ -89,7 +89,7 @@ const resolveLink = (app: App, note: TFile, link: string): string | undefined =>
     return normalize(link);
   }
   const file = app.metadataCache.getFirstLinkpathDest(getLinkpath(link), note.path);
-  return file instanceof TFile ? normalize(fullPath(app.vault.adapter, file.path)) : undefined;
+  return file instanceof TFile ? fullPath(app.vault.adapter, file.path) : undefined;
 };
 
 /** The documents to join, read — or nothing, where neither the template nor the note names any. */
