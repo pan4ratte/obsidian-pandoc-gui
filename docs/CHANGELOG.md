@@ -1,6 +1,13 @@
 # Changelog
 
 
+## 3.0.2
+
+### Enhancements and bug fixes
+
+* Fixed export and import on iOS and iPadOS: Pandoc WASM could not find the vault's files.
+
+
 ## 3.0.1
 
 ### New features

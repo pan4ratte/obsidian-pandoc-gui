@@ -3,6 +3,8 @@ import { PandocGuiSettings, ExportSetting, DEFAULT_SETTINGS, DEFAULT_ENV, restor
 import { ExportSettingTab, ExportDialog, ImportDialog, UserGuideModal, ChangelogModal } from './ui';
 import { exportNote } from './convert/export';
 import { getPlatformValue, PlatformKey, clone } from './system/utils';
+import { isAbsolute } from './system/paths';
+import { mobilePath } from './system/platform';
 import { t } from './lang/helpers';
 import resources, { BUNDLED_LUA_FILES } from './resources';
 import { PandocWasmManager } from './wasm/install';
@@ -157,6 +159,13 @@ export default class PandocGuiPlugin extends Plugin {
     // The last-exported template is remembered by name; drop a name nothing answers to.
     if (settings.lastExportType && settings.items.every(o => o.name !== settings.lastExportType)) {
       delete settings.lastExportType;
+    }
+    // Folders an iPhone saved while its full paths were relative, which no longer match the vault root.
+    for (const key of ['lastExportDirectory', 'customDefaultExportDirectory'] as const) {
+      const folder = settings[key]?.ios;
+      if (folder && !isAbsolute(folder)) {
+        settings[key] = { ...settings[key], ios: mobilePath(folder) };
+      }
     }
     this.settings = settings;
     // A vault that has never written the list needs it on disk now: without it the next release cannot tell a

@@ -9,7 +9,7 @@ import { exportNote } from '../../convert/export';
 import { droppedBy, resolveEngine, unsupportedBy } from '../../pandoc/engine';
 import { outputFormat, supportsToc } from '../../pandoc/pandoc_format';
 import { TOC_MAX_DEPTH, TOC_NONE, setTocDepth, tocDepth } from '../../args/toc_args';
-import { chooseFile, documentsFolder, isMobile, isMobileUi, vaultRoot } from '../../system/platform';
+import { chooseFile, documentsFolder, fullPath, isMobile, isMobileUi, vaultRoot } from '../../system/platform';
 import { shownDocuments } from '../../convert/joined_docs';
 import FolderInput from '../components/FolderInput';
 import DocumentList from '../components/DocumentList';
@@ -105,7 +105,7 @@ const Dialog = (props: { plugin: PandocGuiPlugin; currentFile: TFile; onClose?: 
   const exportTypes = available.map(o => ({ name: o.name, value: o.name })).sort((a, b) => a.name.localeCompare(b.name));
 
   if (globalSetting.defaultExportDirectoryMode === 'Same') {
-    setCandidateOutputDirectory(currentFile.vault.adapter.getFullPath(currentFile.parent.path));
+    setCandidateOutputDirectory(fullPath(currentFile.vault.adapter, currentFile.parent.path));
   } else if (globalSetting.defaultExportDirectoryMode === 'Custom') {
     setCandidateOutputDirectory(getPlatformValue(globalSetting.customDefaultExportDirectory) ?? vaultDir);
   }

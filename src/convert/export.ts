@@ -19,7 +19,7 @@ import { FileStore } from '../system/file_store';
 import { download } from '../system/download';
 import { basename, dirname, extname, normalize, resolve, stem } from '../system/paths';
 import { collectJoins, joinExport } from './joined_docs';
-import { PATH_SEPARATOR, chooseSavePath, isDesktop, isMobile, openFile, showInFolder, tempFolder, vaultRoot } from '../system/platform';
+import { PATH_SEPARATOR, chooseSavePath, fullPath, isDesktop, isMobile, openFile, showInFolder, tempFolder, vaultRoot } from '../system/platform';
 import { type DrawingFormat, isDrawing, renderDrawing } from './excalidraw';
 import { type QueryAnswer, collectQueries, renderQueries } from './dataview';
 import { outputFormat, readsInlinedFonts, takesSvg, writesLatex } from '../pandoc/pandoc_format';
@@ -177,7 +177,7 @@ export async function exportNote(
   const outputFileName = candidateOutputFileName.substring(0, candidateOutputFileName.lastIndexOf('.'));
   const outputFileFullName = candidateOutputFileName;
 
-  const currentPath = adapter.getFullPath(currentFile.path);
+  const currentPath = fullPath(adapter, currentFile.path);
   const currentDir = dirname(currentPath);
   const currentFileName = currentFile.basename;
   const currentFileFullName = currentFile.name;
@@ -230,7 +230,7 @@ export async function exportNote(
         drawings.set(embed.link, target);
         continue;
       }
-      const path = adapter.getFullPath(target.path);
+      const path = fullPath(adapter, target.path);
       embeddedFiles.add(path);
       embedFolders.add(dirname(path));
       if (UNEXPORTED_EXTENSIONS.has(target.extension)) {

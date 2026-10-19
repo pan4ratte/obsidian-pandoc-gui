@@ -14,7 +14,7 @@ import { resolveEngine } from '../pandoc/engine';
 import { convertWithWasm } from '../wasm/convert';
 import { FileStore } from '../system/file_store';
 import { basename, dirname, relativeTo, stem } from '../system/paths';
-import { isMobile, vaultRoot } from '../system/platform';
+import { fullPath, isMobile, vaultRoot } from '../system/platform';
 
 export interface ImportRequest {
   /** The file on disk, as the dialog was given it. */
@@ -71,7 +71,7 @@ export async function importFile(plugin: PandocGuiPlugin, request: ImportRequest
 
   const notePath = importedNotePath(request.source, request.folder);
   const noteName = basename(notePath);
-  const outputPath = adapter.getFullPath(notePath);
+  const outputPath = fullPath(adapter, notePath);
   const outputDir = dirname(outputPath);
   const files = new FileStore(app.vault, vaultRoot(adapter));
 
@@ -90,7 +90,7 @@ export async function importFile(plugin: PandocGuiPlugin, request: ImportRequest
   // will be linking to them.
   const options: ImportOptions = { ...request.options };
   if (request.mediaFolder !== undefined) {
-    options.extractMedia = relativeTo(outputDir, adapter.getFullPath(normalizePath(request.mediaFolder)));
+    options.extractMedia = relativeTo(outputDir, fullPath(adapter, normalizePath(request.mediaFolder)));
   }
 
   const pluginDir = `${vaultRoot(adapter)}/${manifest.dir}`;

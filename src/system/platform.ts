@@ -77,8 +77,19 @@ export const currentPlatform = (): PlatformKey => {
   return Platform.isWin ? 'win32' : Platform.isMacOS ? 'darwin' : 'linux';
 };
 
-/** The vault's own folder on the device. `getBasePath` is the desktop adapter's; the other one answers the same way. */
-export const vaultRoot = (adapter: DataAdapter): string => normalize(adapter.getBasePath?.() ?? adapter.getFullPath(''));
+/**
+ * A path from the mobile adapter, made absolute. That adapter writes `base + "/" + path`, and on iOS the base is relative
+ * to the app's Documents folder: read against the folder a command runs in, it would name the vault twice. Nothing on
+ * a phone opens these paths; they are only matched against the vault root.
+ */
+export const mobilePath = (path: string): string => normalize(`/${path}`.replace(/\/{2,}/g, '/'));
+
+/** Where a vault path is on the device. Every full path the plugin takes from Obsidian comes through here. */
+export const fullPath = (adapter: DataAdapter, path: string): string =>
+  adapter.getBasePath ? adapter.getFullPath(path) : mobilePath(adapter.getFullPath(path));
+
+/** The vault's own folder on the device. `getBasePath` is the desktop adapter's. */
+export const vaultRoot = (adapter: DataAdapter): string => normalize(adapter.getBasePath?.() ?? fullPath(adapter, ''));
 
 /** Electron, likewise — see `typings/electron.d.ts` for the part of it this plugin uses. */
 export const electron = async () => await import('electron');
