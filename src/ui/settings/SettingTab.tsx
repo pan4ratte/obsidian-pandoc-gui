@@ -1727,35 +1727,46 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
   const vaultFolderOf = (path?: string) => (path?.startsWith(`${vaultDir}/`) ? path.substring(vaultDir.length + 1) : '');
   const fullPathOf = (folder: string) => (folder ? `${vaultDir}/${folder}` : vaultDir);
 
+  // Made once, so that switching engines moves the cards rather than starting them over.
+  const wasmPanel = (
+    <WasmPanel
+      app={app}
+      manager={plugin.wasm}
+      version={settings.wasmVersion}
+      onInstalled={version => setSettings('wasmVersion', version)}
+      onNotices={setWasmNotices}
+      onExtensions={() => setModal(() => WasmExtensionsModal)}
+    />
+  );
+  const links = (
+    <PandocLinks
+      app={app}
+      version={plugin.manifest.version}
+      changelogRead={settings.dismissedChangelogVersion === plugin.manifest.version}
+      onChangelog={() => plugin.openChangelog()}
+    />
+  );
+
   return (
     <>
       {/* A card to each pandoc, then the pages to read, then what neither pandoc's card has the room to say. */}
       <div class="ex-dashboard">
-        {/* With the wasm build alone, its card and the three pages to read make a square of four. */}
-        <div class="ex-dashboard-cards" classList={{ 'is-wasm-only': engine() !== 'native' }}>
+        <Show
+          when={engine() === 'native'}
+          fallback={
+            // With the wasm build alone, its card and the three pages to read make a square of four.
+            <div class="ex-dashboard-row is-wasm-only">
+              {wasmPanel}
+              {links}
+            </div>
+          }
+        >
           <div class="ex-dashboard-row">
-            {/* The installed program has nothing to say where it is not the one running. */}
-            <Show when={engine() === 'native'}>
-              <PandocDashboard version={pandocVersion()} markdownLinks={app.vault.config.useMarkdownLinks} onNotices={setNativeNotices} />
-            </Show>
-
-            <WasmPanel
-              app={app}
-              manager={plugin.wasm}
-              version={settings.wasmVersion}
-              onInstalled={version => setSettings('wasmVersion', version)}
-              onNotices={setWasmNotices}
-              onExtensions={() => setModal(() => WasmExtensionsModal)}
-            />
+            <PandocDashboard version={pandocVersion()} markdownLinks={app.vault.config.useMarkdownLinks} onNotices={setNativeNotices} />
+            {wasmPanel}
           </div>
-
-          <PandocLinks
-            app={app}
-            version={plugin.manifest.version}
-            changelogRead={settings.dismissedChangelogVersion === plugin.manifest.version}
-            onChangelog={() => plugin.openChangelog()}
-          />
-        </div>
+          <div class="ex-dashboard-row ex-dashboard-links">{links}</div>
+        </Show>
 
         <PandocNotices notices={panelNotices()} />
       </div>

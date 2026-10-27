@@ -114,23 +114,15 @@
   flex: 1 1 13rem;
 }
 
-/* With the wasm build's card alone in the first row, it and the three pages
-   to read are one grid of two columns, so that it does not stand on a line of
-   its own. */
-.ex-dashboard-cards.is-wasm-only {
-  display: grid;
+/* With the wasm build's card alone, it and the three pages to read are two
+   columns, so that it does not stand on a line of its own. */
+.ex-dashboard-row.is-wasm-only {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--size-4-3);
 }
 
-.ex-dashboard-cards.is-wasm-only > .ex-dashboard-row {
-  display: contents;
-}
-
-/* Too narrow for two of them side by side, the wasm build's card among them,
-   and the four are one column. */
+/* Too narrow for two of them side by side, the four are one column. */
 @container (width < 34rem) {
-  .ex-dashboard-cards.is-wasm-only {
+  .ex-dashboard-row.is-wasm-only {
     grid-template-columns: minmax(0, 1fr);
   }
 }
