@@ -16,9 +16,9 @@ export const WASM_DIR = 'wasm';
 export const WASM_FILE = 'pandoc.wasm';
 
 /**
- * The wasm archive in a pandoc release. Its name has been spelled three ways so far — `pandoc-wasm.zip`,
- * `pandoc-wasm-3.10.2.zip`, `pandoc-3.11.wasm.zip` — so it is matched loosely, and the version is taken from the tag
- * rather than from the name. No other asset in a release has `wasm` in its name.
+ * The wasm archive in a pandoc release. Its name has been spelled four ways so far — `pandoc-wasm.zip`,
+ * `pandoc-wasm-3.10.2.zip`, `pandoc-3.11.wasm.zip`, `pandoc-3.13-wasm.zip` — so it is matched loosely, and the version
+ * is taken from the tag rather than from the name. No other asset in a release has `wasm` in its name.
  */
 const ASSET = /^pandoc-.*wasm.*\.zip$/i;
 

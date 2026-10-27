@@ -1,6 +1,14 @@
 # Changelog
 
 
+## 3.1.0
+
+### Enhancements and bug fixes
+
+* The bundled reference documents are updated to Pandoc 3.13.
+* The user guide now warns that since Pandoc 3.13, `yes` and `no` in a note's properties are read as text.
+
+
 ## 3.0.2
 
 ### Enhancements and bug fixes

@@ -34,7 +34,7 @@ export const referenceFormatFor = (writer?: string): ReferenceFormat | undefined
  * match — see `docs/CONTRIBUTING.md`. It is here rather than in a file beside them so that anything reporting on the
  * bundle can read it.
  */
-export const BUNDLED_REFERENCE_VERSION = '3.12.1';
+export const BUNDLED_REFERENCE_VERSION = '3.13';
 
 /** Carried as base64 in a generated module — see `reference_data.ts`; a release ships no file to read. */
 const BUNDLED: Record<ReferenceFormat, string> = { docx, odt, pptx };

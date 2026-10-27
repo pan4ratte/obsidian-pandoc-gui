@@ -176,6 +176,7 @@ The “Extra commands” field takes Pandoc parameters the editor has no option 
 In the “Document metadata” group you can fill in the title, subtitle, author, date, abstract and other document fields, which apply to every note exported with this template.
 
 * If the note's properties hold metadata (`title`, `author`, `date` and the rest), it takes priority over the template's settings.
+* Use `true` or `false` for yes/no properties: since Pandoc 3.13, `yes`, `no`, `on` and `off` are read as text, so `toc: no` counts as on.
 * Values are read as Markdown, and `${...}` in them is filled in at export: `${today.long}` in the “Date” field gives today's date, for example.
 * Authors and keywords are added one at a time: type a value first, then press Enter to add it to the list.
 
