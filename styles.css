@@ -73,107 +73,300 @@
 }
 
 /*
- * Pandoc dashboard.
+ * Pandoc dashboard, drawn as Citation Suite draws its status card: a card to
+ * each thing it is read for, a gap apart — the two pandocs, then the pages to
+ * read — and under them a card to each notice. The wrapper has no look of its
+ * own.
  */
+.ex-dashboard {
+  /* How tall a notice stands at least: the height an icon button of
+     Obsidian's would give a row, in its padding. */
+  --ex-dashboard-row-height: calc(var(--size-4-2) * 2 + var(--icon-size) + var(--size-2-2) * 2);
 
-/*
- * Everything about pandoc in one card: a row to each thing it is read for, and a
- * pandoc to each half of a row — the installed one on the left, the wasm build
- * on the right, all the way down. `overflow` keeps a half's hover fill inside
- * the rounded corners.
- */
-.ex-pandoc-panel {
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--setting-items-radius);
-  background: var(--setting-items-background);
-  overflow: hidden;
-  margin-bottom: 24px;
-}
-
-.ex-pandoc-panel-row {
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
-}
-
-/* A row narrower than the things in it need side by side breaks onto a second
-   line rather than squeezing them: the basis is the width each wants, and what
-   is left over is shared out equally, so a line holding one is one full-width
-   half. */
-.ex-pandoc-panel-row.ex-pandoc-engines,
-.ex-pandoc-panel-row.ex-pandoc-links {
-  flex-wrap: wrap;
-  /* The lines down the row, drawn as the gaps between its halves over a
-     background of that colour. A border would have to be taken off again at the
-     start of every wrapped line, and no selector can pick those out. */
-  gap: 1px;
-  background-color: var(--background-modifier-border);
-}
-
-/* `min-width` so nothing inside — a long status, a dropdown as wide as its
-   longest option — can argue for more than the half it stands in. */
-.ex-pandoc-engines > * {
-  flex: 1 1 15rem;
-  min-width: 0;
-}
-
-/* The line across, between one row of the card and the next. */
-.ex-pandoc-panel-row + .ex-pandoc-panel-row {
-  border-top: 1px solid var(--background-modifier-border);
-}
-
-/* A button standing as a half is as tall as the row, whatever the half beside
-   it holds. */
-.ex-pandoc-panel-row .ex-action {
-  align-self: stretch;
-  height: auto;
-}
-
-/* The pages to read are the foot of the card rather than a half of it: they
-   answer nothing, so they take the height of their own label and no more. Both
-   of the row's classes are named, to outrank the `.ex-action.ex-action` below
-   that gives every other button in the card its height. */
-.ex-pandoc-panel-row.ex-pandoc-links .ex-action {
-  min-height: 0;
-  padding-block: var(--size-4-3);
-}
-
-/* Opaque, so the colour the row is divided by is only ever seen in the gaps. */
-.ex-pandoc-dashboard-half {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding: var(--size-4-4);
-  background-color: var(--setting-items-background, var(--background-primary));
+  margin-bottom: 24px;
+  container-type: inline-size;
 }
 
-/* The wasm half carries one thing no other does: what the build can be given
-   past itself. It stands at the end of the half, so the half is a row of two —
-   everything the other halves hold, and then that. */
-.ex-pandoc-dashboard-half.ex-wasm-half {
+/* Columns of equal width; a pane too narrow for them all takes fewer to a
+   line, down to one, and every card on the next line keeps the width of those
+   above it. A row with one pandoc in it is that one card across. */
+.ex-dashboard-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--size-4-3);
+}
+
+.ex-dashboard-row + .ex-dashboard-row {
+  margin-top: var(--size-4-3);
+}
+
+/* The pages to read wrap rather than keep to columns, so that one left on a
+   line of its own takes the whole of it. */
+.ex-dashboard-row.ex-dashboard-links {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.ex-dashboard-links > * {
+  /* Wide enough for "Список изменений" on one line beside its badge. */
+  flex: 1 1 13rem;
+}
+
+/* With the wasm build's card alone in the first row, it and the three pages
+   to read are one grid of two columns, so that it does not stand on a line of
+   its own. */
+.ex-dashboard-cards.is-wasm-only {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--size-4-3);
+}
+
+.ex-dashboard-cards.is-wasm-only > .ex-dashboard-row {
+  display: contents;
+}
+
+/* Too narrow for two of them side by side, the wasm build's card among them,
+   and the four are one column. */
+@container (width < 34rem) {
+  .ex-dashboard-cards.is-wasm-only {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Outlined as the settings cards below are: the same line, radius and fill.
+   The badge at the start, and beside it a title over a line, centred against
+   it. Cards on one line of the grid stand as tall as the tallest. */
+.ex-dashboard-card {
+  display: flex;
   flex-direction: row;
   align-items: center;
-  gap: var(--size-4-2);
+  gap: var(--size-4-3);
+  min-width: 0;
+  padding: var(--size-4-4);
+  background-color: var(--setting-items-background);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--setting-items-radius);
+  color: var(--text-normal);
+  line-height: var(--line-height-tight);
 }
 
-.ex-wasm-half-main {
+/* `button` elements, so every one of these properties is something the
+   theme's button rules would otherwise set — `.is-tablet
+   button:not(.clickable-icon)` among them, which sets the padding of every
+   button on a phone or a tablet at 0,2,1. Hence `.ex-dashboard` before two
+   classes, here and on every button of the dashboard. */
+.ex-dashboard .ex-dashboard-action.ex-dashboard-action {
+  justify-content: flex-start;
+  height: auto;
+  margin: 0;
+  padding: var(--size-4-4);
+  text-align: start;
+  white-space: normal;
+  background-color: var(--setting-items-background);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--setting-items-radius);
+  box-shadow: none;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: var(--line-height-tight);
+  cursor: var(--cursor);
+  transition:
+    background-color 100ms ease-in-out,
+    border-color 100ms ease-in-out;
+}
+
+.ex-dashboard .ex-dashboard-action.ex-dashboard-action:hover,
+.ex-dashboard .ex-dashboard-action.ex-dashboard-action:focus-visible {
+  border-color: var(--background-modifier-border-hover);
+  background-color: var(--background-modifier-hover);
+}
+
+.ex-dashboard .ex-dashboard-action.ex-dashboard-action:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
+}
+
+/* A rounded square tinted in the accent, with no outline, and the icon in the
+   accent at full strength. The tint deepens while a card is hovered or
+   focused. */
+.ex-dashboard-badge {
   display: flex;
-  flex-direction: column;
+  flex: none;
+  align-items: center;
   justify-content: center;
-  /* `min-width` so a long status asks for the width of the half rather than of
-     the button beside it. */
+  width: var(--size-4-9);
+  height: var(--size-4-9);
+  border-radius: var(--radius-m);
+  background-color: hsl(var(--interactive-accent-hsl), 0.1);
+  color: var(--text-accent);
+  transition:
+    background-color 100ms ease-in-out,
+    color 100ms ease-in-out;
+}
+
+.ex-dashboard-action:hover .ex-dashboard-badge,
+.ex-dashboard-action:focus-visible .ex-dashboard-badge {
+  background-color: hsl(var(--interactive-accent-hsl), 0.18);
+}
+
+.ex-dashboard-badge > div {
+  display: flex;
+}
+
+.ex-dashboard-badge .svg-icon {
+  width: var(--icon-m);
+  height: var(--icon-m);
+  stroke-width: var(--icon-m-stroke-width);
+}
+
+/* The logo fills less of its square than an icon does. */
+.ex-dashboard-badge .ex-pandoc-logo {
+  width: var(--size-4-5);
+  height: var(--size-4-5);
+}
+
+/* `min-width` so a long status asks for the width of the card rather than of
+   the cog beside it. */
+.ex-dashboard-text {
+  display: flex;
   flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--size-2-2);
   min-width: 0;
 }
 
-/* Read as a way in rather than as an action on the line: the size of the icons
-   in the row, in the colour of the text it stands beside. */
-.ex-wasm-extensions.ex-wasm-extensions {
+/* On one line: a card is never narrower than its title needs, and one that
+   somehow is cuts it short rather than breaking it. The user guide's title is
+   the one let onto a second line. */
+.ex-dashboard-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
+}
+
+.ex-dashboard-title.is-wrapping {
+  white-space: normal;
+}
+
+.ex-dashboard-description {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+/* What the wasm build is for, in the cog's place while it is not installed:
+   the cog's size, room and colours. Two classes, to outrank the padding and
+   fill of Obsidian's `clickable-icon`, which it carries on a phone. */
+.ex-dashboard-hint.ex-dashboard-hint {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  margin: calc(-1 * var(--size-4-2));
+  padding: var(--size-4-2);
+  background: none;
+  color: var(--text-muted);
+  transition: color 100ms ease-in-out;
+}
+
+.ex-dashboard-hint.ex-dashboard-hint:hover {
+  color: var(--text-accent);
+  background: transparent;
+}
+
+.ex-dashboard-hint .svg-icon {
+  display: block;
+}
+
+/* The state as words coloured by what they say, with no fill behind them.
+   What can be done about it follows, and drops below where a long enough
+   status leaves no room. */
+.ex-dashboard-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--size-4-2);
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-medium);
+  color: var(--text-muted);
+}
+
+.ex-dashboard-status.is-ok {
+  color: var(--text-success);
+}
+
+.ex-dashboard-status.is-outdated {
+  color: var(--text-warning);
+}
+
+.ex-dashboard-status.is-missing {
+  color: var(--text-error);
+}
+
+/* Nothing installed yet is not a fault, and does not read as one — neither the
+   wasm build that has not been asked for, nor the program someone using that
+   build exclusively never installed. The error colour is kept for a pandoc that
+   is there and will not run. */
+.ex-dashboard-status.is-absent {
+  color: var(--text-muted);
+}
+
+/* The buttons on the status line: no fill, no border, and the colour of the
+   line they belong to. */
+.ex-dashboard .ex-dashboard-inline.ex-dashboard-inline {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  /* One line of the status, exactly: `1lh` is the button's own line-height, and
+     a button is handed a font of its own — so both are taken from the line. */
+  font-size: inherit;
+  line-height: inherit;
+  height: 1lh;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  color: inherit;
+  cursor: var(--cursor);
+}
+
+/* The one the card is waiting on: nothing is installed until it is pressed. */
+.ex-dashboard .ex-dashboard-inline.is-cta.is-cta {
+  color: var(--text-accent);
+}
+
+.ex-dashboard .ex-dashboard-inline.ex-dashboard-inline:hover {
+  color: var(--text-accent);
+}
+
+.ex-dashboard .ex-dashboard-inline.ex-dashboard-inline:disabled {
+  color: var(--text-faint);
+  cursor: default;
+}
+
+/* Block, or the space a baseline leaves under an inline svg tips it off the
+   middle of the line. */
+.ex-dashboard-inline .svg-icon {
+  display: block;
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+}
+
+/* What the wasm build can be given past itself, at the end of its card: the
+   colour of the text beside it, and the accent under the pointer. Its padding
+   is given back, so the hover area does not make the card taller. */
+.ex-dashboard .ex-wasm-extensions.ex-wasm-extensions {
   flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin: 0;
+  margin: calc(-1 * var(--size-4-2));
   padding: var(--size-4-2);
   background: none;
   border: none;
@@ -182,13 +375,12 @@
   cursor: var(--cursor);
 }
 
-.ex-wasm-extensions.ex-wasm-extensions:hover {
+.ex-dashboard .ex-wasm-extensions.ex-wasm-extensions:hover {
   color: var(--text-accent);
   background: transparent;
 }
 
-/* Block, or the descender space under an inline svg lifts it off the middle.
-   The easing is a spring (stiffness 50, damping 10), sampled. */
+/* The easing is a spring (stiffness 50, damping 10), sampled. */
 .ex-wasm-extensions .svg-icon {
   display: block;
   transition: transform 1s
@@ -205,167 +397,130 @@
   }
 }
 
-/* The name of the pandoc this half is about, and — while there is one to ask —
-   the mark that says what it is. They share a line and wrap together, a half
-   this narrow having nowhere else to put the second of them. */
-.ex-pandoc-dashboard-version {
+/* A card to each notice, under the others, tinted the way Obsidian's callouts
+   are: the info callout's blue for what is merely so, the warning's orange for
+   what wants doing, the error's red for what is wrong. Each keeps its margin
+   rather than the wrapper a gap, so that a card opening or closing brings its
+   room in or takes it away with it. */
+.ex-callouts {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--size-4-1);
-  font-size: var(--font-ui-medium);
-  font-weight: var(--font-semibold);
-  color: var(--text-normal);
-  line-height: 1.2;
+  flex-direction: column;
 }
 
-/* Faint: it is there to be found by whoever is wondering, not to be read by
-   everyone who is not. */
-.ex-pandoc-dashboard-hint {
+.ex-callout {
   display: flex;
   align-items: center;
-  color: var(--text-faint);
-  transition: color 100ms ease-in-out;
-}
-
-.ex-pandoc-dashboard-hint:hover {
-  color: var(--text-muted);
-}
-
-.ex-pandoc-dashboard-hint .svg-icon {
-  width: var(--icon-s);
-  height: var(--icon-s);
-}
-
-/* A press needs something to land on, which a hover does not — so on a phone,
-   where the mark is pressed rather than pointed at, it is given the room.
-   `clickable-icon` is Obsidian's own, and is only on it where there is a press
-   to make. */
-.ex-pandoc-dashboard-hint.clickable-icon {
-  padding: var(--size-2-2);
-  margin: calc(-1 * var(--size-2-2));
-  margin-inline-start: 0;
-}
-
-/* Status line: the dot and its label share the state colour. What can be done
-   about the state follows the label, and drops below it where a long enough
-   status leaves no room. */
-.ex-pandoc-dashboard-status {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: var(--size-4-2);
-  font-size: var(--font-ui-smaller);
-  color: var(--text-muted);
-  margin-top: var(--size-2-2);
-}
-
-.ex-pandoc-dashboard-indicator {
-  flex: none;
-  width: 0.30rem;
-  height: 0.30rem;
-  border-radius: 50%;
-  background-color: currentColor;
-  /* Halo in the same colour as the dot, only much fainter. */
-  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 20%, transparent);
-  /* Centred on the first line rather than on the label, which a long enough
-     status wraps onto a second one. */
-  margin-top: calc((1lh - 0.30rem) / 2);
-}
-
-.ex-pandoc-dashboard-status.is-ok {
-  color: var(--text-success);
-}
-
-.ex-pandoc-dashboard-status.is-outdated {
-  color: var(--text-warning);
-}
-
-.ex-pandoc-dashboard-status.is-missing {
-  color: var(--text-error);
-}
-
-/* Nothing installed yet is not a fault, and does not read as one — neither the
-   wasm build that has not been asked for, nor the program someone using that
-   build exclusively never installed. The error colour is kept for a pandoc that
-   is there and will not run. */
-.ex-pandoc-dashboard-status.is-absent {
-  color: var(--text-muted);
-}
-
-.ex-pandoc-dashboard-status.is-checking .ex-pandoc-dashboard-indicator {
-  box-shadow: none;
-}
-
-/* A line too long to stand in a half of the card beside a version and a button.
-   It is a row of the card like any other, so the rule above it is the one the
-   rows are already divided by. */
-.ex-pandoc-panel-row.ex-pandoc-notice {
-  /* One run of text rather than two halves. */
-  display: block;
-  padding: var(--size-4-2) var(--size-4-4);
-  font-size: var(--font-ui-smaller);
+  gap: var(--size-4-3);
+  min-height: var(--ex-dashboard-row-height);
+  margin-top: var(--size-4-3);
+  padding: var(--size-4-3) var(--size-4-4);
+  border: 1px solid rgb(var(--ex-callout-rgb), 0.3);
+  border-radius: var(--setting-items-radius);
+  background-color: rgb(var(--ex-callout-rgb), 0.08);
+  overflow: hidden;
+  font-size: var(--font-ui-small);
   line-height: var(--line-height-tight);
   color: var(--text-muted);
 }
 
-/* The dot beside the version keeps the state; the notice repeats it only where
-   the state is something gone wrong or something to do. */
-.ex-pandoc-notice.is-warning {
-  color: var(--text-warning);
+.ex-callout.is-info {
+  --ex-callout-rgb: var(--color-blue-rgb);
 }
 
-.ex-pandoc-notice.is-error {
-  color: var(--text-error);
+.ex-callout.is-warning {
+  --ex-callout-rgb: var(--color-orange-rgb);
 }
 
-/* The buttons that stand in the status line rather than in a card of their own:
-   no fill, no border, and the colour of the line they belong to. */
-.ex-pandoc-dashboard-inline.ex-pandoc-dashboard-inline {
+.ex-callout.is-error {
+  --ex-callout-rgb: var(--color-red-rgb);
+}
+
+/* The sign in a round badge of the card's colour: the one place the colour is
+   at full strength. */
+.ex-callout-icon {
+  --icon-size: var(--icon-s);
+  --icon-stroke: var(--icon-s-stroke-width);
+
+  display: flex;
   flex: none;
-  display: inline-flex;
   align-items: center;
-  /* One line of the status, exactly: `1lh` is the button's own line-height, and
-     a button is handed a font of its own — so both are taken from the line the
-     button stands in. Left to the button's font, the box is taller than the
-     text beside it and the row's `flex-start` drops the icon below its middle. */
-  font-size: inherit;
-  line-height: inherit;
-  height: 1lh;
-  margin: 0;
-  padding: 0;
-  background: none;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-  color: inherit;
-  cursor: var(--cursor);
+  justify-content: center;
+  width: var(--size-4-8);
+  height: var(--size-4-8);
+  border-radius: 50%;
+  background-color: rgb(var(--ex-callout-rgb), 0.15);
+  color: rgb(var(--ex-callout-rgb));
 }
 
-/* The one the card is waiting on: nothing is installed until it is pressed, so
-   it takes the colour of something to press. */
-.ex-pandoc-dashboard-inline.is-cta.is-cta {
-  color: var(--text-accent);
+.ex-callout-icon > div {
+  display: flex;
 }
 
-.ex-pandoc-dashboard-inline.ex-pandoc-dashboard-inline:hover {
-  color: var(--text-accent);
+/* `overflow-wrap` for the reason a wasm build would not start, which can be
+   one long word of a path. */
+.ex-callout-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--size-2-1);
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
-.ex-pandoc-dashboard-inline.ex-pandoc-dashboard-inline:disabled {
-  color: var(--text-faint);
-  cursor: default;
+/* In the text's own colour: coloured words on a tint of the same colour would
+   be the hardest thing on the card to read. */
+.ex-callout-title {
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
 }
 
-/* Laid out rather than typeset: an inline svg sits on a baseline, and the space
-   the baseline leaves under it is what tips the icon off the middle of the line
-   even inside a box the right height. */
-.ex-pandoc-dashboard-inline .svg-icon {
-  display: block;
-  width: var(--icon-xs);
-  height: var(--icon-xs);
+/* A notice opens out of nothing and collapses back into it, bringing its
+   margin, padding and border with it, so the settings below make room or
+   close up rather than jump. Its height is measured as it opens or closes. */
+.ex-callout.is-opening {
+  animation: ex-callout-open var(--anim-duration-moderate) var(--anim-motion-swing);
 }
 
+.ex-callout.is-closing {
+  animation: ex-callout-close var(--anim-duration-moderate) var(--anim-motion-swing) forwards;
+}
+
+@keyframes ex-callout-open {
+  from {
+    height: 0;
+    min-height: 0;
+    margin-top: 0;
+    padding-block: 0;
+    border-width: 0;
+    opacity: 0;
+  }
+
+  to {
+    height: var(--ex-callout-height);
+  }
+}
+
+@keyframes ex-callout-close {
+  from {
+    height: var(--ex-callout-height);
+  }
+
+  to {
+    height: 0;
+    min-height: 0;
+    margin-top: 0;
+    padding-block: 0;
+    border-width: 0;
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ex-callout.is-opening,
+  .ex-callout.is-closing {
+    animation: none;
+  }
+}
 
 /* On a phone the export folder is one of the vault's, typed into a field that
    suggests them — which wants the width the folder button would have taken. */
@@ -473,14 +628,10 @@
   height: var(--icon-s);
 }
 
-/* The changelog while this release's is unread: in the accent, and its icon is
-   Animate UI's `icons-sparkles`, its Motion animation ported as Citation Suite
-   has it and looped, the star held still: the dot winks out and back and the
-   plus does the same 0.15 s later. */
-.ex-action.ex-action.is-unread {
-  color: var(--text-accent);
-}
-
+/* The changelog's icon while this release's is unread: Animate UI's
+   `icons-sparkles`, its Motion animation ported as Citation Suite has it and
+   looped, the star held still: the dot winks out and back and the plus does
+   the same 0.15 s later. */
 .ex-sparkles > path,
 .ex-sparkles > circle {
   transform-box: fill-box;

@@ -6,6 +6,8 @@ import { isNewerRelease, type PandocWasmManager, type WasmRelease } from '../../
 import { pandocWasmSupport } from '../../wasm/support';
 import Button from '../components/Button';
 import Icon from '../components/Icon';
+import PandocLogo from '../components/PandocLogo';
+import { CardBadge } from './DashboardCard';
 import type { PanelNotice } from './PandocNotices';
 
 const megabytes = (bytes: number) => Math.round(bytes / 1024 / 1024);
@@ -23,7 +25,7 @@ export default (props: {
   version?: string;
   /** The version now on disk, or nothing where it has just been removed. */
   onInstalled: (version?: string) => void;
-  /** What this half has to say at length, which the card says under both of them. */
+  /** What this card has to say at length, which the dashboard says under both cards. */
   onNotices: (notices: PanelNotice[]) => void;
   /** Open what the build can be given past itself — typst, and the fonts a document is set in. */
   onExtensions: () => void;
@@ -64,21 +66,27 @@ export default (props: {
     if (!installed()) {
       return 'absent';
     }
+    if (latest.loading) {
+      return 'checking';
+    }
     return updatable() ? 'outdated' : 'ok';
   });
 
-  /** The short of it, beside the dot. Why a device will not run it, and what syncing it costs, go below the halves. */
+  /** The short of it, under the title. Why a device will not run it goes below the cards. */
   const statusText = createMemo(() => {
     if (busy()) {
       return busy();
     }
-    // One word for both the guess and the binary's own refusal — a dot with nothing beside it is a state nobody can
-    // read. Which of the two it was, and why, is the line under the halves.
+    // One word for both the guess and the binary's own refusal. Which of the two it was, and why, is the notice under
+    // the cards.
     if (failed() || supported()?.ok === false) {
       return t.WASM_UNSUPPORTED;
     }
     if (!installed()) {
       return t.WASM_ABSENT;
+    }
+    if (latest.loading) {
+      return t.PANDOC_CHECKING;
     }
     if (updatable()) {
       return t.PANDOC_UPDATE_AVAILABLE(latest().version);
@@ -87,14 +95,14 @@ export default (props: {
     return latest() ? t.PANDOC_UP_TO_DATE : t.PANDOC_UPDATE_CHECK_FAILED;
   });
 
-  /** Only what is wrong: a card with nothing the matter with it carries no line under its halves. */
+  /** Only what is wrong: nothing the matter is no notice at all. */
   const notices = createMemo<PanelNotice[]>(() => {
     // What the binary said when it would not start beats what the probe guessed before it was ever downloaded.
     if (failed()) {
-      return [{ text: t.WASM_LOAD_FAILED(failed()), tone: 'error' }];
+      return [{ key: 'wasm-load-failed', kind: 'error', title: t.WASM_LOAD_FAILED_TITLE, text: t.WASM_LOAD_FAILED_HINT(failed()) }];
     }
     if (supported()?.ok === false) {
-      return [{ text: t.WASM_UNAVAILABLE, tone: 'error' }];
+      return [{ key: 'wasm-unavailable', kind: 'warning', title: t.WASM_UNAVAILABLE_TITLE, text: t.WASM_UNAVAILABLE }];
     }
     return [];
   });
@@ -144,30 +152,15 @@ export default (props: {
   );
 
   return (
-    <div class="ex-pandoc-dashboard-half ex-wasm-half">
-      <div class="ex-wasm-half-main">
-        <div class="ex-pandoc-dashboard-version">
-          {installed() ? t.WASM_VERSION(props.version) : t.WASM_TITLE}
+    <div class="ex-dashboard-card">
+      <CardBadge>
+        <PandocLogo />
+      </CardBadge>
+      <div class="ex-dashboard-text">
+        <div class="ex-dashboard-title">{installed() ? t.WASM_VERSION(props.version) : t.WASM_TITLE}</div>
 
-          {/* Only while there is nothing installed: what the build is for is a question the answer to it settles.
-            Read by hovering, and on a phone — where there is no hovering — by pressing. */}
-          <Show when={!installed()}>
-            <Icon
-              class="ex-pandoc-dashboard-hint"
-              name="circle-question-mark"
-              tooltip={hint}
-              onClick={isMobileUi() ? () => new Notice(hint) : undefined}
-            />
-          </Show>
-        </div>
-
-        <div class="ex-pandoc-dashboard-status" classList={{ [`is-${status()}`]: true }}>
-          <span class="ex-pandoc-dashboard-indicator" />
-          {/* The dot keeps the state even where the words for it are too long to stand here. */}
-          <Show when={statusText()}>
-            <span>{statusText()}</span>
-          </Show>
-
+        <div class="ex-dashboard-status" classList={{ [`is-${status()}`]: true }}>
+          <span>{statusText()}</span>
           {/* What to do about what the line says, beside it. Nothing here yet is the one worth a word of its own;
             a newer build and the copy already installed are what the line has just named.
 
@@ -175,7 +168,7 @@ export default (props: {
             someone installing. The binary itself answers on this same line, once it has been asked. */}
           <Show when={latest() && (!installed() || failed())}>
             <Button
-              class="ex-pandoc-dashboard-inline is-cta"
+              class="ex-dashboard-inline is-cta"
               tooltip={`${installed() ? t.WASM_UPDATE : t.WASM_INSTALL}. ${t.WASM_SIZE}`}
               disabled={!!busy()}
               onClick={() => void install(latest())}
@@ -184,17 +177,29 @@ export default (props: {
             </Button>
           </Show>
           <Show when={updatable() && !failed()}>
-            <Button class="ex-pandoc-dashboard-inline" tooltip={t.WASM_UPDATE} disabled={!!busy()} onClick={() => void install(latest())}>
+            <Button class="ex-dashboard-inline" tooltip={t.WASM_UPDATE} disabled={!!busy()} onClick={() => void install(latest())}>
               <Icon name="download" />
             </Button>
           </Show>
         </div>
       </div>
 
-      {/* At the end of the half rather than in the line of statuses: what the build can be given past itself is about
-          the build, not about how it is doing. Only once there is one — typst and its fonts are of no use beside a
-          pandoc that is not here. */}
-      <Show when={installed()}>
+      {/* At the end of the card rather than on the status line: what the build can be given past itself is about the
+          build, not about how it is doing. Only once there is one — typst and its fonts are of no use beside a pandoc
+          that is not here. */}
+      {/* In its place while there is nothing installed: what the build is for is a question the answer to it settles.
+          Read by hovering, and on a phone — where there is no hovering — by pressing. */}
+      <Show
+        when={installed()}
+        fallback={
+          <Icon
+            class="ex-dashboard-hint"
+            name="circle-question-mark"
+            tooltip={hint}
+            onClick={isMobileUi() ? () => new Notice(hint) : undefined}
+          />
+        }
+      >
         <Button class="ex-wasm-extensions" tooltip={t.EXT_TITLE} disabled={!!busy()} onClick={props.onExtensions}>
           <Icon name="cog" />
         </Button>

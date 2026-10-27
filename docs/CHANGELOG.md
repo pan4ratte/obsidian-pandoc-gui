@@ -5,6 +5,7 @@
 
 ### Enhancements and bug fixes
 
+* The settings dashboard is redesigned: Pandoc, Pandoc WASM, the manual, the changelog and the user guide each have a card of their own, with notices in cards under them.
 * The bundled reference documents are updated to Pandoc 3.13.
 * The user guide now warns that since Pandoc 3.13, `yes` and `no` in a note's properties are read as text.
 

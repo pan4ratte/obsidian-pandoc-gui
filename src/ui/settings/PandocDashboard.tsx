@@ -4,10 +4,12 @@ import { t } from '../../lang/helpers';
 import pandoc, { type PandocRelease } from '../../pandoc/pandoc';
 import Button from '../components/Button';
 import Icon from '../components/Icon';
+import PandocLogo from '../components/PandocLogo';
+import { CardBadge } from './DashboardCard';
 import type { PanelNotice } from './PandocNotices';
 import { openExternal } from '../../system/platform';
 
-/** Green / yellow / grey dot next to the version. */
+/** Green / yellow / grey status line under the version. */
 type Status = 'ok' | 'outdated' | 'checking' | 'absent';
 
 /** A lookup that could not be made is the same as "no newer release known". */
@@ -21,7 +23,8 @@ const fetchLatestRelease = async (): Promise<PandocRelease | undefined> => {
 
 /** Installed Pandoc at a glance: which version is there, and whether it is the newest release. */
 export default (props: {
-  version?: SemVer;
+  /** Nothing while the binary has not answered yet, `null` once it has answered that there is no pandoc. */
+  version?: SemVer | null;
   /** Whether the vault writes Markdown links rather than wikilinks. */
   markdownLinks?: boolean;
   /** What this half has to say at length, which the card says under both of them. */
@@ -38,22 +41,22 @@ export default (props: {
   const status = createMemo<Status>(() => {
     // Not a fault, and not read as one: exporting with the wasm build alone is an answer someone can have chosen,
     // and the installed program is then simply not there to report on.
-    if (!props.version) {
+    if (props.version === null) {
       return 'absent';
     }
-    if (latest.loading) {
+    if (!props.version || latest.loading) {
       return 'checking';
     }
     return updateAvailable() ? 'outdated' : 'ok';
   });
 
-  const versionText = createMemo(() => (props.version ? t.PANDOC_VERSION(props.version.version) : t.PANDOC_NOT_INSTALLED));
+  const title = createMemo(() => (props.version ? t.PANDOC_VERSION(props.version.version) : t.PANDOC_TITLE));
 
-  /** The short of it, beside the dot. What is longer than a line goes below the card's halves instead. */
+  /** The short of it, under the version. What is longer than a line goes below the cards instead. */
   const statusText = createMemo(() => {
     switch (status()) {
       case 'absent':
-        return undefined;
+        return t.PANDOC_NOT_INSTALLED;
       case 'checking':
         return t.PANDOC_CHECKING;
       case 'outdated':
@@ -64,48 +67,48 @@ export default (props: {
   });
 
   // Pandoc below the required version cannot resolve this vault's link style.
-  const warning = createMemo(() =>
-    props.version && props.markdownLinks && props.version.compare(pandoc.requiredVersion) === -1
-      ? t.PANDOC_UPGRADE_REQUIRED(pandoc.requiredVersion)
-      : undefined
+  const upgradeRequired = createMemo(
+    () => !!props.version && !!props.markdownLinks && props.version.compare(pandoc.requiredVersion) === -1
   );
 
   const notices = createMemo<PanelNotice[]>(() => {
     const said: PanelNotice[] = [];
     if (status() === 'absent') {
-      said.push({ text: t.PANDOC_NOT_FOUND, tone: 'muted' });
+      said.push({ key: 'pandoc-not-found', kind: 'info', title: t.PANDOC_NOT_FOUND_TITLE, text: t.PANDOC_NOT_FOUND });
     }
-    if (warning()) {
-      said.push({ text: warning(), tone: 'warning' });
+    if (upgradeRequired()) {
+      said.push({
+        key: 'pandoc-upgrade-required',
+        kind: 'warning',
+        title: t.PANDOC_UPGRADE_REQUIRED_TITLE(pandoc.requiredVersion),
+        text: t.PANDOC_UPGRADE_REQUIRED(props.version.version),
+      });
     }
     return said;
   });
 
   createEffect(() => props.onNotices(notices()));
-  // A half that is no longer shown has nothing left to say — the wasm build is the one running.
+  // A card that is no longer shown has nothing left to say — the wasm build is the one running.
   onCleanup(() => props.onNotices([]));
 
   return (
-    <div class="ex-pandoc-dashboard-half">
-      <div class="ex-pandoc-dashboard-version">{versionText()}</div>
+    <div class="ex-dashboard-card">
+      <CardBadge>
+        <PandocLogo />
+      </CardBadge>
+      <div class="ex-dashboard-text">
+        <div class="ex-dashboard-title">{title()}</div>
+        <div class="ex-dashboard-status" classList={{ [`is-${status()}`]: true }}>
+          <span>{statusText()}</span>
 
-      {/* Nothing to say and nothing to press is no line at all: the version above has already said it. */}
-      <Show when={statusText() || updateAvailable()}>
-        <div class="ex-pandoc-dashboard-status" classList={{ [`is-${status()}`]: true }}>
-          <span class="ex-pandoc-dashboard-indicator" />
-          <Show when={statusText()}>
-            <span>{statusText()}</span>
-          </Show>
-
-          {/* Beside the line that says there is one: it is only ever there when that line is, and it is what to do
-              about what the line just said. */}
+          {/* What to do about what the line just said, beside it. */}
           <Show when={updateAvailable()}>
-            <Button class="ex-pandoc-dashboard-inline" tooltip={t.PANDOC_UPDATE} onClick={() => openExternal(latest().url)}>
+            <Button class="ex-dashboard-inline" tooltip={t.PANDOC_UPDATE} onClick={() => openExternal(latest().url)}>
               <Icon name="download" />
             </Button>
           </Show>
         </div>
-      </Show>
+      </div>
     </div>
   );
 };

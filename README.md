@@ -395,6 +395,7 @@ Thanks are also owed to:
 - **[John MacFarlane](https://johnmacfarlane.net/) and the other Pandoc contributors** for the best document converter in the world.
 - **The [pandoc-ext](https://github.com/pandoc-ext) organisation** and the retired **[pandoc/lua-filters](https://github.com/pandoc/lua-filters)** collection.
 - **[Better BibTeX](https://retorque.re/zotero-better-bibtex/)** for the Zotero filter the catalogue also offers.
+- **[Albert Krewinkel](https://github.com/tarleb)** for the [Pandoc logo](https://github.com/tarleb/pandoc-logo) on the dashboard. The logo is licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) and is recoloured to the accent colour in the plugin. It is not an official Pandoc logo.
 
 ---
 

@@ -395,6 +395,7 @@ Typst — программа вёрстки, которая работает в 
 - [Джону Макфарлейну](https://johnmacfarlane.net/) и другим разработчикам Pandoc за лучший конвертер документов в мире.
 - Организации [pandoc-ext](https://github.com/pandoc-ext) и завершённой коллекции [pandoc/lua-filters](https://github.com/pandoc/lua-filters).
 - [Better BibTeX](https://retorque.re/zotero-better-bibtex/) за фильтр для Zotero, который также содержится в каталоге.
+- [Альберту Кревинкелю](https://github.com/tarleb) за [логотип Pandoc](https://github.com/tarleb/pandoc-logo) на панели управления. Логотип распространяется по лицензии [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), в плагине он перекрашен в цвет акцента. Это не официальный логотип Pandoc.
 
 ---
 

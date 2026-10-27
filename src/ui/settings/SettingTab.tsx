@@ -286,7 +286,8 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
   // The app the plugin was handed, not the one on `window` — see the plugin guidelines.
   const { app } = plugin;
   const [settings, setSettings0] = createStore(plugin.settings);
-  const [pandocVersion, setPandocVersion] = createSignal<SemVer>();
+  // Nothing while the binary has not answered yet, `null` once it has answered that there is no pandoc.
+  const [pandocVersion, setPandocVersion] = createSignal<SemVer | null>();
   // Read far more often than written, so the rows stay out of the way until asked for.
   const [editingEnvVars, setEditingEnvVars] = createSignal(false);
   // The pickers answer for the folders a variable lists, which is all three of the defaults are. The text is the way
@@ -1709,14 +1710,14 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
     }
     try {
       const env = createEnv(getPlatformValue(settings.env) ?? {});
-      setPandocVersion(await pandoc.getCachedVersion(getPlatformValue(settings.pandocPath), env));
+      setPandocVersion((await pandoc.getCachedVersion(getPlatformValue(settings.pandocPath), env)) ?? null);
     } catch {
-      setPandocVersion(undefined);
+      setPandocVersion(null);
     }
   });
 
-  // What the two halves say at length, kept by the card rather than by either of them: the installed pandoc's
-  // notices come first, as its half does.
+  // What the two cards say at length, kept by the dashboard rather than by either of them: the installed pandoc's
+  // notices come first, as its card does.
   const [nativeNotices, setNativeNotices] = createSignal<PanelNotice[]>([]);
   const [wasmNotices, setWasmNotices] = createSignal<PanelNotice[]>([]);
   const panelNotices = createMemo(() => [...nativeNotices(), ...wasmNotices()]);
@@ -1728,32 +1729,35 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
 
   return (
     <>
-      {/* One card: a pandoc to each half of it, and a row to each thing it is read for. */}
-      <div class="ex-pandoc-panel">
-        <div class="ex-pandoc-panel-row ex-pandoc-engines">
-          {/* The installed program has nothing to say where it is not the one running. */}
-          <Show when={engine() === 'native'}>
-            <PandocDashboard version={pandocVersion()} markdownLinks={app.vault.config.useMarkdownLinks} onNotices={setNativeNotices} />
-          </Show>
+      {/* A card to each pandoc, then the pages to read, then what neither pandoc's card has the room to say. */}
+      <div class="ex-dashboard">
+        {/* With the wasm build alone, its card and the three pages to read make a square of four. */}
+        <div class="ex-dashboard-cards" classList={{ 'is-wasm-only': engine() !== 'native' }}>
+          <div class="ex-dashboard-row">
+            {/* The installed program has nothing to say where it is not the one running. */}
+            <Show when={engine() === 'native'}>
+              <PandocDashboard version={pandocVersion()} markdownLinks={app.vault.config.useMarkdownLinks} onNotices={setNativeNotices} />
+            </Show>
 
-          <WasmPanel
+            <WasmPanel
+              app={app}
+              manager={plugin.wasm}
+              version={settings.wasmVersion}
+              onInstalled={version => setSettings('wasmVersion', version)}
+              onNotices={setWasmNotices}
+              onExtensions={() => setModal(() => WasmExtensionsModal)}
+            />
+          </div>
+
+          <PandocLinks
             app={app}
-            manager={plugin.wasm}
-            version={settings.wasmVersion}
-            onInstalled={version => setSettings('wasmVersion', version)}
-            onNotices={setWasmNotices}
-            onExtensions={() => setModal(() => WasmExtensionsModal)}
+            version={plugin.manifest.version}
+            changelogRead={settings.dismissedChangelogVersion === plugin.manifest.version}
+            onChangelog={() => plugin.openChangelog()}
           />
         </div>
 
-        {/* Between the two pandocs and the pages to read: what neither half has the width to say. */}
         <PandocNotices notices={panelNotices()} />
-
-        <PandocLinks
-          app={app}
-          changelogRead={settings.dismissedChangelogVersion === plugin.manifest.version}
-          onChangelog={() => plugin.openChangelog()}
-        />
       </div>
 
       <Setting name={t.SECTION_DEFAULTS} heading={true} />
@@ -1766,7 +1770,10 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
               search of the plugin's own — so the row claims it was found only once the binary has actually answered. */}
           <Setting
             name={t.PANDOC_PATH}
-            description={getPlatformValue(settings.pandocPath) || (pandocVersion() ? t.PANDOC_PATH_PLACEHOLDER : t.PANDOC_PATH_NOT_FOUND)}
+            description={
+              getPlatformValue(settings.pandocPath) ||
+              (pandocVersion() ? t.PANDOC_PATH_PLACEHOLDER : pandocVersion() === null ? t.PANDOC_PATH_NOT_FOUND : '')
+            }
           >
             <ExtraButton icon="folder" tooltip={t.CHOOSE_FILE} onClick={() => void choosePandocPath()} />
             {/* The dialog cannot pick "nothing", so clearing needs its own control. */}
