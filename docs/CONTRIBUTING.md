@@ -226,8 +226,8 @@ a literal outside that folder.
 ## Reporting a bug
 
 The [bug report form](https://github.com/pan4ratte/obsidian-pandoc-gui/issues/new?template=bug_report.yml)
-asks for all of the following, and the error window's *Copy report* button
-gives most of it at once. Include the plugin version, your platform, the Pandoc version shown in the
+asks for all of the following, and the error window's copy button gives most
+of it at once through *Copy bug report*. Include the plugin version, your platform, the Pandoc version shown in the
 settings, the template you exported with, the *Resulting command* copied from
 the foot of the template editor, and what the error box said. An export that
 fails only for one note is worth attaching that note to, reduced to the part

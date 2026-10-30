@@ -163,7 +163,7 @@ The “Export note” command opens the export dialog, where the template, file 
 
 The “Export with previous settings” command exports the note with the last export's settings (template, folder, table of contents depth and joined Word documents), without opening the export dialog. The folder is remembered for each device separately.
 
-When an export fails, the error window gives a hint and a “Copy report” button — paste the report into your bug report.
+When an export fails, the error window gives a hint and a copy button. It copies either the error text alone or a report to paste into your bug report.
 
 ### 6.2. Import
 

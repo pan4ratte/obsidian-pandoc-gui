@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to report a bug. If an export or import failed with an error window, its **Copy report** button (the copy icon next to the output) gives almost everything needed to track the bug down.
+        Thanks for taking the time to report a bug. If an export or import failed with an error window, its copy button (the icon next to the output) has a **Copy bug report** option that gives almost everything needed to track the bug down.
 
   - type: checkboxes
     attributes:
@@ -49,7 +49,7 @@ body:
     id: report
     attributes:
       label: Report from the error window
-      description: Paste what **Copy report** gives you, as it is. Leave empty if there was no error window.
+      description: Paste what **Copy bug report** gives you, as it is. Leave empty if there was no error window.
       placeholder: |
         ### Pandoc warnings
 

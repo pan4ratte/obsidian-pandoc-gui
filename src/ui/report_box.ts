@@ -1,4 +1,4 @@
-import { setIcon, setTooltip } from 'obsidian';
+import { Menu, setIcon, setTooltip } from 'obsidian';
 import type PandocGuiPlugin from '../main';
 import { t } from '../lang/helpers';
 import { copyText, environmentLines, formatReport } from '../system/diagnostics';
@@ -34,7 +34,7 @@ export interface RunReport {
  * The same box for both outcomes, because the reader wants the same things of it either way.
  */
 export const reportRun = (plugin: PandocGuiPlugin, report: RunReport): void => {
-  const copy = async () => {
+  const copyReport = async () => {
     const text = formatReport(
       report.title,
       [...report.facts.map(({ label, value, title }) => ({ label, value: title ?? value })), ...(await environmentLines(plugin))],
@@ -44,6 +44,24 @@ export const reportRun = (plugin: PandocGuiPlugin, report: RunReport): void => {
       ]
     );
     await copyText(text, t.REPORT_COPIED);
+  };
+  // Opens leftwards from the button, which sits in the output's right corner.
+  const chooseCopy = (button: HTMLElement) => {
+    const { right, bottom } = button.getBoundingClientRect();
+    new Menu()
+      .addItem(item =>
+        item
+          .setTitle(report.tone === 'error' ? t.REPORT_COPY_ERROR : t.REPORT_COPY_WARNINGS)
+          .setIcon('copy')
+          .onClick(() => void copyText(report.output ?? '', t.OUTPUT_COPIED))
+      )
+      .addItem(item =>
+        item
+          .setTitle(t.REPORT_COPY_REPORT)
+          .setIcon('bug')
+          .onClick(() => void copyReport())
+      )
+      .showAtPosition({ x: right, y: bottom, left: true }, button.doc);
   };
   const box = new MessageBox(plugin.app, {
     title: report.title,
@@ -66,7 +84,7 @@ export const reportRun = (plugin: PandocGuiPlugin, report: RunReport): void => {
           el.createDiv({ cls: ['clickable-icon', 'ex-export-error-copy'] }, button => {
             setIcon(button, 'copy');
             setTooltip(button, t.REPORT_COPY);
-            button.onclick = () => void copy();
+            button.onclick = () => chooseCopy(button);
           });
         });
       }

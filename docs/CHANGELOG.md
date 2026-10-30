@@ -6,6 +6,7 @@
 ### Enhancements and bug fixes
 
 * A path typed into the “Custom location” field in settings is now saved.
+* The copy button in the error window now offers to copy either the error text alone or a bug report.
 
 
 ## 3.1.1
