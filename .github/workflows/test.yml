@@ -31,7 +31,7 @@ jobs:
       # what is being tested. Bump it when developing against a newer pandoc.
       - name: Install Pandoc
         env:
-          PANDOC_VERSION: 3.10.2
+          PANDOC_VERSION: 3.13
         run: |
           wget --tries=5 --waitretry=10 --retry-connrefused --retry-on-http-error=429,500,502,503,504 \
             "https://github.com/jgm/pandoc/releases/download/$PANDOC_VERSION/pandoc-$PANDOC_VERSION-1-amd64.deb"
