@@ -102,6 +102,7 @@ export default {
     pandocNotFound: 'Pandoc could not be run. Install it, or set the Pandoc path in this plugin’s settings.',
     latexUnicode: 'pdfLaTeX cannot write these characters. Switch the template’s PDF engine to XeLaTeX or LuaLaTeX under Advanced.',
     latexPackage: 'A LaTeX package is missing. Install it with your TeX distribution’s package manager, then export again.',
+    zoteroNotRunning: 'Zotero is not running, or the Better BibTeX plugin is not installed in it. Start Zotero and export again.',
     luaFilter: 'A Lua filter failed. Check what it requires, or remove it from the template’s Lua filters.',
     missingDataFile: 'A file the template points at could not be read. Check the paths under Advanced — layout template, reference document, stylesheet.',
     missingResource: 'An image or attachment the note links to could not be found. Check that the file is still in the vault.',

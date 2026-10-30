@@ -6,6 +6,7 @@
 ### Enhancements and bug fixes
 
 * A path typed into the “Custom location” field in settings is now saved.
+* When Zotero is not running, the error window for an export with the Zotero filter now says so.
 * The copy button in the error window now offers to copy either the error text alone or a bug report.
 
 

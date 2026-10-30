@@ -38,6 +38,8 @@ const RECOMMENDATIONS: ReadonlyArray<readonly [RegExp, keyof Hints]> = [
   // pdfLaTeX's 8-bit fonts meet a character the note is written with.
   [/unicode character[^\n]{0,60}not set up for use with latex|inputenc error/i, 'latexUnicode'],
   [/file `?[^\n`']{1,80}\.(sty|cls)'? not found|latex error: file/i, 'latexPackage'],
+  // The Zotero filter asks Better BibTeX on its local port, and nothing answers there.
+  [/:23119\b[\s\S]*?(connectionfailure|connection refused|econnrefused)/i, 'zoteroNotRunning'],
   [/error running filter|\.lua:\d+:|attempt to (call|index)[^\n]{0,40}\(a nil value\)/i, 'luaFilter'],
   // A path the template names — layout template, reference document, syntax file.
   [/could not find data file|could not find template|could not read file/i, 'missingDataFile'],

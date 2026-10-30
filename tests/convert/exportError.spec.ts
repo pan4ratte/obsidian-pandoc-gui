@@ -95,6 +95,13 @@ describe('what to try', () => {
     expect(describe_(execError('Error running filter /plugin/lua/wordcount.lua:\nattempt to index a nil value')).recommendation).toBe(
       hint.luaFilter
     );
+    expect(
+      describe_(
+        execError(
+          "Error running filter 'lua/zotero.lua':\nCould not fetch http://127.0.0.1:23119/better-bibtex/json-rpc?%7B%7D\n (ConnectionFailure Network.Socket.connect: <socket: 792>: failed (Connection refused (WSAECONNREFUSED)))"
+        )
+      ).recommendation
+    ).toBe(hint.zoteroNotRunning);
     expect(describe_(execError('Unknown option --shift-heading-level.')).recommendation).toBe(hint.unknownOption);
     expect(describe_(execError('pandoc: Could not find data file reference.docx')).recommendation).toBe(hint.missingDataFile);
     expect(describe_(execError("Could not fetch resource 'diagram.png'")).recommendation).toBe(hint.missingResource);
