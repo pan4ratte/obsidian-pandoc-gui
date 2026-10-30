@@ -416,6 +416,7 @@ describe.skipIf(!pandocInstalled)('internal links', () => {
 
   test('stay as written in Markdown', async () => {
     const markdown = await convert('commonmark_x');
-    expect(markdown).toContain('(<Story/Chapter One>){.wikilink}');
+    // Older pandoc writes the target without the angle brackets.
+    expect(markdown).toMatch(/\(<?Story\/Chapter One>?\)\{\.wikilink\}/);
   }, 60_000);
 });
