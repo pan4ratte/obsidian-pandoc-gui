@@ -1826,7 +1826,12 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
               when={isMobileUi()}
               fallback={
                 <>
-                  <Text style="width: 100%" value={customDefaultExportDirectory() ?? ''} tooltip={customDefaultExportDirectory()} />
+                  <Text
+                    style="width: 100%"
+                    value={customDefaultExportDirectory() ?? ''}
+                    tooltip={customDefaultExportDirectory()}
+                    onChange={path => setSettings('customDefaultExportDirectory', v => setPlatformValue(v, path.trim()))}
+                  />
                   <ExtraButton icon="folder" onClick={() => void chooseCustomDefaultExportDirectory()} />
                 </>
               }

@@ -1,6 +1,13 @@
 # Changelog
 
 
+## 3.1.2
+
+### Enhancements and bug fixes
+
+* A path typed into the “Custom location” field in settings is now saved.
+
+
 ## 3.1.1
 
 ### Enhancements and bug fixes
