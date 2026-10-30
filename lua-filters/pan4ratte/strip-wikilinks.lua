@@ -31,6 +31,10 @@ local function is_internal(target)
 end
 
 local function strips(inline)
+  -- `embeds.lua` leaves a link to a note outside the export as a Span of its text.
+  if inline.t == 'Span' then
+    return inline.classes:includes('wikilink')
+  end
   return inline.t == 'Link' and (is_wikilink(inline) or is_internal(inline.target))
 end
 

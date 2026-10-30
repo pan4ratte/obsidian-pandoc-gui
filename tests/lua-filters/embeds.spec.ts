@@ -351,3 +351,71 @@ describe.skipIf(!pandocInstalled)('identifiers an embedded note brings with it',
     expect(hrefs(await html())).toEqual(['basis', 'basis-1-1', 'basis-1', 'basis-1-2', 'basis-2']);
   }, 60_000);
 });
+
+/*
+ * Internal links: outside the vault no file can follow one, so it jumps to where its note is written into the
+ * document, or is left as its text: https://github.com/pan4ratte/obsidian-pandoc-gui/issues/11
+ */
+describe.skipIf(!pandocInstalled)('internal links', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'pandoc-gui-links-'));
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+
+  const host = join(dir, 'host.md');
+  const chapter = join(dir, 'Chapter One.md');
+  writeFileSync(
+    host,
+    [
+      '# Book',
+      '',
+      'See [[Story/Chapter One|the chapter]], [[Chapter One#Part B]], [[#Book|top]], [[Missing]] and [[Chapter One#^block]].',
+      '',
+      '![[Story/Chapter One]]',
+      '',
+      '| a |',
+      '|---|',
+      '| [[Story/Chapter One\\|in a table]] |',
+      '',
+    ].join('\n')
+  );
+  writeFileSync(chapter, 'Intro with [[#Part B]] and [[host#Book]].\n\n## Part A\n\n## Part B\n');
+
+  const convert = async (to: string, embedding = true): Promise<string> => {
+    const env: Record<string, string> = {
+      OBSIDIAN_LINKS: mapOf({ '': host, 'Story/Chapter One': chapter, 'Chapter One': chapter, host }),
+    };
+    if (embedding) {
+      env.OBSIDIAN_EMBEDS = mapOf({ 'Story/Chapter One': chapter });
+    }
+    const { stdout } = await run(`pandoc -L "${filter}" -t ${to} --wrap=none -f markdown+wikilinks_title_after_pipe "${host}" -o -`, {
+      env: { ...process.env, ...env },
+    });
+    return stdout;
+  };
+
+  const hrefs = (out: string): string[] => [...out.matchAll(/href="#([^"]+)"/g)].map(match => match[1]);
+
+  test('jump to the note, the heading, or the block’s note, wherever the note is written in', async () => {
+    const html = await convert('html');
+    expect({
+      hrefs: hrefs(html),
+      anchor: html.includes('<span id="chapter-one"></span>Intro'),
+      missing: html.includes('<span class="wikilink">Missing</span>'),
+      heading: html.includes('>Chapter One &gt; Part B</a>'),
+    }).toEqual({
+      hrefs: ['chapter-one', 'part-b', 'book', 'chapter-one', 'part-b', 'book', 'chapter-one'],
+      anchor: true,
+      missing: true,
+      heading: true,
+    });
+  }, 60_000);
+
+  test('are left as their text where the note is not in the document, and leave no anchor behind', async () => {
+    const html = await convert('html', false);
+    expect({ hrefs: hrefs(html), anchor: html.includes('id="chapter-one"') }).toEqual({ hrefs: ['book'], anchor: false });
+  }, 60_000);
+
+  test('stay as written in Markdown', async () => {
+    const markdown = await convert('commonmark_x');
+    expect(markdown).toContain('(<Story/Chapter One>){.wikilink}');
+  }, 60_000);
+});

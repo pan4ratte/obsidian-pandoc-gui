@@ -101,11 +101,14 @@ describe.skipIf(!pandocInstalled)('embeds.lua, given the rendered queries', () =
       env: { ...process.env, OBSIDIAN_EMBEDS: `embedded\t${escapeForEnv(embedded)}`, OBSIDIAN_DATAVIEW: lines.join('\n') },
     });
 
+    // Both links name notes outside the export, so each is left as its text.
+    const asText = (text: string) =>
+      new RegExp(String.raw`Span\s*\(\s*""\s*,\s*\[\s*"wikilink"\s*\]\s*,\s*\[\s*\]\s*\)\s*\[\s*Str "${text}"`).test(stdout);
     expect({
       table: (stdout.match(/\bTable\b/g) ?? []).length,
-      jsLink: stdout.includes('"Notes/a"'),
+      jsLink: asText('A'),
       inline: stdout.includes('"HostName"'),
-      embeddedLink: stdout.includes('"Notes/b"'),
+      embeddedLink: asText('B'),
       // The identical `js` block is not a query.
       plainCodeKept: /CodeBlock\s*\(\s*""\s*,\s*\[\s*"js"/.test(stdout),
       queriesLeft: stdout.includes('"dataview'),

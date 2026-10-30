@@ -71,6 +71,14 @@
   links follow. Nothing the host itself wrote is renamed.
 
   ---------------------------------------------------------------------------
+  Links
+
+  Everywhere but Markdown, an internal link jumps to where its note or heading
+  is written into the document, and is left as its text where it is not. The
+  plugin resolves them as OBSIDIAN_LINKS (`.obsidian-links`), laid out as the
+  embeds are, with the note being exported on a line with an empty link.
+
+  ---------------------------------------------------------------------------
   Why the blocks are rewritten by hand rather than by `walk`
 
   Both of the obvious ways to write this are wrong. Bottom-up, the `Plain` a
@@ -556,6 +564,224 @@ local leave_out = {
   end,
 }
 
+--- Markdown keeps links as wikilinks, which `markdown.lua` writes back.
+local REWRITES_LINKS = not KEEPS_UNEXPORTED
+
+--- link -> absolute path, for the internal links of every note the export reaches; '' is the note being exported.
+local linked = mapped('OBSIDIAN_LINKS', '.obsidian-links')
+local HOST = linked['']
+
+--- Every note written into the document, by path: its anchor, and its headings by what a link calls them.
+local written = {}
+local host = { headings = {} }
+
+--- Anchors put in for links to land on, and the ones a link did land on.
+local markers, reached = {}, {}
+
+local lower = pandoc.text and pandoc.text.lower or string.lower
+
+local function is_wikilink(link)
+  return link.title == 'wikilink' or link.classes:includes('wikilink')
+end
+
+--- A heading as a link names it: Obsidian writes the characters a link cannot hold as spaces.
+local function heading_key(text)
+  text = text:gsub('[#|%^:%%%[%]]', ' '):gsub('%s+', ' ')
+  return lower((text:gsub('^ ', ''):gsub(' $', '')))
+end
+
+local function headings_of(blocks)
+  local out = {}
+  pandoc.walk_block(pandoc.Div(blocks), {
+    Header = function(header)
+      local key = heading_key(pandoc.utils.stringify(header.content))
+      if header.identifier ~= '' and not out[key] then
+        out[key] = header.identifier
+      end
+    end,
+  })
+  return out
+end
+
+--- The file a link names, as written, and the decoded heading or block after its `#`.
+local function parts(link)
+  -- A table escapes the `|` of `[[target|title]]`, and pandoc keeps the backslash on the target.
+  local target = link.target:gsub('\\$', '')
+  local path, fragment = target:match('^(.-)#(.*)$')
+  if not path then
+    return target, nil
+  end
+  return path, decode(fragment)
+end
+
+--- What the link reads as: the alias, or Obsidian's `Note > Heading` where none was written.
+local function shown(link, path, fragment)
+  if not fragment or not is_wikilink(link) or pandoc.utils.stringify(link.content) ~= link.target:gsub('\\$', '') then
+    return link.content
+  end
+  local names = path ~= '' and { path } or {}
+  for name in fragment:gmatch('[^#]+') do
+    names[#names + 1] = name
+  end
+  return pandoc.Inlines(table.concat(names, ' > '))
+end
+
+--- No file outside the vault can follow the link, so its text is all that stays.
+local function as_text(link, path, fragment)
+  return pandoc.Span(shown(link, path, fragment), pandoc.Attr('', { 'wikilink' }))
+end
+
+local function as_jump(link, path, fragment, id)
+  reached[id] = true
+  return pandoc.Link(shown(link, path, fragment), '#' .. id)
+end
+
+--- The heading a fragment names, or nil for a block, which only Obsidian's index can find.
+local function heading_named(headings, fragment)
+  local last = fragment and fragment:match('([^#]*)$')
+  if not last or last:sub(1, 1) == '^' then
+    return nil
+  end
+  return headings[heading_key(last)]
+end
+
+--- A note's links to its own headings, pointed at them.
+local function own_links(blocks, headings)
+  return pandoc.walk_block(pandoc.Div(blocks), {
+    Link = function(link)
+      if link.target:sub(1, 1) ~= '#' then
+        return nil
+      end
+      local path, fragment = parts(link)
+      local id = heading_named(headings, fragment)
+      if id then
+        return as_jump(link, path, fragment, id)
+      end
+      return is_wikilink(link) and as_text(link, path, fragment) or nil
+    end,
+  }).content
+end
+
+local function slug(path)
+  local name = path:match('([^/\\]+)$'):gsub('%.md$', '')
+  local ok, doc = pcall(pandoc.read, '# ' .. name, 'markdown')
+  local id = ok and doc.blocks[1] and doc.blocks[1].identifier or ''
+  return id ~= '' and id or 'note'
+end
+
+--- `list` with an empty Span carrying `id` at the start of its first text, or nil where it starts with none.
+local function marked_text(list, id)
+  local block = list[1]
+  if not block then
+    return nil
+  end
+  if block.t == 'Para' or block.t == 'Plain' or block.t == 'Header' then
+    local content = block.content
+    table.insert(content, 1, pandoc.Span({}, pandoc.Attr(id)))
+    block.content = content
+  elseif block.t == 'Div' or block.t == 'BlockQuote' then
+    local inner = marked_text(block.content, id)
+    if not inner then
+      return nil
+    end
+    block.content = inner
+  elseif (block.t == 'BulletList' or block.t == 'OrderedList') and block.content[1] then
+    local items = block.content
+    local item = marked_text(items[1], id)
+    if not item then
+      return nil
+    end
+    items[1] = item
+    block.content = items
+  else
+    return nil
+  end
+  list[1] = block
+  return list
+end
+
+--- Where a note starts, for links to it to land on: its first heading, or an anchor put in there. A Span rather
+--- than a Div wherever there is text to hold one, as the ODT writer drops a Div's identifier.
+local function marked(blocks, path)
+  local first = blocks[1]
+  if first and first.t == 'Header' and first.identifier ~= '' then
+    return blocks, first.identifier
+  end
+  local id = free(slug(path))
+  used[id] = true
+  markers[id] = true
+  local with_span = marked_text(blocks, id)
+  if with_span then
+    return with_span, id
+  end
+  table.insert(blocks, 1, pandoc.Div({}, pandoc.Attr(id)))
+  return blocks, id
+end
+
+--- A link to a `.md` file, which is how a vault writing markdown links spells an internal one.
+local function names_a_note(target)
+  if names_a_scheme(target) or target:match('^//') then
+    return false
+  end
+  return target:match('^[^#]*'):lower():match('%.md$') ~= nil
+end
+
+--- The written note a path ends in, for links the plugin did not resolve: what Dataview renders.
+local function by_name(path)
+  local wanted = '/' .. decode(path):gsub('\\', '/'):lower()
+  for file in pairs(written) do
+    local name = file:gsub('\\', '/'):lower()
+    if name:sub(-#wanted) == wanted or name:sub(-#wanted - 3) == wanted .. '.md' then
+      return file
+    end
+  end
+  return nil
+end
+
+--- Every link to another note pointed at where it is written in, or left as text where it is not.
+local function relinked(blocks)
+  return pandoc.walk_block(pandoc.Div(blocks), {
+    Link = function(link)
+      local wiki = is_wikilink(link)
+      if not wiki and not names_a_note(link.target) then
+        return nil
+      end
+      local path, fragment = parts(link)
+      local file = path ~= '' and (lookup(linked, path) or resolve(path) or by_name(path))
+      local note = file and (file == HOST and host or written[file])
+      local id = note and (heading_named(note.headings, fragment) or note.anchor)
+      if not id then
+        return as_text(link, path, fragment)
+      end
+      return as_jump(link, path, fragment, id)
+    end,
+  }).content
+end
+
+local function unreached(element)
+  if markers[element.identifier] and not reached[element.identifier] and #element.content == 0 then
+    return {}
+  end
+end
+
+--- The note's own links to its headings, before anything is written in.
+local function own_document(doc)
+  claim(doc.blocks)
+  host.headings = headings_of(doc.blocks)
+  doc.blocks = own_links(doc.blocks, host.headings)
+end
+
+local linking = {
+  Pandoc = function(doc)
+    if HOST then
+      doc.blocks, host.anchor = marked(doc.blocks, HOST)
+    end
+    local blocks = relinked(doc.blocks)
+    doc.blocks = pandoc.walk_block(pandoc.Div(blocks), { Span = unreached, Div = unreached }).content
+    return doc
+  end,
+}
+
 local restore
 local expand
 
@@ -594,6 +820,11 @@ local function blocks_of(target, seen, depth, anchor)
     end
   end
   blocks = renamed(blocks)
+  local headings
+  if REWRITES_LINKS then
+    headings = headings_of(blocks)
+    blocks = own_links(blocks, headings)
+  end
 
   -- `seen` is copied rather than added to: two notes may each embed the same
   -- third note without either of them being a loop.
@@ -603,7 +834,14 @@ local function blocks_of(target, seen, depth, anchor)
   end
   -- Written in at the levels the note itself uses, and moved as one afterwards:
   -- an embed inside it anchors to that note's headings, not to the host's.
-  return fitted(expand(blocks, within, depth + 1, 0), anchor)
+  local out = fitted(expand(blocks, within, depth + 1, 0), anchor)
+  -- Links to a note written in twice land on the first.
+  if REWRITES_LINKS and not written[file] then
+    local id
+    out, id = marked(out, file)
+    written[file] = { headings = headings, anchor = id }
+  end
+  return out
 end
 
 --- Every list of blocks a block holds, rewritten in place.
@@ -721,6 +959,15 @@ if next(targets) == nil then
   if restoring then
     filters[#filters + 1] = restore
   end
+  if REWRITES_LINKS then
+    filters[#filters + 1] = {
+      Pandoc = function(doc)
+        own_document(doc)
+        return doc
+      end,
+    }
+    filters[#filters + 1] = linking
+  end
   return filters
 end
 
@@ -732,9 +979,14 @@ return {
     Pandoc = function(doc)
       local shift = doc.meta['embed-shift-headings']
       SHIFT_HEADINGS = shift ~= nil and (shift == true or pandoc.utils.stringify(shift) == 'true')
-      claim(doc.blocks)
+      if REWRITES_LINKS then
+        own_document(doc)
+      else
+        claim(doc.blocks)
+      end
       doc.blocks = expand(doc.blocks, {}, 1, 0)
       return doc
     end,
   },
+  REWRITES_LINKS and linking or {},
 }

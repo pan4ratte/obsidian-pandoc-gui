@@ -500,7 +500,7 @@
       "author": "Mark Ingrem (pan4ratte)",
       "license": "MIT",
       "category": "prose",
-      "updated": "2026-08-11",
+      "updated": "2026-10-30",
       "fileName": "strip-wikilinks.lua",
       "path": "pan4ratte/strip-wikilinks.lua",
       "homepage": "https://github.com/pan4ratte/obsidian-pandoc-gui/blob/main/lua-filters/pan4ratte/strip-wikilinks.lua",

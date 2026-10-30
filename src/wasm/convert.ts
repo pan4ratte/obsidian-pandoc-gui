@@ -36,12 +36,15 @@ export interface WasmConversion {
   drawings?: Iterable<readonly [string, string]>;
   /** The rendered Dataview queries. Passed as the embeds are; the note being exported is named by the empty string. */
   queries?: readonly QueryAnswer[];
+  /** The internal links, as the file path written against the file it means. Passed as the embeds are. */
+  links?: Iterable<readonly [string, string]>;
 }
 
 /** Where `embeds.lua` looks for its lists when there is no environment to read them from. */
 const EMBED_LIST = '.obsidian-embeds';
 const DRAWING_LIST = '.obsidian-drawings';
 const QUERY_LIST = '.obsidian-dataview';
+const LINK_LIST = '.obsidian-links';
 
 export interface WasmConversionResult {
   /** Everything pandoc wrote, by the path on the machine it belongs at. */
@@ -121,6 +124,11 @@ export async function convertWithWasm(pandoc: PandocWasm, store: FileStore, requ
   const drawings = [...(request.drawings ?? [])];
   if (drawings.length > 0) {
     files[DRAWING_LIST] = drawings.map(([link, image]) => `${link}\t${file(image)}\n`).join('');
+  }
+
+  const links = [...(request.links ?? [])];
+  if (links.length > 0) {
+    files[LINK_LIST] = links.map(([link, note]) => `${link}\t${file(note)}\n`).join('');
   }
 
   const queries = request.queries ?? [];

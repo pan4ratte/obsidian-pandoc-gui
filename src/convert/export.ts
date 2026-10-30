@@ -215,7 +215,22 @@ export async function exportNote(
   // Every embedded note by the path the embed map names it by, which is how `embeds.lua` knows whose query is whose.
   const embeddedNotes = new Map<string, TFile>();
   const walkedForEmbeds = new Set<string>([currentFile.path]);
+  // Every internal link those notes write, resolved: only Obsidian knows where a shortest-path link goes.
+  const noteLinks = new Map<string, string>([['', fullPath(adapter, currentFile.path)]]);
+  const collectLinks = (file: TFile) => {
+    for (const link of metadataCache.getCache(file.path)?.links ?? []) {
+      const path = getLinkpath(link.link);
+      if (path === '' || noteLinks.has(path)) {
+        continue;
+      }
+      const target = metadataCache.getFirstLinkpathDest(path, file.path);
+      if (target instanceof TFile) {
+        noteLinks.set(path, fullPath(adapter, target.path));
+      }
+    }
+  };
   const collectNoteEmbeds = (file: TFile, depth: number) => {
+    collectLinks(file);
     if (depth > 8) {
       return;
     }
@@ -439,8 +454,8 @@ export async function exportNote(
       }
     }
 
-    // Query results go in through `embeds.lua`. A template without it gets it for this run and the note's own queries
-    // alone, handed no embeds or drawings, so those stay the links the template leaves them as.
+    // Query results and internal links go in through `embeds.lua`. A template without it gets it for this run, handed
+    // no embeds or drawings, so those stay the links the template leaves them as.
     const embedding = usesEmbedsFilter(cmd);
     let answersOnly = false;
     if (embedding || setting.type === 'pandoc') {
@@ -449,7 +464,8 @@ export async function exportNote(
         notes.push(...embeddedNotes);
       }
       ({ answers: queryAnswers, problems: queryProblems } = await answerQueries(plugin.app, files, `${scratchDir}/dataview`, notes));
-      if (!embedding && queryAnswers.length > 0) {
+      const pointsLinks = !keepsUnexported(outputFormat(cmd)) && (metadataCache.getCache(currentFile.path)?.links ?? []).length > 0;
+      if (!embedding && (queryAnswers.length > 0 || pointsLinks)) {
         cmd = withEmbedsFilter(cmd, variables.luaDir);
         answersOnly = true;
       }
@@ -465,6 +481,7 @@ export async function exportNote(
         ['OBSIDIAN_EMBEDS', answersOnly ? [] : [...noteEmbeds]],
         ['OBSIDIAN_DRAWINGS', answersOnly ? [] : [...drawnDrawings]],
         ['OBSIDIAN_DATAVIEW', queryAnswers.map(({ note, key, format, path }) => [note, key, format, path])],
+        ['OBSIDIAN_LINKS', [...noteLinks]],
       ];
       for (const [name, rows] of lists) {
         if (rows.length > 0) {
@@ -493,6 +510,7 @@ export async function exportNote(
         embeds: answersOnly ? [] : noteEmbeds,
         drawings: answersOnly ? [] : drawnDrawings,
         queries: queryAnswers,
+        links: noteLinks,
         typst,
         download,
       });

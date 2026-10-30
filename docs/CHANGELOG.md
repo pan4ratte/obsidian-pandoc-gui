@@ -5,7 +5,8 @@
 
 ### Enhancements and bug fixes
 
-* The table of contents depth and joined Word documents are now remembered: the “Export with previous settings” command uses them, and the export dialog opens with them.
+* The table of contents depth and joined Word documents are now remembered when using the “Export with previous settings” command. The export dialog also opens with the last used export settings.
+* Internal links in PDF, Word and every other format but Markdown now lead to the embedded note or heading inside the document.
 
 
 ## 3.1.0

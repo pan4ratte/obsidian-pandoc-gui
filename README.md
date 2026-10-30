@@ -239,6 +239,8 @@ With “Write in embedded notes” on, `![[note]]` is replaced with the note's t
 
 Obsidian Bases and Canvases are not exported: in every format but Markdown their embeds are left out, and the warnings window names them.
 
+In every format but Markdown, internal links lead to a place in the document: `[[note]]` to the embedded note's text, `[[note#heading]]` and `[[#heading]]` to the heading. A link to a note that is not in the document stays as text.
+
 ### 3.2. Other options
 
 * “Insert today’s date instead of $today on export” — every `$today` in the note and its properties becomes today's date in the chosen format.
