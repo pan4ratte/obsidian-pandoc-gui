@@ -157,9 +157,9 @@ An installed filter is added to each template separately, in the editor's “Lua
 
 ### 6.1. Export dialog
 
-The “Export note” command opens the export dialog, where the template, file name and folder are chosen. For formats with a table of contents, its depth can be changed here, and for Word the joined documents: both changes apply to that export alone.
+The “Export note” command opens the export dialog, where the template, file name and folder are chosen. For formats with a table of contents, its depth can be changed here, and for Word the joined documents: both changes leave the template itself as it is, and are remembered for the next export with that template.
 
-The “Export with previous settings” command exports the note with the last template into the last folder, without opening the export dialog. The folder is remembered for each device separately.
+The “Export with previous settings” command exports the note with the last export's settings (template, folder, table of contents depth and joined Word documents), without opening the export dialog. The folder is remembered for each device separately.
 
 When an export fails, the error window gives a hint and a “Copy report” button — paste the report into your bug report.
 

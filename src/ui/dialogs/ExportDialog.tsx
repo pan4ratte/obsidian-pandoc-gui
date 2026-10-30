@@ -3,12 +3,12 @@ import { createSignal, createRoot, onCleanup, createMemo, untrack, Show, For } f
 import { insert } from 'solid-js/web';
 import type PandocGuiPlugin from '../../main';
 import { t } from '../../lang/helpers';
-import { extractDefaultExtension as extractExtension } from '../../settings';
+import { extractDefaultExtension as extractExtension, applyExportChoices, type ExportChoices } from '../../settings';
 import { setPlatformValue, getPlatformValue } from '../../system/utils';
 import { exportNote } from '../../convert/export';
 import { droppedBy, resolveEngine, unsupportedBy } from '../../pandoc/engine';
 import { outputFormat, supportsToc } from '../../pandoc/pandoc_format';
-import { TOC_MAX_DEPTH, TOC_NONE, setTocDepth, tocDepth } from '../../args/toc_args';
+import { TOC_MAX_DEPTH, TOC_NONE, tocDepth } from '../../args/toc_args';
 import { chooseFile, documentsFolder, fullPath, isMobile, isMobileUi, vaultRoot } from '../../system/platform';
 import { shownDocuments } from '../../convert/joined_docs';
 import FolderInput from '../components/FolderInput';
@@ -43,6 +43,8 @@ const Dialog = (props: { plugin: PandocGuiPlugin; currentFile: TFile; onClose?: 
     available.find(o => o.name === globalSetting.lastExportType)?.name ?? available.first()?.name
   );
   const setting = createMemo(() => available.find(o => o.name === exportType()) ?? available.first());
+  /** The last export's choices, for the template they were made for. */
+  const remembered = exportType() === globalSetting.lastExportType ? globalSetting.lastExportChoices : undefined;
   const extension = createMemo(() => (setting() ? extractExtension(setting()) : ''));
 
   // What this template asks for that the engine will not do. It is not a reason to stop — the file is written, just
@@ -60,30 +62,20 @@ const Dialog = (props: { plugin: PandocGuiPlugin; currentFile: TFile; onClose?: 
     return chosen && outputFormat(chosen.arguments, chosen.customArguments, chosen.userArguments);
   });
   /** The depth this export asks for, where it asks for one of its own; the template's own until then. */
-  const [tocOverride, setTocOverride] = createSignal<number>();
+  const [tocOverride, setTocOverride] = createSignal<number | undefined>(remembered?.toc);
   const toc = () => tocOverride() ?? tocDepth(pandocSetting()?.customArguments);
   /** None, then one heading level at a time, as the template editor's own row offers them. */
   const tocLabels = [t.TOC_NONE, ...Array.from({ length: TOC_MAX_DEPTH }, (_, i) => String(i + 1))];
 
   /** The documents joined to a Word export: shown as the note or template names them until the list is changed here. */
-  const [joinChosen, setJoinChosen] = createSignal<{ before?: string[]; after?: string[] }>({});
+  const [joinChosen, setJoinChosen] = createSignal<{ before?: string[]; after?: string[] }>(remembered?.join ?? {});
   const joinShown = createMemo(() => shownDocuments(pandocSetting() ?? {}, app.metadataCache.getFileCache(currentFile)?.frontmatter));
   const joinValue = (side: 'before' | 'after') => joinChosen()[side] ?? joinShown()[side];
   const chooseJoin = (side: 'before' | 'after', value: string[]) => setJoinChosen(chosen => ({ ...chosen, [side]: value }));
 
+  const choices = (): ExportChoices => ({ toc: tocOverride(), join: joinChosen() });
   /** What the export runs: the template, carrying what this dialog asks for where that is not its own. */
-  const exportSetting = () => {
-    const chosen = pandocSetting();
-    if (!chosen) {
-      return setting();
-    }
-    const depth = tocOverride();
-    return {
-      ...chosen,
-      customArguments: depth === undefined ? chosen.customArguments : setTocDepth(chosen.customArguments, depth),
-      joinChosen: joinChosen(),
-    };
-  };
+  const exportSetting = () => applyExportChoices(setting(), choices());
 
   // Where the file goes, as a path on the device. A phone has nowhere outside the vault to write to, so there it is
   // always one of the vault's own folders — held as a vault path, and turned into a real one at export.
@@ -125,6 +117,7 @@ const Dialog = (props: { plugin: PandocGuiPlugin; currentFile: TFile; onClose?: 
       globalSetting.lastExportDirectory = setPlatformValue(globalSetting.lastExportDirectory, untrack(candidateOutputDirectory));
 
       globalSetting.lastExportType = untrack(setting).name;
+      globalSetting.lastExportChoices = untrack(choices);
       await plugin.saveSettings();
       props.onClose?.();
     };
@@ -202,8 +195,8 @@ const Dialog = (props: { plugin: PandocGuiPlugin; currentFile: TFile; onClose?: 
           </div>
         </Show>
 
-        {/* The template editor's own row, for the writers that would do something with it: it says what the template
-            asks for, and answering it here changes this export alone. */}
+        {/* The template editor's own row, for the writers that would do something with it. Answering it here leaves
+            the template as it is. */}
         <Show when={supportsToc(format())}>
           <Setting name={t.TOC} description={t.TOC_DESC} class="ex-export-modal-toc">
             <StepSlider labels={tocLabels} min={TOC_NONE} value={toc()} onChange={depth => setTocOverride(depth)} />

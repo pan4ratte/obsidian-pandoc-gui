@@ -1,6 +1,13 @@
 # Changelog
 
 
+## 3.1.1
+
+### Enhancements and bug fixes
+
+* The table of contents depth and joined Word documents are now remembered: the “Export with previous settings” command uses them, and the export dialog opens with them.
+
+
 ## 3.1.0
 
 ### Enhancements and bug fixes

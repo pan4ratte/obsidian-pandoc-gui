@@ -6,6 +6,7 @@ import type { TodayFormat } from './filters/filter_args';
 import type { EngineMode } from './pandoc/engine';
 import type { StyleMode } from './docx/styles';
 import type { DocumentMetadata } from './convert/document_metadata';
+import { setTocDepth } from './args/toc_args';
 
 // What a template's `${...}` are filled in with. For `/User/aaa/Documents/test.pdf`:
 // `outputDir` is the folder, `outputPath` the whole path, `outputFileName` is `test`,
@@ -82,6 +83,8 @@ export interface PandocGuiSettings {
 
   lastExportDirectory?: PlatformValue<string>;
   lastExportType?: string;
+  /** What the last export picked in the dialog over the template's own. */
+  lastExportChoices?: ExportChoices;
 
   /** What the last import was written as, and the vault folder it was written into. */
   lastImportFlavour?: string;
@@ -150,6 +153,25 @@ export interface CustomExportSetting extends CommonExportSetting {
 }
 
 export type ExportSetting = PandocExportSetting | CustomExportSetting;
+
+/** The export dialog's answers that override the template for one export. */
+export interface ExportChoices {
+  /** Table of contents depth; unset keeps the template's. */
+  toc?: number;
+  join?: PandocExportSetting['joinChosen'];
+}
+
+/** `setting` with the dialog's choices applied. A custom template has nothing to apply them to. */
+export function applyExportChoices(setting: ExportSetting, choices?: ExportChoices): ExportSetting {
+  if (setting.type !== 'pandoc' || !choices) {
+    return setting;
+  }
+  return {
+    ...setting,
+    customArguments: choices.toc === undefined ? setting.customArguments : setTocDepth(setting.customArguments, choices.toc),
+    joinChosen: choices.join,
+  };
+}
 
 export const PRESET_OPTIONS_META: PropertyGridMeta = {
   'textemplate': {

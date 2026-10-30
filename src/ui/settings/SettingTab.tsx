@@ -363,6 +363,7 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
     }
     if (settings.lastExportType === name) {
       setSettings('lastExportType', undefined);
+      setSettings('lastExportChoices', undefined);
     }
   };
 

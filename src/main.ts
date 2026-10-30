@@ -1,5 +1,5 @@
 import { App, Menu, Plugin, PluginManifest, TFile, Notice, debounce } from 'obsidian';
-import { PandocGuiSettings, ExportSetting, DEFAULT_SETTINGS, DEFAULT_ENV, restoreTemplates } from './settings';
+import { PandocGuiSettings, ExportSetting, DEFAULT_SETTINGS, DEFAULT_ENV, restoreTemplates, applyExportChoices } from './settings';
 import { ExportSettingTab, ExportDialog, ImportDialog, UserGuideModal, ChangelogModal } from './ui';
 import { exportNote } from './convert/export';
 import { getPlatformValue, setPlatformValue, PlatformKey, clone } from './system/utils';
@@ -58,7 +58,7 @@ export default class PandocGuiPlugin extends Plugin {
           if (this.settings.lastExportType && directory) {
             const setting = this.settings.items.find(s => s.name === this.settings.lastExportType);
             if (setting) {
-              await exportNote(this, file, directory, undefined, setting);
+              await exportNote(this, file, directory, undefined, applyExportChoices(setting, this.settings.lastExportChoices));
               return;
             }
           }
@@ -158,6 +158,7 @@ export default class PandocGuiPlugin extends Plugin {
     // The last-exported template is remembered by name; drop a name nothing answers to.
     if (settings.lastExportType && settings.items.every(o => o.name !== settings.lastExportType)) {
       delete settings.lastExportType;
+      delete settings.lastExportChoices;
     }
     // Folders a phone saved before its full paths went through `mobilePath`, which no longer match the vault root.
     let migrated = false;
