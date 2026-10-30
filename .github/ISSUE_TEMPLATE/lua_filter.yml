@@ -1,0 +1,44 @@
+name: Lua filter for the store
+description: Suggest a lua filter to add to the plugin's store.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Filters in the store are kept in this repository rather than downloaded from where they were published, so only filters whose licence allows redistribution can be added. To add one yourself, see [Adding a lua filter to the catalogue](https://github.com/pan4ratte/obsidian-pandoc-gui/blob/main/docs/CONTRIBUTING.md#adding-a-lua-filter-to-the-catalogue).
+
+  - type: input
+    id: url
+    attributes:
+      label: Link to the filter
+    validations:
+      required: true
+
+  - type: input
+    id: author
+    attributes:
+      label: Author
+    validations:
+      required: true
+
+  - type: input
+    id: licence
+    attributes:
+      label: Licence
+      placeholder: MIT
+    validations:
+      required: true
+
+  - type: textarea
+    id: purpose
+    attributes:
+      label: What it does
+      description: What the filter changes in an export, and the formats it is useful for.
+    validations:
+      required: true
+
+  - type: checkboxes
+    attributes:
+      label: Tested
+      options:
+        - label: I have exported a note with this filter through Pandoc GUI.

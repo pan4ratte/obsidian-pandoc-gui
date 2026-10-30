@@ -1,0 +1,101 @@
+name: Bug report
+description: An export, an import or a part of the plugin that does not work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. If an export or import failed with an error window, its **Copy report** button (the copy icon next to the output) gives almost everything needed to track the bug down.
+
+  - type: checkboxes
+    attributes:
+      label: Before reporting
+      options:
+        - label: I am on the latest version of Pandoc GUI.
+          required: true
+        - label: I have searched the existing issues and checked the [user guide](https://github.com/pan4ratte/obsidian-pandoc-gui/blob/main/docs/USER_GUIDE.md).
+          required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Export
+        - Import
+        - Template editor
+        - Lua filter store
+        - Pandoc or Pandoc WASM installation and updates
+        - Settings
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead. Screenshots help.
+      placeholder: |
+        1. Export a note with embedded notes using the "Word (.docx)" template.
+        2. ...
+
+        Expected: ...
+        Instead: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: report
+    attributes:
+      label: Report from the error window
+      description: Paste what **Copy report** gives you, as it is. Leave empty if there was no error window.
+      placeholder: |
+        ### Pandoc warnings
+
+        * **Template:** ...
+        * **Pandoc GUI:** ...
+
+  - type: markdown
+    attributes:
+      value: |
+        The fields below are already in the report. Fill them in only if you have no report to paste.
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - iOS / iPadOS
+        - Android
+
+  - type: dropdown
+    id: engine
+    attributes:
+      label: Pandoc
+      options:
+        - Installed Pandoc
+        - Pandoc WASM
+
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Pandoc GUI, Obsidian and Pandoc. The Pandoc version is shown in the plugin settings.
+      placeholder: Pandoc GUI 3.1.1, Obsidian 1.14.5, Pandoc 3.13
+
+  - type: textarea
+    id: command
+    attributes:
+      label: Resulting command
+      description: For a failed export, the template you used and the command copied from **Resulting command** at the bottom of the template editor.
+      render: shell
+
+  - type: textarea
+    id: sample
+    attributes:
+      label: Sample note
+      description: If the bug shows up only with a particular note, attach it or paste it here, cut down to the part that still fails.

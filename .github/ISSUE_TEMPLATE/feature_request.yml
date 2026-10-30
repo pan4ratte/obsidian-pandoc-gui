@@ -1,0 +1,47 @@
+name: Feature request
+description: Something the plugin could do, or do better.
+labels: [enhancement]
+body:
+  - type: checkboxes
+    attributes:
+      label: Before requesting
+      options:
+        - label: I have searched the existing issues and checked the [user guide](https://github.com/pan4ratte/obsidian-pandoc-gui/blob/main/docs/USER_GUIDE.md).
+          required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Export
+        - Import
+        - Template editor
+        - Lua filter store
+        - Mobile and Pandoc WASM
+        - Settings
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What you are trying to do
+      description: The task or the problem, rather than the solution.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you suggest
+      description: How the plugin could help. If it is a Pandoc option the interface does not offer yet, name it and link to it in the [Pandoc manual](https://pandoc.org/MANUAL.html).
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: What you do now
+      description: Any workaround you use, such as "Extra commands" in a template or a lua filter of your own.

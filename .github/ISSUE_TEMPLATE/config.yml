@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or help with setup
+    url: https://github.com/pan4ratte/obsidian-pandoc-gui/discussions
+    about: Ask how to set up a template, an export or the plugin itself.
+  - name: User guide
+    url: https://github.com/pan4ratte/obsidian-pandoc-gui/blob/main/docs/USER_GUIDE.md
+    about: Templates, variables, Word documents, lua filters and Pandoc WASM.
+  - name: Bug in Pandoc itself
+    url: https://github.com/jgm/pandoc/issues
+    about: If the same command fails in a terminal too, the bug is in Pandoc rather than the plugin.
