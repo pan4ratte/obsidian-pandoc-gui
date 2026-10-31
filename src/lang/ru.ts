@@ -84,7 +84,7 @@ export default {
   REPORT_COPY: 'Скопировать',
   REPORT_COPY_ERROR: 'Скопировать ошибку',
   REPORT_COPY_WARNINGS: 'Скопировать предупреждения',
-  REPORT_COPY_REPORT: 'Скопировать отчёт об ошибке',
+  REPORT_COPY_REPORT: 'Скопировать отчёт о баге',
   OUTPUT_COPIED: 'Скопировано.',
   REPORT_COPIED: 'Отчёт скопирован — вставьте его в сообщение об ошибке.',
   REPORT_COMMAND: 'Команда',
