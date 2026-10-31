@@ -27,7 +27,7 @@ import {
 import DocumentList from '../components/DocumentList';
 import Group from '../components/Group';
 import PillInput from '../components/PillInput';
-import { chooseFile, documentsFolder, isMobileUi, showInFolder, vaultRoot } from '../../system/platform';
+import { chooseFile, isMobileUi, showInFolder, vaultRoot } from '../../system/platform';
 import { FileStore } from '../../system/file_store';
 import PandocDashboard from './PandocDashboard';
 import PandocLinks from './PandocLinks';
@@ -1684,7 +1684,7 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
   };
 
   const chooseCustomDefaultExportDirectory = async () => {
-    const chosen = await chooseFile({ folder: true, defaultPath: customDefaultExportDirectory() ?? (await documentsFolder()) });
+    const chosen = await chooseFile({ folder: true, defaultPath: customDefaultExportDirectory() ?? vaultRoot(app.vault.adapter) });
     if (chosen) {
       setSettings('customDefaultExportDirectory', v => setPlatformValue(v, chosen));
     }
