@@ -1,9 +1,19 @@
--- minimum supported version for full environment
--- support is 3.8.unkown yet to be released but probably 3
-local environment_fully_supported_version = pandoc.types.Version('3.8.3')
-local environment_partially_supported_version = pandoc.types.Version('3.8.0')
-local is_partially_supported = PANDOC_VERSION >= environment_partially_supported_version
-local problamatic_environments = {
+-- Pandoc 3.8+ writes math environments as is, but only when \begin is the first thing in the math
+if PANDOC_VERSION >= pandoc.types.Version('3.8.0') then
+    return {
+        {
+            Math = function(elem)
+                if elem.text:find("^%s*\\begin{") then
+                    local text = elem.text:gsub("^%s*\\begin{", "\\begin{"):gsub("\\end{(.-)}%s*$", "\\end{%1}")
+                    return pandoc.Math(elem.mathtype, text)
+                end
+            end,
+        }
+    }
+end
+
+-- Older Pandoc wraps these in \[ \], which LaTeX rejects
+local math_environments = {
     displaymath = true,
     math = true,
     equation = true,
@@ -21,30 +31,14 @@ local problamatic_environments = {
     flalign = true,
     ["flalign*"] = true,
 }
-if is_partially_supported then
-    return {
-        {
-            Math = function(elem)
-                if elem.text:find("^%s*\\begin{") ~= nil then
-                    local replacement = pandoc.text:gsub(elem.text, "^%s*\\begin{(.-)}", "\\begin{%1}"):gsub("\\end{(.-)}%s*$", "\\end{%1}")
-                    return pandoc.Math(replacement, elem.mathtype)
-                else
-                    return elem
-                end
-            end,
-        }
+
+return {
+    {
+        Math = function(elem)
+            local env = elem.text:match("^%s*\\begin{(%a+%*?)}")
+            if env and math_environments[env] then
+                return pandoc.RawInline('tex', elem.text)
+            end
+        end,
     }
-elseif not environment_fully_supported_version then
-    return {
-        {
-            Math = function(elem)
-                local result = elem.text:match("^%s*\\begin{(%a+%*?)}")
-                if result ~= nil and problamatic_environments[result] ~= nil then
-                    return pandoc.RawInline('tex', elem.text)
-                else
-                    return elem
-                end
-            end,
-        }
-    }
-end
+}
