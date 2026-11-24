@@ -32,7 +32,7 @@ its author and licence; all of them are MIT.
 
 | Folder | Origin |
 | --- | --- |
-| `bundled/` | This plugin's own — see below. Not catalogue entries: they are embedded in `main.js`, written to the plugin's `lua/` folder on load, and run by name. |
+| `bundled/` | This plugin's own — see below. Not catalogue entries: they are embedded in `main.js`, written to the plugin's `pandoc/filters/` folder on load, and run by name. |
 | `pandoc-ext/` | The [pandoc-ext] organisation — the filters the pandoc project maintains today. |
 | `pandoc/` | The retired [pandoc/lua-filters] collection, for the filters pandoc-ext has not re-published. |
 | `pan4ratte/` | `Obsidian/Pandoc/filters` in [pan4ratte/course-it-in-science], written for exporting Obsidian notes to Word. `zotero.lua` there is [Better BibTeX]'s, vendored with it. Several of these have since moved to `bundled/`, and `strip-wikilinks.lua` was written for this plugin. |
@@ -132,7 +132,7 @@ one click away, on the card's *Open readme* button.
       // filter simply never reports one.
       "updated": "2026-08-07",
 
-      // What the filter is called in the plugin's lua/ folder. A catalogue of
+      // What the filter is called in the plugin's pandoc/filters/ folder. A catalogue of
       // someone else's may leave it out, and it then defaults to "<id>.lua"; in
       // this one it is written by the generator from the last segment of `path`,
       // since that is the file being served. It is also the name the
@@ -200,7 +200,7 @@ a vault can point the store at a catalogue of its own instead.
 
 ## What installing does
 
-The file is downloaded into the plugin's `lua/` folder — the one in an installed
+The file is downloaded into the plugin's `pandoc/filters/` folder — the one in an installed
 plugin folder, written on load from `bundled/` and never committed here — and
 recorded in `data.json`. Two names are refused: one that
 belongs to a bundled filter (it would be overwritten on the next start) and one

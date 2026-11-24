@@ -513,7 +513,7 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
     }).open();
   };
 
-  // The manager owns the files in `lua/`; what is installed is settings, written here and
+  // The manager owns the files in `pandoc/filters/`; what is installed is settings, written here and
   // handed back to the store as a prop, so store, table and `data.json` agree.
   const luaFilters = new LuaFilterManager(plugin, BUNDLED_LUA_FILES);
 

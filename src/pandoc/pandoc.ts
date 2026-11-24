@@ -63,6 +63,11 @@ export const PANDOC_MATH_METHOD_VERSION = '3.11.0';
 
 export const takesMathMethod = (version?: SemVer | null): boolean => !!version && version.compare(PANDOC_MATH_METHOD_VERSION) >= 0;
 
+/** Where `PANDOC_DATA_DIRS` arrived, which is how a filter or template in the plugin's data folder is found by name. */
+export const PANDOC_DATA_DIRS_VERSION = '3.14.0';
+
+export const takesDataDirs = (version?: SemVer | null): boolean => !!version && version.compare(PANDOC_DATA_DIRS_VERSION) >= 0;
+
 export const PANDOC_MANUAL_URL = 'https://pandoc.org/MANUAL.html';
 
 /** Landing page for the newest release, used when the API lookup gives no URL. */
@@ -122,6 +127,7 @@ export default {
   getLatestRelease: getLatestPandocRelease,
   takesSyntaxHighlighting,
   takesMathMethod,
+  takesDataDirs,
   requiredVersion: PANDOC_REQUIRED_VERSION,
   manualUrl: PANDOC_MANUAL_URL,
 };

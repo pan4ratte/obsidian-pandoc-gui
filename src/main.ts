@@ -10,6 +10,7 @@ import { PandocWasmManager } from './wasm/install';
 import { TypstWasmManager } from './wasm/typst';
 import { ExtensionManager } from './wasm/extensions';
 import { LuaFilterManager, isNewer, type LuaFilterEntry } from './filters/lua_filters';
+import { FILTERS_DIR, LEGACY_FILTERS_DIR, LEGACY_TEMPLATES_DIR, TEMPLATES_DIR } from './pandoc/data_dir';
 // `styles.css` is not imported: Obsidian loads the plugin folder's stylesheet itself.
 
 export default class PandocGuiPlugin extends Plugin {
@@ -28,6 +29,7 @@ export default class PandocGuiPlugin extends Plugin {
 
   async onload() {
     await this.releaseResources();
+    await this.moveLegacyFolders();
     await this.loadSettings();
 
     this.addSettingTab(new ExportSettingTab(this));
@@ -230,6 +232,19 @@ export default class PandocGuiPlugin extends Plugin {
         }
       }
     }
+    // Paths into the folders the filters and LaTeX templates were kept in before 3.1.3.
+    const dir = this.manifest.dir;
+    const moved = (text: string) =>
+      text
+        .replaceAll('${pluginDir}/' + LEGACY_TEMPLATES_DIR, '${pluginDir}/' + TEMPLATES_DIR)
+        .replaceAll('${pluginDir}/' + LEGACY_FILTERS_DIR + '/', '${luaDir}/')
+        .replaceAll(`${dir}/${LEGACY_TEMPLATES_DIR}`, `${dir}/${TEMPLATES_DIR}`)
+        .replaceAll(`${dir}/${LEGACY_FILTERS_DIR}/`, `${dir}/${FILTERS_DIR}/`);
+    const movedIn = <T>(value: T): T => (value === undefined ? value : (JSON.parse(moved(JSON.stringify(value))) as T));
+    const before = JSON.stringify([settings.items, settings.env]);
+    settings.items = movedIn(settings.items);
+    settings.env = movedIn(settings.env);
+    migrated ||= JSON.stringify([settings.items, settings.env]) !== before;
     this.settings = settings;
     // A vault that has never written the list needs it on disk now: without it the next release cannot tell a
     // template the user deleted from one it has just added.
@@ -274,13 +289,43 @@ export default class PandocGuiPlugin extends Plugin {
   async releaseResources(): Promise<void> {
     const { adapter } = this.app.vault;
     for (const [dir, res] of resources) {
-      const resDir = `${this.manifest.dir}/${dir}`;
-      await adapter.mkdir(resDir);
+      let resDir = this.manifest.dir;
+      for (const part of dir.split('/')) {
+        resDir = `${resDir}/${part}`;
+        if (!(await adapter.exists(resDir))) {
+          await adapter.mkdir(resDir);
+        }
+      }
       for (const [fileName, text] of res) {
         const filePath = `${resDir}/${fileName}`;
         await adapter.write(filePath, text);
       }
     }
     resources.length = 0;
+  }
+
+  /** Moves what the store and the user put in the old `lua/` folder into `pandoc/filters/`, and drops the old folders. */
+  private async moveLegacyFolders(): Promise<void> {
+    const { adapter } = this.app.vault;
+    const dir = this.manifest.dir;
+    try {
+      const filters = `${dir}/${LEGACY_FILTERS_DIR}`;
+      if (await adapter.exists(filters)) {
+        for (const file of (await adapter.list(filters)).files) {
+          const target = `${dir}/${FILTERS_DIR}/${file.substring(file.lastIndexOf('/') + 1)}`;
+          if (!(await adapter.exists(target))) {
+            await adapter.rename(file, target);
+          }
+        }
+        await adapter.rmdir(filters, true);
+      }
+      // A source checkout keeps the templates' sources in `textemplate/`; an installed plugin only had copies there.
+      const templates = `${dir}/${LEGACY_TEMPLATES_DIR}`;
+      if ((await adapter.exists(templates)) && !(await adapter.exists(`${dir}/package.json`))) {
+        await adapter.rmdir(templates, true);
+      }
+    } catch (e) {
+      console.warn(e);
+    }
   }
 }

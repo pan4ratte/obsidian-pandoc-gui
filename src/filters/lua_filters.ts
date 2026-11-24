@@ -1,5 +1,6 @@
 import { moment, requestUrl } from 'obsidian';
 import type PandocGuiPlugin from '../main';
+import { FILTERS_DIR } from '../pandoc/data_dir';
 
 /* The lua-filter store. */
 
@@ -39,7 +40,7 @@ export interface LuaFilterEntry {
   requires?: string;
   /** Compared against the installed copy's to offer an update. */
   updated?: string;
-  /** What the filter is called in `lua/`. Defaults to `<id>.lua`. */
+  /** What the filter is called in `pandoc/filters/`. Defaults to `<id>.lua`. */
   fileName?: string;
   /** Relative to the catalogue's base URL. */
   path?: string;
@@ -129,17 +130,20 @@ export const luaFilterArg = (fileName: string) => '--lua-filter="${luaDir}/' + f
 
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+/** The filter as the plugin writes it, or by its name alone, which Pandoc 3.14 finds in the plugin's data folder. */
+const ownFilterFlag = (fileName: string, flags = '') =>
+  new RegExp(String.raw`(?<=^|\s)(?:--lua-filter|-L)[= ]"?(?:\$\{luaDir\}/)?${escapeRegExp(fileName)}"?(?=\s|$)`, flags);
+
 /** Whether `args` already runs the filter. */
-export const hasLuaFilterArg = (args: string | undefined, fileName: string) => !!args && args.includes(luaFilterArg(fileName));
+export const hasLuaFilterArg = (args: string | undefined, fileName: string) => !!args && ownFilterFlag(fileName).test(args);
 
 /** `args` with the filter appended, or unchanged if it is already there. */
 export const addLuaFilterArg = (args: string | undefined, fileName: string) => {
-  const arg = luaFilterArg(fileName);
   const current = args?.trim() ?? '';
   if (!current) {
-    return arg;
+    return luaFilterArg(fileName);
   }
-  return current.includes(arg) ? current : `${current} ${arg}`;
+  return hasLuaFilterArg(current, fileName) ? current : `${current} ${luaFilterArg(fileName)}`;
 };
 
 /**
@@ -251,14 +255,24 @@ export const removeLuaFilterArg = (args: string | undefined, fileName: string) =
     return args ?? '';
   }
   return args
-    .replace(new RegExp(`\\s*${escapeRegExp(luaFilterArg(fileName))}`, 'g'), '')
+    .replace(ownFilterFlag(fileName, 'g'), '')
     .replace(/\s{2,}/g, ' ')
     .trim();
 };
 
+/**
+ * `command` with the plugin's filters that are named by their file alone written as the path to them, for a Pandoc
+ * that cannot look them up: WASM, or one older than 3.14.
+ */
+export const withFilterPaths = (command: string, ours: readonly string[]) =>
+  command.replace(LUA_FILTER_FLAG, (flag, value: string) => {
+    const file = value.replace(/"/g, '');
+    return ours.includes(file) ? luaFilterArg(file) : flag;
+  });
+
 // ── Manager ───────────────────────────────────────────────────────────────────
 
-/** Fetches the catalogue and owns the files in `lua/`. */
+/** Fetches the catalogue and owns the files in `pandoc/filters/`. */
 export class LuaFilterManager {
   /** `bundled` is the list of filters the plugin ships with. */
   constructor(
@@ -274,7 +288,7 @@ export class LuaFilterManager {
 
   /** Where a filter is written, vault-relative. */
   private filePath(fileName: string): string {
-    return `${this.plugin.manifest.dir}/lua/${fileName}`;
+    return `${this.plugin.manifest.dir}/${FILTERS_DIR}/${fileName}`;
   }
 
   /** The filters this plugin ships with, which a download must never replace. */
@@ -340,7 +354,7 @@ export class LuaFilterManager {
 
   // ── Install / uninstall ─────────────────────────────────────────────────────
 
-  /** Download an entry and write it into `lua/`, returning the record to store. */
+  /** Download an entry and write it into `pandoc/filters/`, returning the record to store. */
   async install(entry: LuaFilterEntry, installed: readonly InstalledLuaFilter[]): Promise<InstalledLuaFilter> {
     const fileName = this.fileNameOf(entry);
     if (!/^[\w.@+-]+\.lua$/.test(fileName)) {
@@ -403,7 +417,7 @@ export class LuaFilterManager {
   }
 
   /**
-   * Write a filter of the user's own into `lua/`, and answer the record to store. From there on it stands among the
+   * Write a filter of the user's own into `pandoc/filters/`, and answer the record to store. From there on it stands among the
    * installed ones: the template editor lists it, and removing it deletes the file as it does for any other. It is
    * given no formats, which is what says it runs in all of them — a filter the user wrote is theirs to point wherever
    * they like.

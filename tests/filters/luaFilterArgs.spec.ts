@@ -1,4 +1,4 @@
-import { addLuaFilterArg, hasLuaFilterArg, luaFilterArg, removeLuaFilterArg } from '../../src/filters/lua_filters';
+import { addLuaFilterArg, hasLuaFilterArg, luaFilterArg, removeLuaFilterArg, withFilterPaths } from '../../src/filters/lua_filters';
 
 /*
  * The flag carries `${luaDir}` as literal text — the export fills it in later.
@@ -60,4 +60,24 @@ test('hasLuaFilterArg reports what is and is not there', () => {
   expect(hasLuaFilterArg(`--toc ${ARG}`, 'wordcount.lua')).toBe(true);
   // A different filter whose name merely ends the same way.
   expect(hasLuaFilterArg(luaFilterArg('my-wordcount.lua'), 'wordcount.lua')).toBe(false);
+});
+
+// Pandoc 3.14 finds a filter in the plugin's data folder by its name alone.
+test('a filter named by its file alone counts as running', () => {
+  expect(hasLuaFilterArg('--lua-filter=wordcount.lua', 'wordcount.lua')).toBe(true);
+  expect(hasLuaFilterArg('-L "wordcount.lua" --toc', 'wordcount.lua')).toBe(true);
+  expect(hasLuaFilterArg('--lua-filter=my-wordcount.lua', 'wordcount.lua')).toBe(false);
+  expect(addLuaFilterArg('--lua-filter=wordcount.lua', 'wordcount.lua')).toBe('--lua-filter=wordcount.lua');
+});
+
+test('removing takes out a filter named by its file alone', () => {
+  expect(removeLuaFilterArg('--toc -L wordcount.lua -s', 'wordcount.lua')).toBe('--toc -s');
+});
+
+test('a Pandoc that cannot look filters up gets the path to the plugin’s own', () => {
+  const ours = ['embeds.lua', 'wordcount.lua'];
+  expect(withFilterPaths('pandoc a.md -L embeds.lua --lua-filter="wordcount.lua" -o b.docx', ours)).toBe(
+    'pandoc a.md --lua-filter="${luaDir}/embeds.lua" --lua-filter="${luaDir}/wordcount.lua" -o b.docx'
+  );
+  expect(withFilterPaths('pandoc a.md -L mine.lua -L /x/embeds.lua', ours)).toBe('pandoc a.md -L mine.lua -L /x/embeds.lua');
 });

@@ -102,7 +102,7 @@ export interface PandocGuiSettings {
    */
   seededTemplates?: string[];
 
-  /** Lua filters downloaded through the store, in `lua/` beside the bundled ones. */
+  /** Lua filters downloaded through the store, in `pandoc/filters/` beside the bundled ones. */
   installedLuaFilters?: InstalledLuaFilter[];
   /** Base URL of the lua-filter catalogue. Unset means the default repo. */
   luaFilterRepoUrl?: string;
@@ -194,7 +194,9 @@ export const DEFAULT_ENV = (() => {
     {
       'HOME': '${HOME}',
       'PATH': '${PATH}',
-      'TEXINPUTS': '${pluginDir}/textemplate/:', // It is necessary to **append** to the current TEXINPUTS wtih ":" - NOT REPLACE. TEXINPUTS contains the basic latex classes.
+      'TEXINPUTS': '${pluginDir}/pandoc/templates/:', // It is necessary to **append** to the current TEXINPUTS with ":" - NOT REPLACE. TEXINPUTS contains the basic latex classes.
+      // The plugin's data folder, ahead of any the system already lists. Read by Pandoc 3.14 and newer.
+      'PANDOC_DATA_DIRS': '${pluginDir}/pandoc:${PANDOC_DATA_DIRS}',
     },
     '*' // available for all platforms.
   );
@@ -202,7 +204,8 @@ export const DEFAULT_ENV = (() => {
   env = setPlatformValue(
     env,
     {
-      'TEXINPUTS': '${pluginDir}/textemplate/;', // Windows uses ; rather than : for appending
+      'TEXINPUTS': '${pluginDir}/pandoc/templates/;', // Windows uses ; rather than : for appending
+      'PANDOC_DATA_DIRS': '${pluginDir}/pandoc;${PANDOC_DATA_DIRS}',
       'PATH': '${HOME}\\AppData\\Local\\Pandoc;${PATH}',
     },
     'win32' // available for windows only.
@@ -294,7 +297,8 @@ export function createEnv(env: Record<string, string>, envVars?: Record<string, 
   // A phone has no process to take an environment from, and nothing that reads one — the wasm build is handed its
   // files rather than started with variables. So the defaults are rendered against whatever the caller passes alone.
   const system: Record<string, string | undefined> = typeof process === 'undefined' ? {} : process.env;
-  envVars = Object.assign({ HOME: system['HOME'] ?? system['USERPROFILE'] }, system, envVars ?? {});
+  // `PANDOC_DATA_DIRS` is new enough that a system rarely sets it, and an unset variable would stand as written.
+  envVars = Object.assign({ HOME: system['HOME'] ?? system['USERPROFILE'], PANDOC_DATA_DIRS: '' }, system, envVars ?? {});
   return Object.fromEntries(Object.entries(env).map(([n, v]) => [n, renderTemplate(v, envVars)]));
 }
 

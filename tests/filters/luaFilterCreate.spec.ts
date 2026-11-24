@@ -58,12 +58,12 @@ describe('writing a filter of one’s own', () => {
     expect(filter.id.startsWith(LOCAL_FILTER_PREFIX)).toBe(true);
     // No formats, which is what says it runs in all of them.
     expect(filter.formats).toBeUndefined();
-    expect(written.get('plugins/x/lua/page-breaks.lua')).toBe(`${draft.code}\n`);
+    expect(written.get('plugins/x/pandoc/filters/page-breaks.lua')).toBe(`${draft.code}\n`);
   });
 
   test('the code is written with the line endings lua reads, and ends in a newline', async () => {
     await manager().create({ name: 'a', code: 'one\r\ntwo\r\n\n\n' }, []);
-    expect(written.get('plugins/x/lua/a.lua')).toBe('one\ntwo\n');
+    expect(written.get('plugins/x/pandoc/filters/a.lua')).toBe('one\ntwo\n');
   });
 
   test('a file name already taken is stepped past, whether by an installed filter or a bundled one', async () => {
@@ -89,8 +89,8 @@ describe('rewriting one', () => {
 
     // A template runs a filter by naming its file, so neither the file nor the id it is known by moves.
     expect(renamed).toEqual({ ...filter, storeName: 'Pagination', description: 'Breaks pages.' });
-    expect(written.get('plugins/x/lua/page-breaks.lua')).toBe('two\n');
-    expect([...written.keys()]).toEqual(['plugins/x/lua/page-breaks.lua']);
+    expect(written.get('plugins/x/pandoc/filters/page-breaks.lua')).toBe('two\n');
+    expect([...written.keys()]).toEqual(['plugins/x/pandoc/filters/page-breaks.lua']);
   });
 
   test('a description taken back out is taken out of the record too', async () => {

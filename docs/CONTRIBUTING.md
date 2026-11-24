@@ -109,7 +109,7 @@ their own. Anything else `package.json`'s `scripts` offers is fair game too.
 | `src/ui/` | Solid components: `settings/` is the settings tab, `dialogs/` the export, import and store modals, `components/` the widgets they share. |
 | `src/lang/` | Every string the user sees. `en.ts` is the type every other locale satisfies; `ru.ts` is the Russian one. |
 | `lua-filters/` | The filters: `bundled/` is what the plugin ships, the rest is the store's catalogue. See its [readme](../lua-filters/README.md). |
-| `textemplate/` | LaTeX templates embedded into the build alongside the bundled filters. |
+| `textemplate/` | LaTeX templates embedded into the build alongside the bundled filters. Both are written into the plugin folder's `pandoc/` — `filters/` and `templates/` — a Pandoc data folder that `PANDOC_DATA_DIRS` points Pandoc 3.14 and newer at. |
 | `reference-docs/` | Pandoc's own `reference.docx`, `.odt` and `.pptx`. Carried into the build by the generated `src/pandoc/reference_data.ts`. See below. |
 | `docs/` | This file, the changelog, the user guide and the Russian readme. |
 | `scripts/` | `gen-catalogue.js`, which writes the catalogue table in the readme, and `version.mjs`, which bumps the version across `package.json`, `manifest.json` and `versions.json`. |

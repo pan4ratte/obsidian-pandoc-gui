@@ -81,7 +81,7 @@ export default {
     type: 'pandoc',
     // `math_block` before `pdf`: the first puts a broken `$$…$$` back together, the second is what the engine then
     // needs made of it.
-    arguments: `-f \${fromFormat} ${IMAGES} ${MATH_BLOCK} --lua-filter="\${luaDir}/pdf.lua" \${ options.textemplate ? \`--resource-path="\${pluginDir}/textemplate" --template="\${options.textemplate}"\` : \` \` } -o "\${outputPath}" -t pdf`,
+    arguments: `-f \${fromFormat} ${IMAGES} ${MATH_BLOCK} --lua-filter="\${luaDir}/pdf.lua" \${ options.textemplate ? \`--resource-path="\${pluginDir}/pandoc/templates" --template="\${options.textemplate}"\` : \` \` } -o "\${outputPath}" -t pdf`,
     // XeLaTeX rather than pdfLaTeX: pdfLaTeX cannot set a character it has no 8-bit font for, so a note with
     // Cyrillic, CJK or an emoji in it does not export at all.
     customArguments: `--pdf-engine=xelatex ${OBSIDIAN_SYNTAX}`,
@@ -154,7 +154,7 @@ export default {
   'Latex': {
     name: 'Latex',
     type: 'pandoc',
-    arguments: `-f \${fromFormat} ${IMAGES} \${ options.textemplate ? \`--resource-path="\${pluginDir}/textemplate" --template="\${options.textemplate}"\` : \` \` } --extract-media="\${outputDir}" -s -o "\${outputPath}" -t latex`,
+    arguments: `-f \${fromFormat} ${IMAGES} \${ options.textemplate ? \`--resource-path="\${pluginDir}/pandoc/templates" --template="\${options.textemplate}"\` : \` \` } --extract-media="\${outputDir}" -s -o "\${outputPath}" -t latex`,
     customArguments: OBSIDIAN_SYNTAX,
     optionsMeta: {
       'textemplate': 'preset:textemplate', // reference from `PresetOptionsMeta` in `src/settings.ts`

@@ -9,7 +9,16 @@ import { PandocProgress } from '../ui/progress';
 import { describeExportFailure } from './export_error';
 import type PandocGuiPlugin from '../main';
 import pandoc from '../pandoc/pandoc';
-import { orderLuaFilters, usesEmbedsFilter, withCalloutsFilter, withEmbedsFilter, withWikilinkWriter } from '../filters/lua_filters';
+import {
+  orderLuaFilters,
+  usesEmbedsFilter,
+  withCalloutsFilter,
+  withEmbedsFilter,
+  withFilterPaths,
+  withWikilinkWriter,
+} from '../filters/lua_filters';
+import { FILTERS_DIR } from '../pandoc/data_dir';
+import { BUNDLED_LUA_FILES } from '../resources';
 import { legacyMathFlags, renameHighlightFlags, renameMathFlags } from '../args/writer_args';
 import { outputArg } from '../args/output_arg';
 import { resolveEngine, unsupportedBy, writesTypstPdf } from '../pandoc/engine';
@@ -19,7 +28,17 @@ import { FileStore } from '../system/file_store';
 import { download } from '../system/download';
 import { basename, dirname, extname, normalize, resolve, stem } from '../system/paths';
 import { collectJoins, joinExport } from './joined_docs';
-import { PATH_SEPARATOR, chooseSavePath, fullPath, isDesktop, isMobile, openFile, showInFolder, tempFolder, vaultRoot } from '../system/platform';
+import {
+  PATH_SEPARATOR,
+  chooseSavePath,
+  fullPath,
+  isDesktop,
+  isMobile,
+  openFile,
+  showInFolder,
+  tempFolder,
+  vaultRoot,
+} from '../system/platform';
 import { type DrawingFormat, isDrawing, renderDrawing } from './excalidraw';
 import { type QueryAnswer, collectQueries, renderQueries } from './dataview';
 import { outputFormat, readsInlinedFonts, takesSvg, writesLatex } from '../pandoc/pandoc_format';
@@ -171,7 +190,7 @@ export async function exportNote(
   // The `${...}` a template can use — see the `Variables` interface in settings.ts.
   const vaultDir = vaultRoot(adapter);
   const pluginDir = `${vaultDir}/${manifest.dir}`;
-  const luaDir = `${pluginDir}/lua`;
+  const luaDir = `${pluginDir}/${FILTERS_DIR}`;
   const outputDir = candidateOutputDirectory;
   const outputPath = `${outputDir}/${candidateOutputFileName}`;
   const outputFileName = candidateOutputFileName.substring(0, candidateOutputFileName.lastIndexOf('.'));
@@ -409,6 +428,12 @@ export async function exportNote(
       // file that spells the method the one way every build reads.
       if (engine !== 'wasm') {
         cmdTpl = pandoc.takesMathMethod(installed) ? renameMathFlags(cmdTpl) : legacyMathFlags(cmdTpl);
+      }
+
+      // A filter named by its file alone is found in the plugin's data folder by Pandoc 3.14 and newer only.
+      if (engine === 'wasm' || !pandoc.takesDataDirs(installed)) {
+        const installedFilters = (globalSetting.installedLuaFilters ?? []).map(f => f.fileName);
+        cmdTpl = withFilterPaths(cmdTpl, [...BUNDLED_LUA_FILES, ...installedFilters]);
       }
     }
 

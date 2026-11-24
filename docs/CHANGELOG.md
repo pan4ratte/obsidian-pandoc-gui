@@ -7,6 +7,9 @@
 
 * **PowerPoint, Excel and AsciiDoc import.** The import command now opens .pptx, .xlsx and .adoc files. Requires Pandoc 3.8.3 or newer.
 * **Repeated table captions.** PDF and LaTeX templates have a new option, “Repeat table captions”: a long table's caption is printed on every page the table runs over. Requires Pandoc 3.14 or newer.
+* **Filters by file name.** The plugin's lua filters and LaTeX templates now live in the plugin's `pandoc/` folder, which Pandoc 3.14 and newer finds through the `PANDOC_DATA_DIRS` variable. Your own arguments can name a filter by its file name alone: `--lua-filter=strip-wikilinks.lua`.
+
+Note: installed filters, and paths to the old `lua/` and `textemplate/` folders in templates, are moved over automatically.
 
 ### Enhancements and bug fixes
 

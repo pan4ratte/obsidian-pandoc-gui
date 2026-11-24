@@ -2,9 +2,10 @@
 /data.json
 /node_modules
 /coverage
-# The plugin folder's runtime lua/: written on load from the filters embedded in
-# main.js, and written into by the store. The sources are in lua-filters/bundled.
-/lua/
+# The plugin folder's runtime pandoc/ data folder: written on load from the
+# filters and LaTeX templates embedded in main.js, and written into by the store.
+# The sources are in lua-filters/bundled and textemplate.
+/pandoc/
 # The wasm builds downloaded into the plugin folder on request — pandoc's 56 MB
 # and typst's 27 MB with its fonts, all someone else's releases. The leading
 # slash matters — src/wasm/ is ours.

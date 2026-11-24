@@ -46,7 +46,7 @@ In the examples, the note `/Users/aaa/Documents/readme.md` is exported to `/User
 | `${vaultDir}` | The vault's folder. |
 | `${attachmentFolderPath}` | The attachment folder from Obsidian's settings. |
 | `${pluginDir}` | The plugin's folder: its resources and the Pandoc WASM extensions. |
-| `${luaDir}` | The plugin's `lua/` folder, with the installed lua filters. |
+| `${luaDir}` | The plugin's `pandoc/filters/` folder, with the installed lua filters. |
 | `${embedDirs}` | The folders of the files embedded in the note — for `--resource-path`. |
 | `${fromFormat}` | The format Pandoc reads the note in: `markdown+wikilinks_title_after_pipe`, or `markdown` in a vault that uses Markdown links. |
 | `${today.long}`, `${today.medium}`, `${today.short}`, `${today.iso}` | Today's date in Obsidian's language: long, medium and short, and `2026-10-02`. |
@@ -154,7 +154,7 @@ Note: settings Word makes for the whole document rather than for a section — d
 
 A lua filter is a small script Pandoc applies to the document on export. Filters are installed from the store, which opens from the plugin settings. There a filter can be found by the task it does, its requirements and readme read, and it can be installed, updated and removed. When an installed filter has an update, the plugin says so when Obsidian starts, and the filter can be updated right from the notice. You can also add a filter of your own by choosing “Add my own lua-filter” in the store: paste its code or pick a file.
 
-An installed filter is added to each template separately, in the editor's “Lua filters” option. The list shows only the filters compatible with the template's format. A filter that needs a program (mermaid-cli or lilypond, for example) needs Pandoc to be able to find it — see section 7.
+An installed filter is added to each template separately, in the editor's “Lua filters” option. The list shows only the filters compatible with the template's format. A filter that needs a program (mermaid-cli or lilypond, for example) needs Pandoc to be able to find it — see section 7. With Pandoc 3.14 or newer, your own arguments can name a filter by its file name alone, without `${luaDir}`: `--lua-filter=strip-wikilinks.lua`.
 
 ## 6. Export and import
 
@@ -172,7 +172,7 @@ The “Import a file and convert it to a note” command turns a document of any
 
 ## 7. Environment variables
 
-The installed Pandoc runs with the variables from the “Environment variables” setting (the “Edit” button). They are needed when Pandoc or a filter cannot find a program — LaTeX, Typst, mermaid-cli, lilypond. It happens most on macOS: Obsidian started other than from a terminal does not get the shell's PATH. On macOS, the Homebrew and TeX folders are already in PATH by default.
+The installed Pandoc runs with the variables from the “Environment variables” setting (the “Edit” button). They are needed when Pandoc or a filter cannot find a program — LaTeX, Typst, mermaid-cli, lilypond. It happens most on macOS: Obsidian started other than from a terminal does not get the shell's PATH. On macOS, the Homebrew and TeX folders are already in PATH by default. `PANDOC_DATA_DIRS` points Pandoc 3.14 and newer at the plugin's `pandoc/` folder, which holds its lua filters and LaTeX templates.
 
 ## 8. Pandoc WASM
 
