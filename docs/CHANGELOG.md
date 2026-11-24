@@ -8,6 +8,7 @@
 * When Obsidian starts, the plugin says when installed Lua filters have updates, and they can be updated right from the notice.
 * Exporting with the “Dissertation” and “Academic Paper” LaTeX templates no longer fails on tables without a caption.
 * Footnotes in tables work with Pandoc 3.14 when exporting with the “Dissertation” and “Academic Paper” LaTeX templates.
+* The bundled reference documents are updated to Pandoc 3.14.
 
 
 ## 3.1.2
