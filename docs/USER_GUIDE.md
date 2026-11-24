@@ -87,6 +87,7 @@ In every format but Markdown, internal links lead to a place in the document: `[
 * “Insert today’s date instead of $today on export” — every `$today` in the note and its properties becomes today's date in the chosen format.
 * “Print the keywords property” — the keywords from the note's or the template's properties are printed in the document's text, under the label from the “Keywords label” field.
 * The plugin supports Excalidraw: Excalidraw drawings are exported into the document as images. For PDF and LaTeX, “Excalidraw drawing format” lets you choose PNG or SVG (SVG needs the svg package and Inkscape), and “Keep images in place” stops LaTeX from moving captioned images elsewhere.
+* “Repeat table captions” — in PDF and LaTeX, a long table's caption is printed on every page the table runs over. Requires Pandoc 3.14 or newer.
 * “Extensions” (beside “Lua filters”) handle syntax Pandoc does not read by default: callouts, highlights, emoji codes, bare URLs, single line breaks and more.
 
 ### 3.3. Dataview queries

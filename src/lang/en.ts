@@ -331,6 +331,8 @@ export default {
   DRAWING_FORMAT_SVG: 'SVG',
   FLOAT_PLACEMENT: 'Keep images in place',
   FLOAT_PLACEMENT_DESC: 'In PDF and LaTeX a captioned image is a floating object, and LaTeX places it on its own, leaving a gap in the text. Switch this on to pin images where they stand.',
+  REPEAT_CAPTIONS: 'Repeat table captions',
+  REPEAT_CAPTIONS_DESC: 'In PDF and LaTeX, a long table’s caption is printed on every page the table runs over. Requires Pandoc 3.14 or newer.',
   TODAY: 'Insert today’s date instead of $today on export',
   TODAY_DESC: 'Every $today anywhere in the note, properties included, becomes today’s date.',
   TODAY_NONE: 'Select date formatting…',

@@ -6,6 +6,7 @@
 ### New features
 
 * **PowerPoint, Excel and AsciiDoc import.** The import command now opens .pptx, .xlsx and .adoc files. Requires Pandoc 3.8.3 or newer.
+* **Repeated table captions.** PDF and LaTeX templates have a new option, “Repeat table captions”: a long table's caption is printed on every page the table runs over. Requires Pandoc 3.14 or newer.
 
 ### Enhancements and bug fixes
 

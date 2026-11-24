@@ -65,6 +65,7 @@ import {
   keywords,
   keywordsTitle,
   listStyles,
+  repeatCaptions,
   setDrawingFormat,
   setEmbedNotes,
   setEmbedShiftHeadings,
@@ -73,6 +74,7 @@ import {
   setFloatPlacement,
   setKeywords,
   setKeywordsTitle,
+  setRepeatCaptions,
   setListStyles,
   setTableHeadStyle,
   setTableStyle,
@@ -1257,6 +1259,9 @@ const SettingTab = (props: { plugin: PandocGuiPlugin }) => {
               <Setting name={t.FLOAT_PLACEMENT} description={t.FLOAT_PLACEMENT_DESC} class="mod-toggle">
                 <Toggle checked={floatPlacement(args())} onChange={on => writeArgs(a => setFloatPlacement(a, on))} />
               </Setting>
+              <Setting name={t.REPEAT_CAPTIONS} description={t.REPEAT_CAPTIONS_DESC} class="mod-toggle">
+                <Toggle checked={repeatCaptions(args())} onChange={on => writeArgs(a => setRepeatCaptions(a, on))} />
+              </Setting>
               <Setting name={t.DRAWING_FORMAT} description={t.DRAWING_FORMAT_DESC}>
                 <DropDown
                   options={[
@@ -1984,6 +1989,7 @@ export default class extends PluginSettingTab {
               t.STRIP_COMMENTS,
               t.EMBED_NOTES,
               t.FLOAT_PLACEMENT,
+              t.REPEAT_CAPTIONS,
               t.TODAY,
               t.KEYWORDS,
               t.WORD_STYLES,

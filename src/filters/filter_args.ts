@@ -11,6 +11,7 @@ export const FILTERS = {
   today: 'today.lua',
   embeds: EMBEDS_FILTER,
   floatPlacement: 'float_placement.lua',
+  repeatCaptions: 'repeat_captions.lua',
 } as const;
 
 /* -- The primitives ------------------------------------------------------- */
@@ -212,3 +213,8 @@ export const setDrawingFormat = (args: string | undefined, format?: 'svg' | 'png
 export const floatPlacement = (args?: string): boolean => runs(args, FILTERS.floatPlacement);
 
 export const setFloatPlacement = (args: string | undefined, on: boolean): string => setRuns(args, FILTERS.floatPlacement, on);
+
+/** Whether `args` repeats a long table's caption on every page it runs over. */
+export const repeatCaptions = (args?: string): boolean => runs(args, FILTERS.repeatCaptions);
+
+export const setRepeatCaptions = (args: string | undefined, on: boolean): string => setRuns(args, FILTERS.repeatCaptions, on);
