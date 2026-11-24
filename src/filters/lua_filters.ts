@@ -86,6 +86,10 @@ export interface InstalledLuaFilter {
   formats?: string[];
 }
 
+/** Whether the catalogue has moved on from the copy on disk; ISO dates compare as strings. */
+export const isNewer = (entry: LuaFilterEntry, mine: InstalledLuaFilter | undefined): boolean =>
+  !!mine && !!entry.updated && !!mine.updated && entry.updated > mine.updated;
+
 /**
  * What tells a filter of the user's own from one the catalogue offers, in the id both are known by. No catalogue can
  * take an id back off the user: an entry that named itself this way would be skipped as a duplicate.

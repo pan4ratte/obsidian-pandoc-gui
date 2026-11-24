@@ -151,7 +151,7 @@ Note: settings Word makes for the whole document rather than for a section — d
 
 ## 5. Lua filters
 
-A lua filter is a small script Pandoc applies to the document on export. Filters are installed from the store, which opens from the plugin settings. There a filter can be found by the task it does, its requirements and readme read, and it can be installed, updated and removed. You can also add a filter of your own by choosing “Add my own lua-filter” in the store: paste its code or pick a file.
+A lua filter is a small script Pandoc applies to the document on export. Filters are installed from the store, which opens from the plugin settings. There a filter can be found by the task it does, its requirements and readme read, and it can be installed, updated and removed. When an installed filter has an update, the plugin says so when Obsidian starts, and the filter can be updated right from the notice. You can also add a filter of your own by choosing “Add my own lua-filter” in the store: paste its code or pick a file.
 
 An installed filter is added to each template separately, in the editor's “Lua filters” option. The list shows only the filters compatible with the template's format. A filter that needs a program (mermaid-cli or lilypond, for example) needs Pandoc to be able to find it — see section 7.
 

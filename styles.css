@@ -2677,6 +2677,16 @@
   color: var(--text-normal);
 }
 
+.ex-update-notice {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-3);
+}
+
+.ex-update-notice button {
+  flex-shrink: 0;
+}
+
 /*
  * Export progress notice. Borrowed from the Classy PDF Extractor.
  */

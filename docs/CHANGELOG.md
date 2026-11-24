@@ -1,6 +1,13 @@
 # Changelog
 
 
+## 3.1.3
+
+### Enhancements and bug fixes
+
+* When Obsidian starts, the plugin says when installed Lua filters have updates, and they can be updated right from the notice.
+
+
 ## 3.1.2
 
 ### Enhancements and bug fixes

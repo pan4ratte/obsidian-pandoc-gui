@@ -10,6 +10,7 @@ import {
   LUA_FILTER_CATEGORIES,
   LuaFilterManager,
   isLocalFilter,
+  isNewer,
   shelfOf,
   type InstalledLuaFilter,
   type LuaFilterCategory,
@@ -114,11 +115,7 @@ export default (props: {
 
   const matched = createMemo(() => allEntries().filter(matchesSearch));
 
-  /** Whether the catalogue has moved on from the copy on disk; ISO dates compare as strings. */
-  const isUpdatable = (e: LuaFilterEntry) => {
-    const mine = installedOf(e.id);
-    return !!mine && !!e.updated && !!mine.updated && e.updated > mine.updated;
-  };
+  const isUpdatable = (e: LuaFilterEntry) => isNewer(e, installedOf(e.id));
 
   const inChip = (e: LuaFilterEntry, value: Chip) =>
     value === 'all' ? true : value === 'installed' ? !!installedOf(e.id) : value === 'updatable' ? isUpdatable(e) : e.category === value;

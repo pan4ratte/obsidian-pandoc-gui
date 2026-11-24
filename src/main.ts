@@ -9,6 +9,7 @@ import resources, { BUNDLED_LUA_FILES } from './resources';
 import { PandocWasmManager } from './wasm/install';
 import { TypstWasmManager } from './wasm/typst';
 import { ExtensionManager } from './wasm/extensions';
+import { LuaFilterManager, isNewer, type LuaFilterEntry } from './filters/lua_filters';
 // `styles.css` is not imported: Obsidian loads the plugin folder's stylesheet itself.
 
 export default class PandocGuiPlugin extends Plugin {
@@ -107,7 +108,10 @@ export default class PandocGuiPlugin extends Plugin {
         }
       })
     );
-    this.app.workspace.onLayoutReady(() => void this.announceWasmUpdate());
+    this.app.workspace.onLayoutReady(() => {
+      void this.announceWasmUpdate();
+      void this.announceLuaFilterUpdates();
+    });
 
     if (import.meta.env.DEV) {
       window.hmr?.(this);
@@ -127,6 +131,61 @@ export default class PandocGuiPlugin extends Plugin {
     this.settings.wasmUpdateSeen = release.version;
     await this.saveSettings();
     new Notice(t.WASM_UPDATE_AVAILABLE(release.version));
+  }
+
+  /**
+   * Say once that the catalogue has newer copies of installed filters, with a button that fetches them. A bundled
+   * filter can change in a way an old copy no longer fits, and nothing outside the store would tell.
+   */
+  private async announceLuaFilterUpdates(): Promise<void> {
+    const installed = this.settings.installedLuaFilters ?? [];
+    if (!installed.some(f => f.updated)) {
+      return;
+    }
+    const manager = new LuaFilterManager(this, BUNDLED_LUA_FILES);
+    let catalogue: LuaFilterEntry[];
+    try {
+      catalogue = await manager.fetchCatalogue();
+    } catch {
+      return;
+    }
+    const outdated = catalogue.filter(e =>
+      isNewer(
+        e,
+        installed.find(f => f.id === e.id)
+      )
+    );
+    const updates = outdated.map(e => `${e.id}@${e.updated}`);
+    const seen = this.settings.luaFilterUpdatesSeen ?? [];
+    if (updates.every(u => seen.includes(u))) {
+      return;
+    }
+    this.settings.luaFilterUpdatesSeen = updates;
+    await this.saveSettings();
+
+    const notice = new Notice('', 0);
+    notice.messageEl.addClass('ex-update-notice');
+    notice.messageEl.createSpan({ text: t.STORE_UPDATES_AVAILABLE(outdated.map(e => e.storeName)) });
+    notice.messageEl
+      .createEl('button', { cls: 'mod-cta', text: t.STORE_UPDATE })
+      .addEventListener('click', () => void this.updateLuaFilters(manager, outdated));
+  }
+
+  private async updateLuaFilters(manager: LuaFilterManager, entries: LuaFilterEntry[]): Promise<void> {
+    const updated: string[] = [];
+    try {
+      for (const entry of entries) {
+        const filter = await manager.install(entry, this.settings.installedLuaFilters ?? []);
+        this.settings.installedLuaFilters = [...(this.settings.installedLuaFilters ?? []).filter(f => f.id !== filter.id), filter];
+        updated.push(filter.storeName);
+      }
+    } catch (e) {
+      new Notice(t.STORE_UPDATE_FAILED(e instanceof Error ? e.message : String(e)));
+    }
+    if (updated.length > 0) {
+      await this.saveSettings();
+      new Notice(t.STORE_UPDATED_NOTICE(updated));
+    }
   }
 
   /** Opens the changelog and marks this release's as read, so the settings' changelog button stops announcing it. */

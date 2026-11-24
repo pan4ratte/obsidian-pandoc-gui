@@ -106,6 +106,8 @@ export interface PandocGuiSettings {
   installedLuaFilters?: InstalledLuaFilter[];
   /** Base URL of the lua-filter catalogue. Unset means the default repo. */
   luaFilterRepoUrl?: string;
+  /** The filter updates already announced, as `id@updated`, so the same ones are not brought up at every start. */
+  luaFilterUpdatesSeen?: string[];
 }
 
 export type OptionsMeta = {
