@@ -3,6 +3,7 @@ import {
   IMPORT_EXTENSIONS,
   MARKDOWN_FLAVOURS,
   readerFor,
+  readerSince,
   supportsExtractMedia,
   supportsMetadata,
   supportsStripComments,
@@ -35,9 +36,26 @@ describe('the reader a file names', () => {
   });
 
   test('a format pandoc writes but cannot read is not offered', () => {
-    expect(readerFor('slides.pptx')).toBeUndefined();
     expect(readerFor('notes.pdf')).toBeUndefined();
-    expect(readerFor('page.adoc')).toBeUndefined();
+  });
+
+  test('PowerPoint, Excel and AsciiDoc are read since Pandoc 3.8.3', () => {
+    expect(readerFor('slides.pptx')).toBe('pptx');
+    expect(readerFor('sheet.xlsx')).toBe('xlsx');
+    expect(readerFor('page.adoc')).toBe('asciidoc');
+    for (const reader of ['pptx', 'xlsx', 'asciidoc']) {
+      expect(readerSince(reader)).toBe('3.8.3');
+    }
+    expect(readerSince('docx')).toBeUndefined();
+  });
+
+  test('a spreadsheet has no images to extract and no title to keep, slides have images', () => {
+    expect(supportsExtractMedia('xlsx')).toBe(false);
+    expect(supportsExtractMedia('pptx')).toBe(true);
+    expect(supportsMetadata('xlsx')).toBe(false);
+    expect(supportsMetadata('pptx')).toBe(false);
+    expect(supportsTabStop('pptx')).toBe(false);
+    expect(supportsTabStop('asciidoc')).toBe(true);
   });
 
   test('a file with no extension, or none at all, names nothing', () => {

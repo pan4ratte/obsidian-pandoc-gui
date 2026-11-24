@@ -167,7 +167,7 @@ When an export fails, the error window gives a hint and a copy button. It copies
 
 ### 6.2. Import
 
-The “Import a file and convert it to a note” command turns a document of any format Pandoc reads into a note: Word, OpenOffice (.fodt included), EPUB, HTML, LaTeX and more.
+The “Import a file and convert it to a note” command turns a document of any format Pandoc reads into a note: Word, OpenOffice (.fodt included), PowerPoint, Excel, EPUB, HTML, LaTeX, AsciiDoc and more. PowerPoint, Excel and AsciiDoc need Pandoc 3.8.3 or newer.
 
 ## 7. Environment variables
 

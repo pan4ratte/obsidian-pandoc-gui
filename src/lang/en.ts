@@ -50,6 +50,7 @@ export default {
   IMPORT_DIALOG_SOURCE_NONE: 'Choose the document to turn into a note.',
   IMPORT_DIALOG_SOURCE_FORMAT: (format: string) => `Will be read as ${format}.`,
   IMPORT_DIALOG_SOURCE_UNKNOWN: 'Pandoc cannot read this kind of file.',
+  IMPORT_READER_TOO_OLD: (format: string, version: string) => `Importing ${format} needs Pandoc ${version} or newer.`,
   IMPORT_DIALOG_FILE_FILTER: 'Documents Pandoc reads',
   IMPORT_DIALOG_FOLDER: 'Destination folder',
   IMPORT_DIALOG_FOLDER_NONE: 'Where in the vault the note is put.',

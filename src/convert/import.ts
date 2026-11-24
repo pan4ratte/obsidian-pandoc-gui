@@ -8,7 +8,7 @@ import { IMPORT_MESSAGES, PandocProgress } from '../ui/progress';
 import { describeExportFailure } from './export_error';
 import type PandocGuiPlugin from '../main';
 import pandoc from '../pandoc/pandoc';
-import { readerFor } from '../pandoc/import_format';
+import { readerFor, readerSince } from '../pandoc/import_format';
 import { importCommand, type ImportOptions } from '../args/import_args';
 import { resolveEngine } from '../pandoc/engine';
 import { convertWithWasm } from '../wasm/convert';
@@ -95,6 +95,19 @@ export async function importFile(plugin: PandocGuiPlugin, request: ImportRequest
 
   const pluginDir = `${vaultRoot(adapter)}/${manifest.dir}`;
   const env = createEnv(getPlatformValue(globalSetting.env) ?? {}, { pluginDir });
+
+  // Where it is not known, pandoc says so itself.
+  const since = readerSince(reader);
+  if (since) {
+    const version =
+      engine === 'wasm'
+        ? pandoc.parseVersion(globalSetting.wasmVersion ?? '')
+        : await pandoc.getCachedVersion(getPlatformValue(globalSetting.pandocPath), env).catch((): null => null);
+    if (version && version.compare(since) < 0) {
+      new MessageBox(app, { title: t.IMPORT_ERROR_TITLE, message: t.IMPORT_READER_TOO_OLD(reader, since), buttons: 'Ok' }).open();
+      return false;
+    }
+  }
 
   let pandocPath = pandoc.normalizePath(getPlatformValue(globalSetting.pandocPath));
   let source = request.source;

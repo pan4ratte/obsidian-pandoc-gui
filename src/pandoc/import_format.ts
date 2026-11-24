@@ -32,14 +32,13 @@ const WRITERS: Partial<Record<MarkdownFlavour, string>> = {
 
 export const writerFor = (flavour: MarkdownFlavour): string => WRITERS[flavour] ?? flavour;
 
-/**
- * What each extension is read as. Only the formats pandoc has a reader for — it writes pptx and asciidoc, for two,
- * and can read neither.
- */
+/** What each extension is read as. Only the formats pandoc has a reader for. */
 const READERS: Record<string, string> = {
   docx: 'docx',
   odt: 'odt',
   fodt: 'fodt',
+  pptx: 'pptx',
+  xlsx: 'xlsx',
   epub: 'epub',
   rtf: 'rtf',
   html: 'html',
@@ -55,6 +54,8 @@ const READERS: Record<string, string> = {
   dokuwiki: 'dokuwiki',
   muse: 'muse',
   djot: 'djot',
+  adoc: 'asciidoc',
+  asciidoc: 'asciidoc',
   creole: 'creole',
   t2t: 't2t',
   man: 'man',
@@ -80,6 +81,16 @@ export const readerFor = (file?: string): string | undefined => {
   return extension ? READERS[extension] : undefined;
 };
 
+/** The readers newer than the oldest Pandoc the plugin runs with, and the release that brought them. */
+const READER_SINCE: Record<string, string> = {
+  pptx: '3.8.3',
+  xlsx: '3.8.3',
+  asciidoc: '3.8.3',
+};
+
+/** The Pandoc a reader needs, where it is newer than the plugin's oldest. */
+export const readerSince = (reader?: string): string | undefined => (reader ? READER_SINCE[reader] : undefined);
+
 const supportedBy = (readers: readonly string[]) => {
   const supported = new Set(readers);
   return (reader?: string): boolean => !!reader && supported.has(reader);
@@ -89,13 +100,13 @@ const supportedBy = (readers: readonly string[]) => {
 export const supportsTrackChanges = supportedBy(['docx']);
 
 /** The readers whose documents carry no media to extract — a bibliography, a table, pandoc's own tree. */
-const MEDIA_LESS = new Set(['biblatex', 'bibtex', 'csljson', 'ris', 'csv', 'tsv', 'native', 'json', 'man', 'opml', 't2t']);
+const MEDIA_LESS = new Set(['biblatex', 'bibtex', 'csljson', 'ris', 'csv', 'tsv', 'xlsx', 'native', 'json', 'man', 'opml', 't2t']);
 
 /** `--extract-media`: "Extract images and other media contained in or linked from the source document". */
 export const supportsExtractMedia = (reader?: string): boolean => !!reader && !MEDIA_LESS.has(reader);
 
 /** The formats a word processor writes rather than anyone types, so nothing in them was ever indented with a tab. */
-const BINARY_READERS = new Set(['docx', 'odt', 'fodt', 'epub', 'rtf']);
+const BINARY_READERS = new Set(['docx', 'odt', 'fodt', 'pptx', 'xlsx', 'epub', 'rtf']);
 
 /** `--tab-stop`, which only means anything where the source is typed. */
 export const supportsTabStop = (reader?: string): boolean => !!reader && !BINARY_READERS.has(reader);
@@ -104,7 +115,7 @@ export const supportsTabStop = (reader?: string): boolean => !!reader && !BINARY
 export const supportsStripComments = supportedBy(['markdown', 'html', 'textile']);
 
 /** The readers with nothing to say about the document itself — no title, no author, no date. */
-const METADATA_LESS = new Set(['csv', 'tsv', 'native', 'json']);
+const METADATA_LESS = new Set(['csv', 'tsv', 'pptx', 'xlsx', 'native', 'json']);
 
 /** `--standalone`, which is what puts that title block into the note's properties. */
 export const supportsMetadata = (reader?: string): boolean => !!reader && !METADATA_LESS.has(reader);

@@ -3,6 +3,10 @@
 
 ## 3.1.3
 
+### New features
+
+* **PowerPoint, Excel and AsciiDoc import.** The import command now opens .pptx, .xlsx and .adoc files. Requires Pandoc 3.8.3 or newer.
+
 ### Enhancements and bug fixes
 
 * When Obsidian starts, the plugin says when installed Lua filters have updates, and they can be updated right from the notice.

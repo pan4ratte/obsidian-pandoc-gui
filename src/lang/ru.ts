@@ -50,6 +50,7 @@ export default {
   IMPORT_DIALOG_SOURCE_NONE: 'Выберите документ, который нужно превратить в заметку.',
   IMPORT_DIALOG_SOURCE_FORMAT: (format: string) => `Будет прочитан как ${format}.`,
   IMPORT_DIALOG_SOURCE_UNKNOWN: 'Pandoc не умеет читать файлы этого типа.',
+  IMPORT_READER_TOO_OLD: (format: string, version: string) => `Для импорта ${format} нужен Pandoc ${version} или новее.`,
   IMPORT_DIALOG_FILE_FILTER: 'Документы, понятные Pandoc',
   IMPORT_DIALOG_FOLDER: 'Папка назначения',
   IMPORT_DIALOG_FOLDER_NONE: 'Куда в хранилище попадёт заметка.',
