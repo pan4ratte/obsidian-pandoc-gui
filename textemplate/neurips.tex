@@ -39,6 +39,23 @@
 \usepackage{amsmath}
 \usepackage{textcomp}
 \setlength{\LTcapwidth}{\textwidth} % To make captions fit within page width
+\newcounter{none} % for unnumbered tables
+$if(deferred-notes)$
+% Footnotes in tables and captions, from pandoc 3.14's default template.
+\makeatletter
+\protected\def\pandocfootnotemark#1{\footnotemark{}%
+  \expandafter\xdef\csname pandoc@fn@#1\endcsname{%
+    \noexpand\pandoc@fnrestore
+    {\unexpanded\expandafter{\@thefnmark}}%
+    {\ifdefined\Hy@footnote@currentHref
+       \unexpanded\expandafter{\Hy@footnote@currentHref}\fi}}}
+\def\pandoc@fnrestore#1#2{%
+  \gdef\@thefnmark{#1}%
+  \ifdefined\Hy@footnote@currentHref\gdef\Hy@footnote@currentHref{#2}\fi}
+\newcommand\pandocfootnotetext[1]{%
+  \csname pandoc@fn@#1\endcsname\@footnotetext}
+\makeatother
+$endif$
 
 \makeatletter
 \newsavebox\pandoc@box
